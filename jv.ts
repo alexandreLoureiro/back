@@ -267,6 +267,16 @@ public List<Funcionario> FuncisContinua(@PathVariable String nm_fun) {
         simular.click();
 
         driver.close();
-    }
+	}
+	
+	https://www.youtube.com/watch?v=UbJLOn1PAKw
+	https://git-scm.com/download/win
+	new reposotorio
+	copia endereco clone download
+	git clone + endereco
+	entra na pasta criada
+	git add.
+	git commit -m "mensagem"
+	git push
 */
 
