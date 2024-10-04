@@ -1,5 +1,3 @@
-import pandas as pd
-
 # Consultar os dados das tabelas
 trabalhos_processos_query = """
 SELECT nr_trabalho, cd_pmi, nm_pmi, nm_tip_pmi
@@ -43,7 +41,7 @@ for _, row in trabalhos_processos.iterrows():
     subprocessos = build_hierarchy(base_pmi, cd_pmi)
     result.append({
         'nr_trabalho': nr_trabalho,
-        'processos': f"Processos: {processo_nome}, Subprocessos: {', '.join(subprocessos)}"
+        'processos': f"Processo: {processo_nome}, Subprocessos: {', '.join(subprocessos)}"
     })
 
 result_df = pd.DataFrame(result)
