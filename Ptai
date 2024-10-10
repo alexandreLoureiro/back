@@ -1,33 +1,18 @@
-
 PROC SQL;
-    CREATE TABLE PTAI_TRABALHOS_TEMP1 AS
-    SELECT t1.*, 
-           t3.*, 
-           t4.*,
-           t5.*
-    FROM work.PTAI_TRABALHOS_0 t1
-    LEFT JOIN DB2PLNJ.VIEW_AUD_ITNO_PGMD t3 ON t1.nr_trabalho = t3.CD_ATVD_PLNJ
-    LEFT JOIN DB2PLNJ.TIP_VIEW_AUD t4 ON t3.CD_TIP_VIEW_AUD = t4.CD_TIP_VIEW_AUD
-    LEFT JOIN dados.RELACAO_GA t5 ON t1.CD_GA_COORD = t5.PREFIXO;
+   /* Verifica se a tabela já existe */
+   SELECT COUNT(*) INTO :exist 
+   FROM sashelp.vtable 
+   WHERE libname = 'DADOS' AND memname = 'TRABALHOS_PROCESSOS';
+
+   /* Se a tabela existir, ela será eliminada */
+   %IF &exist > 0 %THEN %DO;
+       DROP TABLE dados.trabalhos_processos;
+   %END;
 QUIT;
 
 PROC SQL;
-    CREATE TABLE PTAI_TRABALHOS_TEMP2 AS
-    SELECT temp1.*, 
-           t8.*
-    FROM PTAI_TRABALHOS_TEMP1 temp1
-    INNER JOIN DB2PLNJ.HST_EST_ATVD_PLNJ t8 ON temp1.nr_trabalho = t8.CD_ATVD_PLNJ
-    WHERE DATEPART(t8.TS_FIM_EST) = "01JAN2000"d AND t8.CD_TIP_EST_ATVD <> 9;
+   CREATE TABLE dados.trabalhos_processos AS 
+   SELECT t1.*
+   FROM WORK.trabalhos_processos_v01 t1;
 QUIT;
 
-PROC SQL;
-    CREATE TABLE PTAI_TRABALHOS_v01 AS
-    SELECT DISTINCT temp2.*, 
-           t9.*, 
-           t10.*
-    FROM PTAI_TRABALHOS_TEMP2 temp2
-    INNER JOIN DB2PLNJ.TIP_EST_ATVD_PLNJ t9 ON temp2.CD_TIP_EST_ATVD = t9.CD_TIP_EST_ATVD
-    INNER JOIN DB2GDA.GRDR_CMTD_DMD t13 ON temp2.CD_DMD = t13.CD_DMD
-    LEFT JOIN T7 ORIGEM_TRAB t7 ON temp2.NR_TRABALHO = t7.NR_TRABALHO
-    LEFT JOIN t10 ON t13.CD_PRF_DEPE = t10.PREFIXO;
-QUIT;
