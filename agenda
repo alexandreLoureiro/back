@@ -1,7 +1,4 @@
-bom dia! Houve alteração de agenda no BBDW e a nossa entrevista foi alterada para o dia 30/10, às 15h20. Segue o briefing e a proposta de perguntas que enviarei a organização. Caso tenham alguma sugestão de pergunta, podem me mandar por aqui até o final do dia de hoje.
- 
-Entrevista BBDW -  Canal Youtube do BB
-30/10 - 15h20
+
 Briefing
 1. Fazendo auditoria com uso de IA Generativa:
 Descrição: Apresenta uma solução inovadora baseada em IA generativa (GPT-4) para transformar auditorias. A IA analisa e classifica documentos de auditoria, destacando pontos positivos, melhorias, situações em tratamento e conclusões relevantes.
@@ -23,3 +20,24 @@ Ainda falando no projeto desenvolvido com a ferramenta de auto ML H2O, quais for
 Como o PlanejAI utiliza dados para priorizar avaliações de auditoria? Pode dar exemplos de hipóteses de risco identificadas?
 Como a cultura Data Driven está sendo implantada na Auditoria Interna com o uso do PlanejAI?
 Quais são as expectativas futuras para o uso de IA na auditoria? Quais novas tecnologias estão sendo exploradas?
+
+
+Aqui estão algumas ideias para responder essas duas perguntas de forma clara e informativa:
+
+### 1. **Como a IA generativa lida com a atualização constante dos riscos corporativos no PlanejAI? Existe algum mecanismo de retroalimentação para adaptar os modelos de IA com base em novos dados e avaliações de auditoria?**
+
+**Resposta sugerida:**
+
+O PlanejAI utiliza uma abordagem dinâmica para lidar com a atualização constante dos riscos corporativos. A IA generativa integrada ao PlanejAI é alimentada por dados atualizados regularmente, provenientes de várias fontes, como relatórios de auditoria, mapeamentos de processos, e registros de eventos de risco. Cada vez que novos dados são inseridos no sistema, a IA é capaz de recalibrar suas sugestões, priorizando os riscos mais recentes e de maior impacto.
+
+Além disso, há um mecanismo de retroalimentação, onde os auditores podem fornecer feedback sobre os temas e riscos sugeridos pela IA. Esse feedback é usado para refinar o modelo de IA, ajustando-o para fornecer sugestões mais precisas e alinhadas com a realidade da organização. Com essa retroalimentação contínua, o PlanejAI se mantém relevante e ajustado às mudanças dinâmicas do ambiente corporativo, garantindo que os temas e riscos emergentes sejam priorizados adequadamente no planejamento da auditoria.
+
+### 2. **Qual o papel dos auditores humanos na interação com a IA generativa no PlanejAI? Como o uso da IA impacta a autonomia e o julgamento profissional no processo de planejamento?**
+
+**Resposta sugerida:**
+
+Embora a IA generativa do PlanejAI ofereça suporte ao planejamento de auditoria, o papel dos auditores humanos continua sendo central. A IA funciona como uma ferramenta de apoio, gerando insights e sugerindo temas de auditoria com base em grandes volumes de dados, mas a decisão final sobre quais riscos e processos devem ser priorizados cabe aos auditores.
+
+A IA automatiza a análise de dados complexos e fornece recomendações baseadas em padrões e tendências, mas o julgamento crítico do auditor é fundamental para interpretar esses resultados no contexto específico da organização. O auditor avalia as sugestões da IA e usa seu conhecimento e experiência para validar ou ajustar os temas propostos, garantindo que estejam alinhados com as necessidades estratégicas da empresa. Assim, a IA melhora a eficiência e eficácia do processo de planejamento, mas não substitui o papel do auditor em exercer autonomia e senso crítico no processo de tomada de decisão.
+
+Essas respostas destacam a colaboração entre IA e auditores, mostrando como a tecnologia complementa, mas não substitui, o julgamento humano no processo de auditoria.
