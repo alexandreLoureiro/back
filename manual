@@ -80,3 +80,120 @@ else:
 
 =======
 
+
+import tiktoken
+import pandas as pd
+import os
+import json
+import time
+import requests
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine
+from IPython.display import display, JSON
+from dotenv import load_dotenv
+
+# Carregando o encoding para o modelo GPT-4
+encoding = tiktoken.encoding_for_model("gpt-4")
+
+# Função para carregar variáveis de ambiente
+def carregar_variaveis_ambiente():
+    dotenv_path = '/code/notebooks/taxonomia/.env'
+    load_dotenv(dotenv_path)
+    usr = os.getenv('USR_')
+    pw = os.getenv('PWD_')
+    return usr, pw
+
+# Função para conectar ao banco de dados
+def conectar_postgres(db, usr, pw):
+    engine = create_engine(f'postgresql://{usr}:{pw}@localhost:5432/{db}')
+    conn = engine.connect()
+    return conn, engine
+
+# Função que simula a API de assistente de auditoria
+def assistente_exemplo(row):
+    orientacao_prompt = '''Você é um assistente ...'''
+    avaliacao_nota_tecnica = f"irregularidades: {row['tx_gpt']} "
+    prompt = orientacao_prompt + avaliacao_nota_tecnica + 'segue lista da base de conhecimento'
+    
+    url = 'url'
+    data = {
+        "data": {
+            "input": prompt,
+            "intents": [{}],
+            "entities": [{}],
+            "context": {
+                "config": {
+                    "top_p": 0.95,
+                    "max_tokens": 4000,
+                    "temperature": 0.2
+                }
+            }
+        }
+    }
+
+    headers = {'Content-type': 'application/json', 'accept': 'application/json'}
+
+    try:
+        resp = requests.post(url, data=json.dumps(data), headers=headers)
+        resp.raise_for_status()
+        resp_dict = resp.json()
+        
+        status = resp_dict.get('status')
+        print('Status:', status)
+        
+        texto_resposta = resp_dict["data"]["context"]["prompt_response"]["acs_llm_prompt_execution"]["result"]
+        return texto_resposta
+
+    except requests.exceptions.RequestException as e:
+        print(f"Erro na requisição: {e}")
+        return None
+
+# Função para contar tokens
+def contar_tokens(texto):
+    tokens = encoding.encode(texto)
+    return len(tokens)
+
+# Função principal
+def processar_dados():
+    # Carregar variáveis de ambiente e conectar ao banco
+    usr, pw = carregar_variaveis_ambiente()
+    conn, engine = conectar_postgres(db="sala_agil", usr=usr, pw=pw)
+
+    # Consultar dados do PostgreSQL
+    query_postgres = """
+    SELECT * FROM riscometro.dmd_ae_gpt LIMIT 5;
+    """
+    df_postgres = pd.read_sql(query_postgres, conn)
+
+    # Contar tokens e filtrar com base no limite
+    df_postgres['quantidade_tokens'] = df_postgres['tx_gpt'].apply(contar_tokens)
+    df_postgres = df_postgres.query('quantidade_tokens <= 10000').reset_index(drop=True)
+
+    # Processar as linhas com um controle de tempo e salvar resultados localmente
+    df_local = pd.DataFrame()
+
+    for index, row in df_postgres.iterrows():
+        if index > 0 and index % 10 == 0:
+            print("Aguardando 10 segundos...")
+            time.sleep(10)
+
+        try:
+            proposta = assistente_exemplo(row)
+            
+            if isinstance(proposta, str):
+                proposta = json.loads(proposta)
+            
+            resultado = row.to_dict()
+            resultado.update(proposta)
+            
+            df_local = pd.concat([df_local, pd.DataFrame([resultado])], ignore_index=True)
+
+        except Exception as e:
+            print(f"Erro na linha {index}: {e}")
+
+    # Salvar localmente para ver o resultado
+    df_local.to_csv('resultados_locais.csv', index=False)
+
+
+processar_dados()
+
