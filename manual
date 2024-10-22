@@ -76,3 +76,7 @@ if resposta:
     display(JSON(resposta))
 else:
     print("Não foi possível obter a resposta.")
+
+
+=======
+
