@@ -1,0 +1,25 @@
+bom dia! Houve alteração de agenda no BBDW e a nossa entrevista foi alterada para o dia 30/10, às 15h20. Segue o briefing e a proposta de perguntas que enviarei a organização. Caso tenham alguma sugestão de pergunta, podem me mandar por aqui até o final do dia de hoje.
+ 
+Entrevista BBDW -  Canal Youtube do BB
+30/10 - 15h20
+Briefing
+1. Fazendo auditoria com uso de IA Generativa:
+Descrição: Apresenta uma solução inovadora baseada em IA generativa (GPT-4) para transformar auditorias. A IA analisa e classifica documentos de auditoria, destacando pontos positivos, melhorias, situações em tratamento e conclusões relevantes.
+Aplicação: Testada em processos de Prevenção à Lavagem de Dinheiro e Governança de Relacionamento com Clientes, resultando em maior eficácia e eficiência operacional.
+2. Predição de atipicidades – Auditoria contínua utilizando H2O.ai:
+Descrição: Utiliza modelos de Aprendizado de Máquina Supervisionado para prever tipicidades em clientes, processados em um ambiente de Big Data com pySpark.
+Aplicação: Identifica variáveis cadastrais e comportamentais, apontando situações atípicas e fornecendo insights valiosos para a gestão de riscos.
+3. PlanejAI – utilizando IA Generativa no planejamento da Auditoria Interna:
+Descrição: Plataforma que utiliza IA generativa para transformar o planejamento da Auditoria Interna, capturando e analisando grandes volumes de dados.
+Aplicação: Prioriza avaliações de temas relevantes e riscos de maior impacto, implantando uma cultura Data Driven na seleção dos trabalhos de auditoria.
+ 
+Proposta de Perguntas para a entrevista
+Como a IA Generativa está transformando a auditoria? Quais são os principais benefícios observados até agora?
+Quais desafios foram enfrentados ao implementar a IA Generativa no processo de auditoria? Como foram superados?
+Como a solução de IA Generativa melhora a eficácia e a eficiência operacional na avaliação dos processos de Prevenção à Lavagem de Dinheiro e ao Financiamento do Terrorismo (PLD/FT) e no de Governança de Relacionamento com Clientes?
+Como a análise de sentimento é integrada às soluções utilizando IA Generativa desenvolvidas para apoiar avaliação dos processos de PLD/FT e Governança de Relacionamento com Clientes?
+Quais são os principais resultados obtidos com o uso da ferramenta H2O.ai na predição de atipicidades?
+Ainda falando no projeto desenvolvido com a ferramenta de auto ML H2O, quais foram as variáveis cadastrais e comportamentais mais relevantes identificadas pelo modelo de Aprendizado de Máquina Supervisionado?
+Como o PlanejAI utiliza dados para priorizar avaliações de auditoria? Pode dar exemplos de hipóteses de risco identificadas?
+Como a cultura Data Driven está sendo implantada na Auditoria Interna com o uso do PlanejAI?
+Quais são as expectativas futuras para o uso de IA na auditoria? Quais novas tecnologias estão sendo exploradas?
