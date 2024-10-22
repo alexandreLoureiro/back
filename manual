@@ -1,0 +1,78 @@
+import tiktoken
+import json
+import requests
+from IPython.display import display, JSON
+
+# Carregue o encoding para o modelo GPT-4
+encoding = tiktoken.encoding_for_model("gpt-4")
+
+# Definição de dados e prompts
+def get_prompts():
+    orientacao_prompt = '''Você é um assistente de auditoria '''
+    
+    formato_saida = '''{
+        "regra_classificacao": "foi classificada como...
+    }'''
+    
+    irregularidades = '''1. Vinculação de comprovantes espúrios de endereço no cadastro de clientes
+    '''
+    
+    exemplo_rag_dinamica = '''base de conhecimento'''
+    
+    resultado = f"{orientacao_prompt} # Formato Saída: {formato_saida}, irregularidades: {irregularidades}, base de conhecimento: {exemplo_rag_dinamica}"
+    
+    return resultado
+# Limitar o número de tokens
+def limit_tokens(text, max_tokens=20000):
+    if not text:
+        return ''
+    
+    tokens = encoding.encode(text)
+    if len(tokens) > max_tokens:
+        text = encoding.decode(tokens[:max_tokens])
+    
+    return text
+
+# Função para fazer requisição à API de assistente de auditoria
+def assistente_manual(prompt):
+    url = 'url'
+    headers = {'Content-type': 'application/json', 'accept': 'application/json'}
+    data = {
+        "data": {
+            "input": prompt,
+            "intents": [{}],
+            "entities": [{}],
+            "context": {
+                "config": {
+                    "top_p": 0.95,
+                    "max_tokens": 4000,
+                    "temperature": 0.2
+                }
+            }
+        }
+    }
+    try:
+        resp = requests.post(url, data=json.dumps(data), headers=headers)
+        resp.raise_for_status()
+        resp_dict = resp.json()
+        
+        # Extração de informações relevantes da resposta
+        status = resp_dict.get('status')
+        print('Status:', status)
+        
+        texto_resposta = resp_dict["data"]["context"]["prompt_response"]["acs_llm_prompt_execution"]["result"]
+        return texto_resposta
+
+    except requests.exceptions.RequestException as e:
+        print(f"Erro na requisição: {e}")
+        return None
+
+
+resultado = get_prompts()
+prompt = limit_tokens(resultado)
+resposta = assistente_manual(prompt)
+
+if resposta:
+    display(JSON(resposta))
+else:
+    print("Não foi possível obter a resposta.")
