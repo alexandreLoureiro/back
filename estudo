@@ -53,38 +53,53 @@ QUIT;
 %Altera_Situacao;
 
 
-/* Definir as opções de email */
-options emailauthprotocol=none emailid='audit.mefis@bb.com.br' emailsys=smtp emailhost=smtp.bb.com.br emailport=25;
-filename newEmail email lrecl=64000;
+%Macro Envia_Email;
+    /* Verificar se há registros a serem processados */
+    proc sql noprint;
+        select count(*) into :row_count from WORK.cria_dados_email;
+    quit;
 
-data _null_;
-    SET work.cria_dados_email END=FINAL;
-    
-    /* Remover espaços em branco */
-    destino1 = strip(destino);
-    destino2 = strip(destino_cc);
-    assunto = "Recomendação: " || strip(titulo) || ".";	
-    
-    /* Depuração: imprimir valores no log */
-    put 'DEBUG: destino1=' destino1;
-    put 'DEBUG: destino2=' destino2;
-    put 'DEBUG: assunto=' assunto;
-    
-    /* Configurar o arquivo de email */
-    file newEmail 
-        from  = "audit.mefis@bb.com.br"
-        content_type = "text/html" ;
+    %if &row_count > 0 %then %do;
+        /* Configurar as opções de email */
+        options emailauthprotocol=none 
+                emailid='audit.mefis@bb.com.br' 
+                emailsys=smtp 
+                emailhost=smtp.bb.com.br 
+                emailport=25;
 
-    /* Especificar destinatários e conteúdo */
-    put '!EM_TO!' destino1; 
-    put '!EM_CC!' destino2; 
-    put '!EM_SUBJECT!' assunto;
-    put mensagem_html;
+        /* Definir o arquivo de email */
+        filename newEmail email lrecl=64000;
 
-    /* Enviar o email */
-    put '!EM_SEND!';
-run;
+        /* Enviar os emails */
+        data _null_;
+            set work.cria_dados_email;
+            
+            /* Remover espaços em branco das variáveis de email */
+            destino1 = strip(destino);
+            destino2 = strip(destino_cc);
+            destino3 = strip(destino_cco);
+            assunto = "Recomendação: " || strip(titulo) || ".";	
 
-/* Limpar a referência do arquivo */
-filename newEmail clear;
+            /* Depuração: imprimir valores no log */
+            put 'DEBUG: destino1=' destino1;
+            put 'DEBUG: destino2=' destino2;
+            put 'DEBUG: destino3=' destino3;
+            put 'DEBUG: assunto=' assunto;
 
+            /* Configurar o arquivo de email */
+            file newEmail 
+                to=(destino1)
+                cc=(destino2)
+                bcc=(destino3)
+                from='audit.mefis@bb.com.br'
+                subject=assunto
+                content_type='text/html';
+
+            /* Escrever o conteúdo do email */
+            put mensagem_html;
+        run;
+
+        /* Limpar a referência do arquivo */
+        filename newEmail clear;
+    %end;
+%Mend;
