@@ -1,92 +1,53 @@
-
-proc sql noerrorstop;
-		connect to postgres as comm(server="&_servidor" port="&_porta" user="&_usuario" password="&_senha" database="&_basedados");
-		disconnect from comm;
-/*
-		DATA WORK.cria_dados_email; 
-	 	   set PGMEFIS.mensageria_plataforma; 		
-		run;
-quit;
-*/
- 
 PROC SQL;
 CREATE TABLE WORK.cria_dados_email AS 
-SELECT * FROM PGMEFIS.mensageria_plataforma T1  WHERE SITUACAO = 'A_ENVIAR' 
-;QUIT;
- 
- 
+SELECT * FROM PGMEFIS.mensageria_plataforma T1 WHERE SITUACAO = 'A_ENVIAR';
+QUIT;
+
 %Macro Envia_Email;
- 
-
-proc sql ;
-
+    proc sql noprint;
         select count(*) into :row_count from WORK.cria_dados_email;
-
     quit;
 
-  %if &row_count > 0 %then %do;
+    %if &row_count > 0 %then %do;
+        options emailauthprotocol=none emailid='@' emailsys=smtp emailhost=smtp emailport=25;
+        filename newEmail email lrecl=64000;
 
+        data _null_;
+            SET work.cria_dados_email;
+            destino1 = destino;
+            destino2 = destino_cc;
+            assunto = "Recomendação: " || titulo || ".";
 
+            file newEmail 
+                from  = "audit.mefis@bb.com.br"
+                to = destino1
+                cc = destino2
+                subject = assunto
+                content_type = "text/html";
 
-options emailauthprotocol=none emailid='audit.mefis@bb.com.br' emailsys=smtp emailhost=smtp.bb.com.br emailport=25;
+            put mensagem_html;
+        run;
 
-filename newEmail email lrecl=64000;
-data _null_;
-SET work.cria_dados_email END=FINAL;
-destino1 = destino;
-destino2 = destino_cc;
- assunto = "Recomendação: " || titulo || ".";	
-
-
-
-file newEmail 
-		        from  = "audit.mefis@bb.com.br"
-		        content_type = "text/html" ;
- 
-			put '!EM_TO!' destino1; 
-			put '!EM_CC!' destino2 ; 
-		    put '!EM_SUBJECT!' titulo;
-		    put mensagem_html;
-		    put " - - - ";
-		    
-		    put '!EM_SEND!' / '!EM_NEWMSG!';
-if FINAL then 
-		put '!EM_ABORT!';
-run;
-
-/* Clear the filename reference */
-filename newEmail clear;
-
-
-
-
- %END
-
+        /* Clear the filename reference */
+        filename newEmail clear;
+    %end;
 %Mend;
- 
 
- 
 %Macro Altera_Situacao;
+    proc sql noprint;
+        select id into :id_list separated by ',' from WORK.cria_dados_email;
+    quit;
 
-
-
-data mydata;
-	
-run;
-
-proc sql noerrorstop;
-	
-
-	        connect to postgres as comm(server="&_servidor" port="&_porta" user="&_usuario" password="&_senha" database="&_basedados");
-	            execute (UPDATE mensageria_plataforma SET situacao = 'ENVIADO' , DATA_ENVIO = current_timestamp  WHERE situacao = 'A_ENVIAR' ;) by comm;
-	        disconnect from comm;			
-	 	 quit;
-
-
-
+    proc sql;
+        connect to postgres as comm(server="&_servidor" port="&_porta" user="&_usuario" password="&_senha" database="&_basedados");
+        execute (
+            UPDATE mensageria_plataforma
+            SET situacao = 'ENVIADO', DATA_ENVIO = current_timestamp
+            WHERE id IN (&id_list)
+        ) by comm;
+        disconnect from comm;
+    quit;
 %Mend;
-
 
 %Envia_Email;
-
 %Altera_Situacao;
