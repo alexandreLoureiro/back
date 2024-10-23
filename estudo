@@ -45,3 +45,68 @@ proc sql noprint;
         filename newEmail clear;
     %end;
 %Mend;
+
+
+
+PROC SQL;
+CREATE TABLE WORK.cria_dados_email AS 
+SELECT 'teste Alerta AIQ Gerencial' as titulo, 
+       'alexandreloureiro@bb.com.br' as destino, 
+       'alexandreloureiro@bb.com.br' as destino_cc,
+       'alexandreloureiro@bb.com.br' as destino_cco,
+       T1.*
+FROM PGMEFIS.mensageria_plataforma T1  
+WHERE SITUACAO = 'A_ENVIAR';
+QUIT;
+
+proc sql noprint;
+    select count(*) into :row_count from WORK.cria_dados_email;
+quit;
+
+%put row_count: &row_count;
+
+%Macro Envia_Email;
+    proc sql noprint;
+        select count(*) into :row_count from WORK.cria_dados_email;
+    quit;
+
+    %if &row_count > 0 %then %do;
+        options emailauthprotocol=none 
+                emailid='audit.mefis@bb.com.br' 
+                emailsys=smtp 
+                emailhost='smtp.bb.com.br' 
+                emailport=25;
+        filename newEmail email lrecl=64000;
+
+        data _null_;
+            SET work.cria_dados_email;
+            
+            /* Limpar os endereços de email */
+            destino1 = compress(strip(destino), "'"" ");
+            destino2 = compress(strip(destino_cc), "'"" ");
+            destino3 = compress(strip(destino_cco), "'"" ");
+            assunto = "Recomendação: " || strip(titulo) || ".";
+
+            /* Depuração: imprimir valores no log */
+            put 'DEBUG: destino1="' destino1 +(-1) '"';
+            put 'DEBUG: destino2="' destino2 +(-1) '"';
+            put 'DEBUG: destino3="' destino3 +(-1) '"';
+            put 'DEBUG: assunto="' assunto +(-1) '"';
+
+            file newEmail 
+                from  = "audit.mefis@bb.com.br"
+                to = (destino1)
+                cc = (destino2)
+                bcc = (destino3)
+                subject = assunto
+                content_type = "text/html";
+
+            put mensagem_html;
+        run;
+
+        /* Limpar a referência ao arquivo */
+        filename newEmail clear;
+    %end;
+%Mend;
+
+%Envia_Email;
