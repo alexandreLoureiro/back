@@ -1,105 +1,137 @@
-PROC SQL;
-CREATE TABLE WORK.cria_dados_email AS 
-SELECT * FROM PGMEFIS.mensageria_plataforma T1 WHERE SITUACAO = 'A_ENVIAR';
-QUIT;
 
-%Macro Envia_Email;
+%macro send_email_if_table_not_empty;
+    /* Verifica se a tabela work.preparaemail_01 está vazia */
     proc sql noprint;
-        select count(*) into :row_count from WORK.cria_dados_email;
+        select count(*) into :row_count from work.preparaemail_01;
     quit;
 
+	/* Se a tabela não estiver vazia, executa o código para enviar o email */
     %if &row_count > 0 %then %do;
-        options emailauthprotocol=none emailid='@' emailsys=smtp emailhost=smtp emailport=25;
-        filename newEmail email lrecl=64000;
-
-        data _null_;
-            SET work.cria_dados_email;
-            destino1 = destino;
-            destino2 = destino_cc;
-            assunto = "Recomendação: " || titulo || ".";
-
-            file newEmail 
-                from  = "audit.mefis@bb.com.br"
-                to = destino1
-                cc = destino2
-                subject = assunto
-                content_type = "text/html";
-
-            put mensagem_html;
-        run;
-
-        /* Clear the filename reference */
-        filename newEmail clear;
-    %end;
-%Mend;
-
-%Macro Altera_Situacao;
-    proc sql noprint;
-        select id into :id_list separated by ',' from WORK.cria_dados_email;
-    quit;
-
-    proc sql;
-        connect to postgres as comm(server="&_servidor" port="&_porta" user="&_usuario" password="&_senha" database="&_basedados");
-        execute (
-            UPDATE mensageria_plataforma
-            SET situacao = 'ENVIADO', DATA_ENVIO = current_timestamp
-            WHERE id IN (&id_list)
-        ) by comm;
-        disconnect from comm;
-    quit;
-%Mend;
-
-%Envia_Email;
-%Altera_Situacao;
 
 
-%Macro Envia_Email;
-    /* Verificar se há registros a serem processados */
-    proc sql noprint;
-        select count(*) into :row_count from WORK.cria_dados_email;
-    quit;
+		options emailauthprotocol=none emailid='audit.refis@bb.com.br' emailsys=smtp emailhost= 'smtp.bb.com.br' emailport=25;
+		filename newEmail email lrecl=64000;
+		data _null_;
+		    SET work.preparaemail_01 END=FINAL;
+		    assunto = "Recomendação: " || strip(CD_RCM) || ", envio evidências auditoria externa";	
+		    file newEmail 
+		        from         = "audit.refis@bb.com.br"
+		        content_type = "text/html" ;
 
-    %if &row_count > 0 %then %do;
-        /* Configurar as opções de email */
-        options emailauthprotocol=none 
-                emailid='audit.mefis@bb.com.br' 
-                emailsys=smtp 
-                emailhost=smtp.bb.com.br 
-                emailport=25;
+			email3 = '"audit.refis@bb.com.br" "alexandreloureiro@bb.com.br" "rawatanabe@bb.com.br" "cristhiane@bb.com.br"'; 
+			/*email3 = '"alexandreloureiro@bb.com.br" "alexandreloureiro@bb.com.br" "alexandreloureiro@bb.com.br"';*/
+			
+			put '!EM_TO!' email1; 
+		    put '!EM_CC!' email2 ; 
+			put '!EM_BCC!' email3; 
+		    put '!EM_SUBJECT!' assunto;
+			/*put '!EM_ATTACH!' "/dados/audit/gamefis/aud/interno/RCM_EE/dados/Consultoria.pdf" ;*/   
+		    
+			put "<html>";
+		    put "<head>";
+		    put "<style>";
+		    put "body { font-family: Verdana, sans-serif; font-size: 12px; }";
+		    put "table { width: 80%; margin: auto; border-collapse: collapse; }";
+		    put "th, td { border: 1px solid black; padding: 10px; text-align: left; }";
+		    put "th { background-color: #ADD8E6; }";
+		    put "tr:nth-child(even) { background-color: #f2f2f2; }";
+		    put "tr:hover { background-color: #ddd; }";
+		    put "</style>";
+		    put "</head>";
+		    put "<body>";
 
-        /* Definir o arquivo de email */
-        filename newEmail email lrecl=64000;
+		   /*
+		    put "<p>***************** teste ************************</p>";
 
-        /* Enviar os emails */
-        data _null_;
-            set work.cria_dados_email;
-            
-            /* Remover espaços em branco das variáveis de email */
-            destino1 = strip(destino);
-            destino2 = strip(destino_cc);
-            destino3 = strip(destino_cco);
-            assunto = "Recomendação: " || strip(titulo) || ".";	
+		    put "<p>A informação foi útil?</p>";
+		    put "<a href='https://mefis.bb.com.br/apiptai/rcm_ae_participou/?CD_RCM=" CD_RCM "&utilidade=sim'>";
+		    put "<button style='background-color: #4CAF50; color: white; padding: 10px 20px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; margin: 4px 2px; cursor: pointer;'>Sim</button></a>";
+		    put "<a href='https://mefis.bb.com.br/apiptai/rcm_ae_participou/?CD_RCM=" CD_RCM "&utilidade=nao'> <button style='background-color: #f44336; color: white; padding: 10px 20px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; margin: 4px 2px; cursor: pointer;'>Não</button></a>";
 
-            /* Depuração: imprimir valores no log */
-            put 'DEBUG: destino1=' destino1;
-            put 'DEBUG: destino2=' destino2;
-            put 'DEBUG: destino3=' destino3;
-            put 'DEBUG: assunto=' assunto;
+		    
+		    put "<p>******************* fim teste ***************************</p>";
 
-            /* Configurar o arquivo de email */
-            file newEmail 
-                to=(destino1)
-                cc=(destino2)
-                bcc=(destino3)
-                from='audit.mefis@bb.com.br'
-                subject=assunto
-                content_type='text/html';
+			put "<p>******************* email validação *********************</p>";
 
-            /* Escrever o conteúdo do email */
-            put mensagem_html;
-        run;
+		    */
+		    put "<p style='font-weight: bold; text-align: right;'>#interna</p>";
+			/*
+			put "<p><img src='https://mefis.bb.com.br/apiptai/logo_rcm_ae'></p>";
 
-        /* Limpar a referência do arquivo */
-        filename newEmail clear;
-    %end;
-%Mend;
+		*/
+		/*	put "<a href='https://mefis.bb.com.br/apiptai/rcm_ae_participou/'><img src='https://mefis.bb.com.br/apiptai/logo_rcm_ae'></a></p>"; 
+			put "<a href='https://mefis.bb.com.br/apiptai/rcm_ae_participou/?CD_RCM=" CD_RCM "'><img src='https://mefis.bb.com.br/apiptai/logo_rcm_ae'></a></p>";*/
+		    put "<p>Sr(a). Gerente,</p>";
+		    put "<br>";
+			/*put "<p style='font-family: Arial, sans-serif; font-size: 14px; color: #333;'> Identificamos o registro de implementação da RCM nº <strong>" CD_RCM "</strong>, em " INC_ABGC_EST " - " HORA_MINUTO_INC_ABGC_EST ". Informamos que é necessário enviar as respectivas evidências para os seguintes endereços: </p>";*/
+			put "<p style='font-family: Arial, sans-serif; font-size: 14px; color: #333;'> Identificamos o registro de implementação da recomendação abaixo. </p>";
+		    put "<p style='font-family: Arial, sans-serif; font-size: 14px; color: #333;'> Informamos que com a mudança da empresa de Auditoria Externa, comunicada por email em 09/05/2024, é necessário enviar as evidências da implementação para os seguintes endereços: </p>";
+
+		    titulo = "Título: Envio de evidências recomendação de auditoria externa: " || strip(CD_RCM) ;
+		    put "<ul style='color:green;'>";
+			put "  <li>Para: BR-DLEquipeBB@kpmg.com.br</li>";
+			put "  <li>c/c: audit.refis@bb.com.br</li>";
+			put "  <li>" titulo "</li>";
+		    put "</ul>";	
+		    put "<br>";    
+		    /* Início da tabela */
+			put "<table style='table-layout: fixed;'>";
+			/* Cabeçalho da tabela com cores */
+			put "<tr>";
+			put "<th style='width: 10%; text-align: center; font-size: 10px;'>Matricula</th>";
+			put "<th style='width: 24%; text-align: center; font-size: 10px;'>Funcionário</th>";
+			put "<th style='width: 10%; text-align: center; font-size: 10px;'>UOR Localização</th>";
+			put "<th style='width: 10%; text-align: center; font-size: 10px;'>Recomendação</th>";
+			put "<th style='width: 24%; text-align: center; font-size: 10px;'>Situação Recomendação</th>";
+			/*put "<th style='width: 10%; text-align: center; font-size: 10px;'>ENQUADRAMENTO_CERTIF</th>";*/
+			put "<th style='width: 12%; text-align: center; font-size: 10px;'>Data</th>";
+			put "<th style='width: 10%; text-align: center; font-size: 10px;'>Hora</th>";
+			put "</tr>";
+
+			/* Linhas da tabela */
+			put "<tr>";
+			put "<td style='white-space: nowrap; text-align: center; font-size: 10px;'>" CD_MTC_FUN "</td>";
+			put "<td style='white-space: nowrap; text-align: center; font-size: 10px;'>" NOME_FUNCIONARIO "</td>";
+			put "<td style='white-space: nowrap; text-align: center; font-size: 10px;'>" CD_UOR_DEPE_PRFL "</td>";
+			put "<td style='white-space: nowrap; text-align: center; font-size: 10px;'>" CD_RCM "</td>";
+			put "<td style='white-space: nowrap; text-align: center; font-size: 10px;'>" SITUACAO_RCM "</td>";
+			/*put "<td style='white-space: nowrap; font-size: 8px;'>" ENQUADRAMENTO_CERTIF "</td>";*/
+			put "<td style='white-space: nowrap; text-align: center; font-size: 10px;'>" INC_ABGC_EST "</td>";
+			put "<td style='white-space: nowrap; text-align: center; font-size: 10px;'>" HORA_MINUTO_INC_ABGC_EST "</td>";
+			put "</tr>";
+
+			/* Fim da tabela */
+			put "</table>";    
+		    put "<br>";
+		    put '<p>A <span style="color:red;">ausência</span> de evidências pode resultar na <b>não</b> certificação da recomendação, pela empresa de auditoria externa uma vez que a empresa não possui acesso a Intranet do Banco/Audit. </p>';
+		    put "<br><br>";    
+		    put "<p>Atenciosamente,</p>";
+		    put "<p>9821 AUDIT/GA Refis</p>";
+			put "<br><br>";
+		    put "<br><br>";
+		    /*put "<p style='font-size: 10px; font-weight: bold; text-align: right'>Não responda esse e-mail.</p>";*/
+			put "<p style='font-size: 10px; font-weight: bold;'>Não responda esse e-mail.</p>";    
+		    put "</body>";
+		    put "</html>";
+		    put " ";
+		    put '!EM_SEND!' / '!EM_NEWMSG!';
+		    if FINAL then 
+		        put '!EM_ABORT!';
+		run;
+		filename newEmail clear;
+
+
+
+		data dados.rcm_ae;
+		 set preparaemail_01;
+		 format data_envio date9. ;
+		     qtd_email_enviado = 1;
+			 data_envio = today();
+		run;
+
+
+		%let _tabs = rcm_ae;
+		%UPLOAD_PG (TIPO= A, _bulkload=no);
+
+%end;
+%mend send_email_if_table_not_empty;
