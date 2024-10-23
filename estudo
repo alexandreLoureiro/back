@@ -5,7 +5,7 @@
 
     %if &row_count > 0 %then %do;
         options emailauthprotocol=none
-                emailid='audit.mefis@bb.com.br'
+                emailid='email@com.br'
                 emailsys=smtp
                 emailhost='smtp.bb.com.br'
                 emailport=25;
@@ -18,7 +18,7 @@
             destino1 = compress(strip(destino), "'"" ");
             destino2 = compress(strip(destino_cc), "'"" ");
             destino3 = compress(strip(destino_cco), "'"" ");
-            assunto = "Recomendação: " || strip(titulo) || ".";
+            assunto = "quero que vc ... : " || strip(titulo) || ".";
 
             /* Depuração: imprimir valores no log */
             put 'DEBUG: destino1="' destino1 +(-1) '"';
