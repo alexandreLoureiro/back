@@ -48,39 +48,22 @@ proc sql noprint;
 
 
 
-PROC SQL;
-CREATE TABLE WORK.cria_dados_email AS 
-SELECT 'teste Alerta AIQ Gerencial' as titulo, 
-       'alexandreloureiro@bb.com.br' as destino, 
-       'alexandreloureiro@bb.com.br' as destino_cc,
-       'alexandreloureiro@bb.com.br' as destino_cco,
-       T1.*
-FROM PGMEFIS.mensageria_plataforma T1  
-WHERE SITUACAO = 'A_ENVIAR';
-QUIT;
-
-proc sql noprint;
-    select count(*) into :row_count from WORK.cria_dados_email;
-quit;
-
-%put row_count: &row_count;
-
 %Macro Envia_Email;
     proc sql noprint;
         select count(*) into :row_count from WORK.cria_dados_email;
     quit;
 
     %if &row_count > 0 %then %do;
-        options emailauthprotocol=none 
-                emailid='audit.mefis@bb.com.br' 
-                emailsys=smtp 
-                emailhost='smtp.bb.com.br' 
+        options emailauthprotocol=none
+                emailid='audit.mefis@bb.com.br'
+                emailsys=smtp
+                emailhost='smtp.bb.com.br'
                 emailport=25;
         filename newEmail email lrecl=64000;
 
         data _null_;
             SET work.cria_dados_email;
-            
+
             /* Limpar os endereços de email */
             destino1 = compress(strip(destino), "'"" ");
             destino2 = compress(strip(destino_cc), "'"" ");
@@ -93,14 +76,18 @@ quit;
             put 'DEBUG: destino3="' destino3 +(-1) '"';
             put 'DEBUG: assunto="' assunto +(-1) '"';
 
-            file newEmail 
+            /* Configurar o arquivo de email */
+            file newEmail
                 from  = "audit.mefis@bb.com.br"
-                to = (destino1)
-                cc = (destino2)
-                bcc = (destino3)
-                subject = assunto
                 content_type = "text/html";
 
+            /* Especificar destinatários e assunto */
+            put '!EM_TO!' destino1;
+            put '!EM_CC!' destino2;
+            put '!EM_BCC!' destino3;
+            put '!EM_SUBJECT!' assunto;
+
+            /* Escrever o corpo do email */
             put mensagem_html;
         run;
 
@@ -110,126 +97,3 @@ quit;
 %Mend;
 
 %Envia_Email;
-
-
-
-
-
-
-1          ;*';*";*/;quit;run;
-2          OPTIONS PAGENO=MIN;
-3          %LET _CLIENTTASKLABEL='send_mail';
-4          %LET _CLIENTPROCESSFLOWNAME='Process Flow';
-5          %LET _CLIENTPROJECTPATH='';
-6          %LET _CLIENTPROJECTNAME='';
-7          %LET _SASPROGRAMFILE='/dados/audit/gamefis/aud/interno/PlataformaMefis/Mensageria/send_mail.sas';
-8          
-9          ODS _ALL_ CLOSE;
-10         OPTIONS DEV=PNG;
-11         GOPTIONS XPIXELS=0 YPIXELS=0;
-12         FILENAME EGSR TEMP;
-13         ODS tagsets.sasreport13(ID=EGSR) FILE=EGSR
-14             STYLE=HtmlBlue
-15             STYLESHEET=(URL="file:///C:/Program%20Files/SASHome/SASEnterpriseGuide/7.1/Styles/HtmlBlue.css")
-16             NOGTITLE
-17             NOGFOOTNOTE
-18             GPATH=&sasworklocation
-19             ENCODING=UTF8
-20             options(rolap="on")
-21         ;
-NOTE: Writing TAGSETS.SASREPORT13(EGSR) Body file: EGSR
-22         
-23         GOPTIONS ACCESSIBLE;
-24         
-25         %Macro Envia_Email;
-26             proc sql noprint;
-27                 select count(*) into :row_count from WORK.cria_dados_email;
-28             quit;
-29         
-30             %if &row_count > 0 %then %do;
-31                 options emailauthprotocol=none
-32                         emailid='audit.mefis@bb.com.br'
-33                         emailsys=smtp
-34                         emailhost='smtp.bb.com.br'
-35                         emailport=25;
-36                 filename newEmail email lrecl=64000;
-37         
-38                 data _null_;
-39                     SET work.cria_dados_email;
-40         
-41                     /* Limpar os endereços de email */
-42                     destino1 = compress(strip(destino), "'"" ");
-43                     destino2 = compress(strip(destino_cc), "'"" ");
-44                     destino3 = compress(strip(destino_cco), "'"" ");
-45                     assunto = "Recomendação: " || strip(titulo) || ".";
-46         
-47                     /* Depuração: imprimir valores no log */
-48                     put 'DEBUG: destino1="' destino1 +(-1) '"';
-49                     put 'DEBUG: destino2="' destino2 +(-1) '"';
-50                     put 'DEBUG: destino3="' destino3 +(-1) '"';
-51                     put 'DEBUG: assunto="' assunto +(-1) '"';
-52         
-53                     file newEmail
-54                         from  = "audit.mefis@bb.com.br"
-55                         to = (destino1)
-56                         cc = (destino2)
-57                         bcc = (destino3)
-2                                                          The SAS System                          13:35 Wednesday, October 23, 2024
-
-58                         subject = assunto
-59                         content_type = "text/html";
-60         
-61                     put mensagem_html;
-62                 run;
-63         
-64                 /* Limpar a referência ao arquivo */
-65                 filename newEmail clear;
-66             %end;
-67         %Mend;
-68         
-69         %Envia_Email;
-NOTE: PROCEDURE SQL used (Total process time):
-      real time           0.00 seconds
-      cpu time            0.00 seconds
-      
-
-
-NOTE: The file NEWEMAIL is:
-      E-Mail Access Device
-
-DEBUG: destino1="alexandreloureiro@bb.com.br"
-DEBUG: destino2="alexandreloureiro@bb.com.br"
-DEBUG: destino3="alexandreloureiro@bb.com.br"
-DEBUG: assunto="Recomendação: teste Alerta AIQ Gerencial."
-ERROR: Email: 501 5.1.3 Invalid address
-WARNING: Bad e-mail address: DESTINO1
-ERROR: Email: 501 5.1.3 Invalid address
-WARNING: Bad e-mail address: DESTINO2
-ERROR: Email: 501 5.1.3 Invalid address
-WARNING: Bad e-mail address: DESTINO3
-WARNING: No email addresses specified.
-NOTE: 1 record was written to the file NEWEMAIL.
-      The minimum record length was 427.
-      The maximum record length was 427.
-NOTE: There were 1 observations read from the data set WORK.CRIA_DADOS_EMAIL.
-NOTE: DATA statement used (Total process time):
-      real time           15.04 seconds
-      cpu time            0.03 seconds
-      
-
-NOTE: Fileref NEWEMAIL has been deassigned.
-70         
-71         GOPTIONS NOACCESSIBLE;
-72         %LET _CLIENTTASKLABEL=;
-73         %LET _CLIENTPROCESSFLOWNAME=;
-74         %LET _CLIENTPROJECTPATH=;
-75         %LET _CLIENTPROJECTNAME=;
-76         %LET _SASPROGRAMFILE=;
-77         
-78         ;*';*";*/;quit;run;
-79         ODS _ALL_ CLOSE;
-80         
-81         
-82         QUIT; RUN;
-83         
-
