@@ -10,21 +10,60 @@ Aplicação: Identifica variáveis cadastrais e comportamentais, apontando situa
 Descrição: Plataforma que utiliza IA generativa para transformar o planejamento da Auditoria Interna, capturando e analisando grandes volumes de dados.
 Aplicação: Prioriza avaliações de temas relevantes e riscos de maior impacto, implantando uma cultura Data Driven na seleção dos trabalhos de auditoria.
  
-Proposta de Perguntas para a entrevista
-Como a IA Generativa está transformando a auditoria? Quais são os principais benefícios observados até agora?
-Quais desafios foram enfrentados ao implementar a IA Generativa no processo de auditoria? Como foram superados?
-Como a solução de IA Generativa melhora a eficácia e a eficiência operacional na avaliação dos processos de Prevenção à Lavagem de Dinheiro e ao Financiamento do Terrorismo (PLD/FT) e no de Governança de Relacionamento com Clientes?
-Como a análise de sentimento é integrada às soluções utilizando IA Generativa desenvolvidas para apoiar avaliação dos processos de PLD/FT e Governança de Relacionamento com Clientes?
-Quais são os principais resultados obtidos com o uso da ferramenta H2O.ai na predição de atipicidades?
-Ainda falando no projeto desenvolvido com a ferramenta de auto ML H2O, quais foram as variáveis cadastrais e comportamentais mais relevantes identificadas pelo modelo de Aprendizado de Máquina Supervisionado?
-Como o PlanejAI utiliza dados para priorizar avaliações de auditoria? Pode dar exemplos de hipóteses de risco identificadas?
-Como a cultura Data Driven está sendo implantada na Auditoria Interna com o uso do PlanejAI?
-Quais são as expectativas futuras para o uso de IA na auditoria? Quais novas tecnologias estão sendo exploradas?
+Roteiro de Perguntas:
+1. Início com uma visão geral
+Mediador: "A gente tem sempre em mente que a Auditoria é uma área mais conservadora, que demora um pouco mais na adoção de novas tecnologias... Mas parece que não é bem isso, né Fábio?
+Fiquei as sabendo que a Audit tem experimentado com sucesso tecnologias emergentes. Para começarmos, poderia nos contar que tecnologias são essas e quais os principais benefícios observados até agora?"
+Fábio compartilha insights iniciais sobre os benefícios da IA Generativa na auditoria.
+---
+2. Desafios da Implementação
+Mediador: "Interessante, Fábio. E como foi o processo de implementação? Quais foram os desafios enfrentados e como vocês conseguiram superá-los?"
+Essa pergunta permite que Fábio aprofunde os obstáculos e soluções do processo, trazendo uma visão completa para os espectadores.
+---
+3. Aplicação em áreas específicas
+Mediador: "Com isso em mente, Paolla, na sua experiência, como a IA Generativa tem melhorado a eficácia e a eficiência em áreas tão sensíveis quanto a Prevenção à Lavagem de Dinheiro e o Financiamento do Terrorismo (PLD/FT), além da Governança de Relacionamento com Clientes?"
+Paolla explora a aplicação direta da IA nessas áreas específicas, ilustrando o impacto da tecnologia.
+---
+4. Integração da Análise de Sentimento
+Mediador: "E ainda falando sobre o projeto envolvendo o processo de PLD/FT, como a análise de sentimento é integrada a essa solução? Isso traz um diferencial para o processo?"
+Paolla fala sobre a integração da análise de sentimento, abordando as nuances dessa técnica e os benefícios adicionais para a auditoria.
+---
+5. Resultados com o uso do H2O.ai
+Mediador: "Eduardo, falamos até agora sobre IA Generativa, que é a hype do momento... Mas outras tecnologias no campo da IA também estão sendo utilizadas para potencializar a atuação da Audit, correto?
+Eduardo fala sobre o projeto MBC, explica os resultados práticos obtidos com o H2O.ai, demonstrando os ganhos de eficiência e eficácia trazidos pelo projeto.
+---
+7. PlanejAI e Prioridades de Auditoria
+Mediador: "Alexandre, agora vamos voltar para a IA generativa... O momento do planejamento dos trabalhos para o ano seguinte é um momento muito importante para a Auditoria, até pelo alto nível de exigência dos reguladores... Sei que vocês desenvolveram uma solução para apoiar esse momento também, chamada PlanejAI. Como a solução utiliza dados para priorizar as avaliações que serão realizadas pela Audit?
+Alexandre introduz a funcionalidade do PlanejAI e ilustra seu valor com exemplos práticos.
+---
+8. Implantação da Cultura Data-Driven
+Mediador: "Interessante, Alexandre. E como a cultura Data-Driven está sendo implantada na Auditoria Interna com o uso do PlanejAI?"
+Alexandre fala como o PlanejAI contribui para a cultura orientada a dados, oferecendo uma visão sobre a transformação organizacional.
+---
+10. Papel dos Auditores e a IA
+Mediador: "E pensando no papel dos auditores, como eles interagem com a IA no PlanejAI? Essa interação impacta a autonomia e o julgamento profissional?"
+Alexandre fala sobre a interação entre auditores e IA, abordando o equilíbrio entre tecnologia e julgamento humano.
+Mediador: "E nos outros projetos que foram citados... ?"
+Paolla fala sobre o tema no contexto do projeto GPT no processo de PLD/FT e Política de Relacionamento
+Eduardo fala sobre o tema no contexto do projeto GPT no processo de PLD/FT e Política de Relacionamento
+---
+11. Expectativas Futuras
+Mediador: "Para finalizarmos, Fábio, olhando para o futuro, quais são as expectativas para o uso de tecnologias emergentes na auditoria? Existem novas tecnologias que estão sendo exploradas ou que vocês veem como promissoras para a área?"
+Fábio fecha a discussão, compartilhando uma visão sobre o futuro da auditoria e as tendências tecnológicas.
+---
+Encerramento do Mediador:
+"Obrigado a todos por essa discussão tão rica. É inspirador ver como a IA está avançando no setor de auditoria e contribuindo para processos mais seguros e eficientes."
+---
+Backlog de perguntas:
+Variáveis mais relevantes no H2O.ai
+Mediador: "Eduardo, voltando a falar no projeto que você citou, de implementação de modelo preditivo utilizando ferramenta de AutoML, que variáveis você identificaria como as mais relevantes? Poderia comentar como o modelo as considera no processo de aprendizado de máquina?"
+Eduardo compartilha variáveis-chave, permitindo que os demais visualizem os dados importantes para a predição de atipicidades.
+ 
+Atualização Constante no PlanejAI
+Mediador: "E já que a tecnologia exige atualização constante, como o PlanejAI lida com mudanças nos dados, como riscos corporativos e processos? Existe algum mecanismo de retroalimentação para adaptar o modelo de IA Alexandre?"
+Alexandre explica como a IA se adapta às atualizações, abordando a resiliência e o aprendizado contínuo da ferramenta.
+ 
+tem menu de contexto
 
 
-Como a IA generativa lida com a atualização constante das informações, como os riscos corporativos, processos e outras informações no PlanejAI? Existe algum mecanismo de retroalimentação para adaptar os modelos de IA com base em novos dados e avaliações de auditoria?
-"Aqui, podemos destacar a relevância dos instrumentos desenvolvidos com essa tecnologia, sua perenidade e constante atualização frente aos riscos corporativos. Exemplo técnico: agentes com RAG e sem RAG, com atualização dinâmica da base de conhecimento..."  
-
-Qual o papel dos auditores na interação com a IA generativa no PlanejAI? Como o uso da IA impacta a autonomia e o julgamento profissional no processo de planejamento? 
-"No último evento do COMBRAI, discutiu-se bastante sobre a expertise dos auditores e IA. No PlanejAI, houve insights (propostas de temas), vinculação de PC e Taxonomia. Todos esses pontos passaram por uma acurácia preliminar de auditores especializados, mas sempre destacamos o protagonismo do auditor, que utiliza esses instrumentos com base em sua expertise."
-
+tem menu de contexto
