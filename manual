@@ -8,11 +8,6 @@
 
 
 
-/* VARIÁVEIS */
-%LET PASTA_GA = /dados/audit/gamefis/aud/interno/RCM_EE;
-%LET PATH = &PASTA_GA./script;/* VARIÁVEIS */
-
-
 
 %let data_hoje = %sysfunc(putn(%sysfunc(today()), date7.));
 
@@ -54,49 +49,4 @@ run;
 %mend verificar_envio;
 
 %verificar_envio;
-
-
-
-/*
-proc sql;
-    create table dados.data_envio_email (
-        ultimo_envio date
-    );
-quit;
-
-proc sql;
-    delete from  dados.data_envio_email ;
-quit;
-
-proc sql;
-    delete from  dados.data_envio_email where ultimo_envio = '27AUG24'd;
-quit;
-
-proc contents data=dados.data_envio_email;
-run;
-
-
-proc sql;
-    insert into dados.data_envio_email (ultimo_envio)
-    values (%sysfunc(today(), yymmdd10.));
-quit;
-
-
-*/
-
-proc sql;
-    insert into dados.data_envio_email (ultimo_envio)
-    values ('20JUL2024'd);
-    insert into dados.data_envio_email (ultimo_envio)
-    values ('21JUL2024'd);
-    insert into dados.data_envio_email (ultimo_envio)
-    values ('19AUG2024'd);
-    insert into dados.data_envio_email (ultimo_envio)
-    values ('01AUG2024'd);
-    insert into dados.data_envio_email (ultimo_envio)
-    values ('15SEP2024'd);
-quit;
-
-
-o controle_email.sas cria a tabela em uma área mapeada, fora da work, para não perder os dados (dados.data_envio_email). Como teste, deixei o script que insere dados, o script teste_controle_email.sas, que tem a “inteligência” para verificar se a data atual é superior ao dia 20 e se é um dia da semana. Se ambas as regras forem atendidas, verifica a última data de envio de email na tabela dados.data_envio_email. Se o último dia não for superior ao dia 20 do mês e ano corrente, efetua a ação do script vinculado %include "&PATH./controle_email.sas" (aqui usei como teste; você coloca o script que gera os emails) e insere a última data nessa tabela. Caso contrário, não faz nada. O script teste_controle_email.sas, renomeado para controle_email.sas, tem que estar agendado para rodar todos os dias no agendamento corporativo SAS.
 
