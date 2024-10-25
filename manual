@@ -1,199 +1,92 @@
-import tiktoken
-import json
-import requests
-from IPython.display import display, JSON
-
-# Carregue o encoding para o modelo GPT-4
-encoding = tiktoken.encoding_for_model("gpt-4")
-
-# Definição de dados e prompts
-def get_prompts():
-    orientacao_prompt = '''Você é um assistente de auditoria '''
-    
-    formato_saida = '''{
-        "regra_classificacao": "foi classificada como...
-    }'''
-    
-    irregularidades = '''1. Vinculação de comprovantes espúrios de endereço no cadastro de clientes
-    '''
-    
-    exemplo_rag_dinamica = '''base de conhecimento'''
-    
-    resultado = f"{orientacao_prompt} # Formato Saída: {formato_saida}, irregularidades: {irregularidades}, base de conhecimento: {exemplo_rag_dinamica}"
-    
-    return resultado
-# Limitar o número de tokens
-def limit_tokens(text, max_tokens=20000):
-    if not text:
-        return ''
-    
-    tokens = encoding.encode(text)
-    if len(tokens) > max_tokens:
-        text = encoding.decode(tokens[:max_tokens])
-    
-    return text
-
-# Função para fazer requisição à API de assistente de auditoria
-def assistente_manual(prompt):
-    url = 'url'
-    headers = {'Content-type': 'application/json', 'accept': 'application/json'}
-    data = {
-        "data": {
-            "input": prompt,
-            "intents": [{}],
-            "entities": [{}],
-            "context": {
-                "config": {
-                    "top_p": 0.95,
-                    "max_tokens": 4000,
-                    "temperature": 0.2
-                }
-            }
-        }
-    }
-    try:
-        resp = requests.post(url, data=json.dumps(data), headers=headers)
-        resp.raise_for_status()
-        resp_dict = resp.json()
-        
-        # Extração de informações relevantes da resposta
-        status = resp_dict.get('status')
-        print('Status:', status)
-        
-        texto_resposta = resp_dict["data"]["context"]["prompt_response"]["acs_llm_prompt_execution"]["result"]
-        return texto_resposta
-
-    except requests.exceptions.RequestException as e:
-        print(f"Erro na requisição: {e}")
-        return None
+/* VARIÁVEIS */
+%LET PASTA_GA = /dados/audit/gamefis/aud/interno/RCM_EE;
+%LET PATH = &PASTA_GA./script;/* VARIÁVEIS */
 
 
-resultado = get_prompts()
-prompt = limit_tokens(resultado)
-resposta = assistente_manual(prompt)
 
-if resposta:
-    display(JSON(resposta))
-else:
-    print("Não foi possível obter a resposta.")
+%let data_hoje = %sysfunc(putn(%sysfunc(today()), date7.));
 
+%let dia_atual = %sysfunc(day(%sysfunc(today())));
+%let mes_atual = %sysfunc(month(%sysfunc(today())));
+%let ano_atual = %sysfunc(year(%sysfunc(today())));
+%let dia_semana = %sysfunc(weekday(%sysfunc(today())));
 
-=======
+data _null_;
+    set dados.data_envio_email;
+    format ultimo_envio date7.;
+    where month(ultimo_envio) = &mes_atual and year(ultimo_envio) = &ano_atual;
+    call symputx('data_envio', put(ultimo_envio, date7.));
+run;
 
+%put data ultimo envio &data_envio;
 
-import tiktoken
-import pandas as pd
-import os
-import json
-import time
-import requests
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine
-from IPython.display import display, JSON
-from dotenv import load_dotenv
+%let data_envio_num = %sysfunc(inputn(&data_envio., date7.));
+%let dia_envio = %sysfunc(day(&data_envio_num));
+%let mes_envio = %sysfunc(month(&data_envio_num));
+%let ano_envio = %sysfunc(year(&data_envio_num));
 
-# Carregando o encoding para o modelo GPT-4
-encoding = tiktoken.encoding_for_model("gpt-4")
+%macro verificar_envio;
+    %if %eval(&dia_atual > 20) and %eval(%index(1 7, &dia_semana) = 0) %then %do;
+        %if %symexist(data_envio) and &dia_envio > 20 and &mes_envio = &mes_atual and &ano_envio = &ano_atual %then %do;
+            %put Já existe um envio registrado após o dia 20 deste mês;
+        %end;
+        %else %do;
+            %include "&PATH./controle_email.sas";
+            proc sql; 
+                insert into dados.data_envio_email (ultimo_envio) 
+                values ("&data_hoje."d); 
+            quit;
+        %end;
+    %end;
+    %else %do;
+        %put O dia atual é inferior ou igual ao dia 20 ou não é um dia útil. O script não será executado.;
+    %end;
+%mend verificar_envio;
 
-# Função para carregar variáveis de ambiente
-def carregar_variaveis_ambiente():
-    dotenv_path = '/code/notebooks/taxonomia/.env'
-    load_dotenv(dotenv_path)
-    usr = os.getenv('USR_')
-    pw = os.getenv('PWD_')
-    return usr, pw
-
-# Função para conectar ao banco de dados
-def conectar_postgres(db, usr, pw):
-    engine = create_engine(f'postgresql://{usr}:{pw}@localhost:5432/{db}')
-    conn = engine.connect()
-    return conn, engine
-
-# Função que simula a API de assistente de auditoria
-def assistente_exemplo(row):
-    orientacao_prompt = '''Você é um assistente ...'''
-    avaliacao_nota_tecnica = f"irregularidades: {row['tx_gpt']} "
-    prompt = orientacao_prompt + avaliacao_nota_tecnica + 'segue lista da base de conhecimento'
-    
-    url = 'url'
-    data = {
-        "data": {
-            "input": prompt,
-            "intents": [{}],
-            "entities": [{}],
-            "context": {
-                "config": {
-                    "top_p": 0.95,
-                    "max_tokens": 4000,
-                    "temperature": 0.2
-                }
-            }
-        }
-    }
-
-    headers = {'Content-type': 'application/json', 'accept': 'application/json'}
-
-    try:
-        resp = requests.post(url, data=json.dumps(data), headers=headers)
-        resp.raise_for_status()
-        resp_dict = resp.json()
-        
-        status = resp_dict.get('status')
-        print('Status:', status)
-        
-        texto_resposta = resp_dict["data"]["context"]["prompt_response"]["acs_llm_prompt_execution"]["result"]
-        return texto_resposta
-
-    except requests.exceptions.RequestException as e:
-        print(f"Erro na requisição: {e}")
-        return None
-
-# Função para contar tokens
-def contar_tokens(texto):
-    tokens = encoding.encode(texto)
-    return len(tokens)
-
-# Função principal
-def processar_dados():
-    # Carregar variáveis de ambiente e conectar ao banco
-    usr, pw = carregar_variaveis_ambiente()
-    conn, engine = conectar_postgres(db="sala_agil", usr=usr, pw=pw)
-
-    # Consultar dados do PostgreSQL
-    query_postgres = """
-    SELECT * FROM riscometro.dmd_ae_gpt LIMIT 5;
-    """
-    df_postgres = pd.read_sql(query_postgres, conn)
-
-    # Contar tokens e filtrar com base no limite
-    df_postgres['quantidade_tokens'] = df_postgres['tx_gpt'].apply(contar_tokens)
-    df_postgres = df_postgres.query('quantidade_tokens <= 10000').reset_index(drop=True)
-
-    # Processar as linhas com um controle de tempo e salvar resultados localmente
-    df_local = pd.DataFrame()
-
-    for index, row in df_postgres.iterrows():
-        if index > 0 and index % 10 == 0:
-            print("Aguardando 10 segundos...")
-            time.sleep(10)
-
-        try:
-            proposta = assistente_exemplo(row)
-            
-            if isinstance(proposta, str):
-                proposta = json.loads(proposta)
-            
-            resultado = row.to_dict()
-            resultado.update(proposta)
-            
-            df_local = pd.concat([df_local, pd.DataFrame([resultado])], ignore_index=True)
-
-        except Exception as e:
-            print(f"Erro na linha {index}: {e}")
-
-    # Salvar localmente para ver o resultado
-    df_local.to_csv('resultados_locais.csv', index=False)
+%verificar_envio;
 
 
-processar_dados()
+
+/*
+proc sql;
+    create table dados.data_envio_email (
+        ultimo_envio date
+    );
+quit;
+
+proc sql;
+    delete from  dados.data_envio_email ;
+quit;
+
+proc sql;
+    delete from  dados.data_envio_email where ultimo_envio = '27AUG24'd;
+quit;
+
+proc contents data=dados.data_envio_email;
+run;
+
+
+proc sql;
+    insert into dados.data_envio_email (ultimo_envio)
+    values (%sysfunc(today(), yymmdd10.));
+quit;
+
+
+*/
+
+proc sql;
+    insert into dados.data_envio_email (ultimo_envio)
+    values ('20JUL2024'd);
+    insert into dados.data_envio_email (ultimo_envio)
+    values ('21JUL2024'd);
+    insert into dados.data_envio_email (ultimo_envio)
+    values ('19AUG2024'd);
+    insert into dados.data_envio_email (ultimo_envio)
+    values ('01AUG2024'd);
+    insert into dados.data_envio_email (ultimo_envio)
+    values ('15SEP2024'd);
+quit;
+
+
+o controle_email.sas cria a tabela em uma área mapeada, fora da work, para não perder os dados (dados.data_envio_email). Como teste, deixei o script que insere dados, o script teste_controle_email.sas, que tem a “inteligência” para verificar se a data atual é superior ao dia 20 e se é um dia da semana. Se ambas as regras forem atendidas, verifica a última data de envio de email na tabela dados.data_envio_email. Se o último dia não for superior ao dia 20 do mês e ano corrente, efetua a ação do script vinculado %include "&PATH./controle_email.sas" (aqui usei como teste; você coloca o script que gera os emails) e insere a última data nessa tabela. Caso contrário, não faz nada. O script teste_controle_email.sas, renomeado para controle_email.sas, tem que estar agendado para rodar todos os dias no agendamento corporativo SAS.
 
