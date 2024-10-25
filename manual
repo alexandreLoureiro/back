@@ -1,3 +1,13 @@
+**Aviso Importante**
+
+- **Frequência de Envio**: Um e-mail será enviado **uma vez por mês**.
+- **Data de Envio**: O envio ocorrerá **após o dia 20** de cada mês.
+- **Dias de Envio**: Os e-mails serão enviados **apenas em dias úteis** (de segunda a sexta-feira).
+- **Envio Único Mensal**: Garantimos que **apenas um e-mail** será enviado nesse período, evitando mensagens duplicadas.
+
+
+
+
 /* VARIÁVEIS */
 %LET PASTA_GA = /dados/audit/gamefis/aud/interno/RCM_EE;
 %LET PATH = &PASTA_GA./script;/* VARIÁVEIS */
