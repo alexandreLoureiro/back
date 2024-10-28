@@ -67,3 +67,53 @@ tem menu de contexto
 
 
 tem menu de contexto
+
+
+
+=========================
+
+quantitativos, registrados em quantidade, normalmente por meio de números e representando características mensuráveis das entidades, como idade, número de itens comprados, valor de transações, horas trabalhadas no período, número de curtidas, entre outros; ou
+qualitativos, registrados em texto, imagem ou som, indicando estilos, gostos, preferências, como leitura, gosta de rock, prefere comprar pela internet, entre outros.
+
+
+
+Estrutura lógica
+Como os dados devem ser organizados para que sejam entendidos por um determinado usuário?
+
+
+Dados: São fatos brutos e números sem contexto. Por exemplo, uma lista de números de vendas diárias.
+Informação: Quando os dados são processados e organizados de maneira significativa, eles se tornam informação. Por exemplo, a média de vendas diárias calculada a partir dos dados brutos.
+Conhecimento: É a compreensão e interpretação da informação. Envolve a aplicação da informação para tomar decisões. Por exemplo, saber que um aumento nas vendas diárias pode indicar uma tendência positiva no mercado.
+Inteligência: Vai além do conhecimento, envolvendo a capacidade de analisar, prever e tomar decisões estratégicas. É a aplicação do conhecimento de forma criativa e inovadora para resolver problemas complexos. Por exemplo, usar análises preditivas para antecipar mudanças no mercado e ajustar estratégias de negócios.
+
+
+inteligência está ligada a um processo contínuo de estabelecer relações e conexões, permitindo a criação de estratégias para cenários futuros e a tomada de decisão de maneira mais segura e assertiva
+
+
+Inteligência de Mercado: Abarca a coleta, análise e tratamento de dados sobre um mercado ou segmento específico de atuação, com base na inserção da organização nesse mercado.
+Objetiva oferecer um retrato fiel do negócio em que se insere a atividade da empresa, incluindo informações sobre competidores, clientes (atuais e
+potenciais) e projeções. Tem o foco voltado para a demanda da empresa. Em outras palavras, ela se preocupa não apenas com a concorrência e o mercado,
+mas também com os clientes. Sendo assim, busca entender o cenário no qual a organização se encontra aliado ao conhecimento mais aprofundado do perfil
+dos seus consumidores — o cliente atual ocupa um espaço determinante no mercado.
+
+Inteligência Competitiva: A Inteligência Competitiva é conhecida por ter o foco na concorrência. Todas as técnicas e análises de dados envolvidas nesse tipo
+de estratégia estão voltadas para as demais empresas que atuam no mesmo segmento do mercado. Compreende a coleta e análise de dados para a formulação de uma estratégia de negócios, provendo informações
+sobre a dinâmica de mercado, forças competitivas e movimentos externos relevantes que podem afetar o negócio, com vistas a antecipar a atividade de competidores e avaliar o impacto de eventos passados e vigentes na
+atividade da organização.
+
+Eventos: Ocorrências verificadas que provocam efeitos no ambiente competitivo e negocial para um dado segmento.
+
+Reatividade Estratégica: Razão entre as ações implementadas por um player como resposta aos eventos e hipóteses de um determinado segmento de atuação.
+
+hipóteses: Formulações e suposições em relação a um cenário potencial a serem posteriormente verificadas quando da ocorrência ou não desse cenário.
+
+
+Bancos perdem participação em meios de pagamentos. O texto aborda um estudo do Boston Consulting Group (BCG) que indica que grandes bancos estão perdendo participação de mercado no segmento de meios de pagamento para as fintechs. Para se manterem competitivos, os bancos precisam expandir suas ofertas ou criar novos modelos de negócio. O estudo aponta que existem quase 6,5 mil fintechs de pagamentos ativas no mundo, que já receberam US$ 125 bilhões em investimentos nos últimos 25 anos. Os bancos têm uma grande oportunidade em "pagamentos embutidos" ("embedded finance"), algo que já é feito por empresas de viés tecnológico. Além disso, com muitas empresas de pagamento sendo negociadas a valores bem abaixo dos últimos anos, pode ser uma boa oportunidade para os grandes bancos comprarem essas fintechs ou realizarem parcerias. No Brasil, grandes empresas de pagamento ligadas aos bancos, como Cielo e Rede, saíram de um marketshare de quase 90% para algo perto de 50%. Novos entrantes, como Stone, PagSeguro e Mercado Pago, ganharam participação. O estudo também aponta que todos os players do mercado precisam estar prontos para os pagamentos instantâneos, que já são uma realidade em mais de 60 países. No Brasil, os pagamentos instantâneos, como o Pix, representam cerca de 25% dos pagamentos totais no varejo, mas esse número deve crescer rapidamente nos próximos anos.
+
+ 
+
+Para Nubank e Itaú, a IA vai colocar um banqueiro no bolso de cada cliente. Na visão dos CEOs, com a hipersonalização os bancos vão virar consultores de todos os clientes, contribuindo para a inclusão financeira. O CEO do Nubank também atribuiu à IA outra grande possibilidade, a de tornar os custos mais baixos. "Vejo ganhos de eficiência com o uso de IA e contratos inteligentes. Isso permitirá que ofereçamos taxas mais baixas aos nossos clientes." Ele ainda destaca que "mesmo que hoje quase todo cliente tenha um banco no bolso, nem todos sabem como investir, qual é o melhor fundo de imposto mais eficiente para alocar suas economias. Você não necessariamente tem poder de negociação ou conhecimento para fazer os bancos competirem pelas menores taxas de juros. Achamos que a próxima fase de inclusão financeira será colocar um banqueiro no bolso de todos, e isso será um avanço significativo. Estamos falando de aconselhamento financeiro para cada pessoa, não apenas para o 1% mais rico que tem acesso aos melhores produtos. Hoje, a base da pirâmide não tem acesso a esses produtos. Estamos muito animados para ver as melhorias tanto em aconselhamento quanto em eficiência operacional que serão possíveis ao longo dos próximos dez anos", disse Vélez.
+
+título: Caixa e BB usam Drex para fazer pagamentos off-line; resumo: A Caixa Econômica Federal e o Banco do Brasil (BB), em consórcios separados dentro do projeto piloto do Drex, que digitaliza o real brasileiro, estão tentando viabilizar soluções de pagamentos off-line. 0 objetivo é permitir que com um celular ou um cartão as pessoas possam pagar compras em maquininhas POS mesmo que estejam em uma região sem acesso à internet, algo que ainda é realidade para algumas localidades do Brasil.
+
+LLM IA GENERATIVA propos trabalho: Tema: Segurança e Conformidade em Pagamentos Off-line no BB e Caixa; objetivo: Avaliar a segurança, a conformidade regulatória e a eficácia das soluções de pagamentos off-line desenvolvidas pelo Banco do Brasil e pela Caixa Econômica Federal no âmbito do projeto piloto Drex.
