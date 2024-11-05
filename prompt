@@ -1,0 +1,51 @@
+import pandas as pd
+
+# Supondo que 'df' é o seu dataframe
+for index, row in df.iterrows():
+    nome_relatorio = row['nome_relatorio']
+    relatorio = row['relatorio']
+    conf_constatacao = row['conf_costatacao']
+
+    prompt = f"""
+    Você receberá os seguintes dados de um relatório de auditoria externa:
+
+    **Nome do Relatório:** {nome_relatorio}
+
+    **Relatório:**
+    {relatorio}
+
+    **Conferência de Constatações:**
+    {conf_constatacao}
+
+    **Sua tarefa é:**
+
+    1. **Extrair as seguintes informações do campo 'relatorio':**
+       - **data_relatorio**: a data em que o relatório foi emitido.
+       - **area_resp**: a área responsável mencionada no relatório.
+       - **constatacoes**: as constatações listadas no relatório.
+
+    2. **Comparar as 'constatacoes' com 'conf_constatacao':**
+       - Identificar quais constatações têm uma similaridade superior a 90% com as entradas em 'conf_constatacao'.
+       - Incluir essas constatações correspondentes no campo 'conf_constatacoes'.
+
+    3. **Retornar o resultado no seguinte formato JSON:**
+
+    ```json
+    {{
+      "resultado": [
+        {{
+          "data_relatorio": "data do relatório",
+          "area_resp": "área responsável",
+          "constatacoes": "lista de constatações",
+          "conf_constatacoes": "lista de constatações com similaridade >90%"
+        }}
+      ]
+    }}
+    ```
+    """
+
+    # Envie o prompt para a API do GPT
+    resposta = enviar_para_gpt(prompt)
+
+    # Processar a resposta conforme necessário (por exemplo, adicionar ao dataframe)
+    df.at[index, 'resultado'] = resposta
