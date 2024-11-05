@@ -1,3 +1,23 @@
+# Ler o arquivo CSV correspondente
+csv_path = os.path.join(os.path.dirname(pdf_path), f'{file_name_no_ext}.csv')
+if os.path.isfile(csv_path):
+    try:
+        df_csv = pd.read_csv(csv_path)
+        if 'constatação' in df_csv.columns:
+            # Concatenar todas as constatações em uma única string
+            constatacoes = ' '.join(df_csv['constatação'].astype(str).tolist())
+        else:
+            print(f'Coluna "constatação" não encontrada em {csv_path}.')
+            constatacoes = ''
+    except Exception as e:
+        print(f'Erro ao ler {csv_path}: {e}')
+        constatacoes = ''
+else:
+    print(f'Arquivo CSV correspondente não encontrado: {csv_path}')
+    constatacoes = ''
+
+
+
 import pandas as pd
 
 # Supondo que 'df' é o seu dataframe
