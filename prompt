@@ -253,3 +253,62 @@ Você receberá um acórdão do {instituicao.upper()} relacionado ao Banco do Br
     "resumo_executivo": "Resumo dos pontos-chave."
   }}
 }}
+
+
+
+
+
+def criar_prompt(nome_relatorio, tipo_de_arquivo, instituicao, relatorio_texto):
+    if tipo_de_arquivo.lower() == 'relatório técnico':
+        prompt = f"""
+Você receberá um relatório técnico emitido pelo {instituicao.upper()}, relacionado ao Banco do Brasil.
+
+**Nome do Documento:** {nome_relatorio}
+
+**Relatório Técnico:**
+{relatorio_texto}
+
+**Sua tarefa é analisar o relatório técnico a partir da perspectiva do Banco do Brasil e fornecer as seguintes informações:**
+
+1. **Citações e referências ao Banco do Brasil:**
+   - Liste todas as menções diretas ou indiretas ao Banco.
+   - Contextualize o significado de cada citação.
+
+2. **Responsabilidades e obrigações atribuídas ao Banco:**
+   - Detalhe quaisquer responsabilidades destacadas.
+   - Identifique obrigações legais ou regulatórias.
+
+3. **Recomendações e ações necessárias:**
+   - Liste as ações recomendadas que o Banco deve tomar.
+   - Sugira possíveis medidas para cumprir as recomendações.
+
+4. **Prazos e cronogramas:**
+   - Identifique quaisquer prazos estabelecidos no relatório.
+   - Destaque datas críticas para o cumprimento das obrigações.
+
+5. **Riscos e impactos potenciais:**
+   - Descreva os riscos identificados que podem afetar o Banco.
+   - Analise os impactos financeiros, operacionais ou reputacionais.
+
+6. **Conformidade e regulamentação:**
+   - Avalie questões relacionadas à conformidade com leis e regulamentos.
+   - Indique se há necessidade de ajustes em políticas internas.
+
+7. **Resumo executivo:**
+   - Forneça um resumo dos principais pontos relevantes para o Banco do Brasil.
+
+**Retorne o resultado no seguinte formato JSON:**
+
+```json
+{{
+  "resultado": {{
+    "citacoes_referencias": "Listagem e contextualização das citações.",
+    "responsabilidades_obrigacoes": "Descrição das responsabilidades.",
+    "recomendacoes_acoes": "Lista de recomendações e ações necessárias.",
+    "prazos_cronogramas": "Descrição dos prazos e datas importantes.",
+    "riscos_impactos": "Análise dos riscos e impactos potenciais.",
+    "conformidade_regulamentacao": "Avaliação de conformidade e necessidades regulatórias.",
+    "resumo_executivo": "Resumo dos pontos-chave."
+  }}
+}}
+
