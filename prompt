@@ -64,6 +64,146 @@ for index, row in df.iterrows():
     ```
     """
 
+
+
+from pdfminer.high_level import extract_text
+import re
+import os
+import pandas as pd
+import tiktoken
+import openai  # Biblioteca para interagir com a API OpenAI
+
+# Configure sua chave de API da OpenAI
+openai.api_key = 'SUA_CHAVE_DE_API_AQUI'
+
+# Função para enviar o prompt para a API GPT
+def enviar_para_gpt(prompt, modelo='gpt-4'):
+    response = openai.ChatCompletion.create(
+        model=modelo,
+        messages=[
+            {"role": "user", "content": prompt}
+        ],
+        max_tokens=1500,  # Ajuste conforme necessário
+        n=1,
+        stop=None,
+        temperature=0.7,
+    )
+    return response['choices'][0]['message']['content']
+
+# Lista de dicionários contendo o caminho do PDF, tipo de arquivo e instituição
+pdf_files = [
+    {'path': '/Users/alexandreloureiro/bb/mefis/estudo_risco.pdf', 'tipo_de_arquivo': 'Relatório técnico', 'instituicao': 'Bacen'},
+    {'path': '/Users/alexandreloureiro/bb/mefis/estrategia.pdf', 'tipo_de_arquivo': 'Relatório técnico', 'instituicao': 'Bacen'},
+    {'path': '/caminho/para/terceiro.pdf', 'tipo_de_arquivo': 'acordao', 'instituicao': 'tcu'},
+    {'path': '/caminho/para/quarto.pdf', 'tipo_de_arquivo': 'acordao', 'instituicao': 'tcu'}
+]
+
+# Definir o modelo e obter o codificador apropriado
+modelo = 'gpt-4'
+try:
+    encoding = tiktoken.encoding_for_model(modelo)
+except KeyError:
+    print(f'Modelo "{modelo}" não encontrado. Usando codificação padrão "cl100k_base".')
+    encoding = tiktoken.get_encoding('cl100k_base')
+
+# Lista para armazenar os dados
+dados = []
+
+for file_info in pdf_files:
+    pdf_path = file_info['path']
+    tipo_de_arquivo = file_info['tipo_de_arquivo']
+    instituicao = file_info['instituicao']
+
+    # Verificar se o arquivo existe
+    if not os.path.isfile(pdf_path):
+        print(f'Arquivo não encontrado: {pdf_path}')
+        continue
+
+    # Obter o nome base do arquivo (sem o caminho completo)
+    base_name = os.path.basename(pdf_path)
+    # Remover a extensão '.pdf' do nome base
+    file_name_no_ext = os.path.splitext(base_name)[0]
+
+    print(f'Processando o arquivo: {pdf_path}')
+    # Extrair todo o texto do PDF
+    texto_completo = extract_text(pdf_path)
+
+    # Remover múltiplas quebras de linha consecutivas
+    texto_limpo = re.sub(r'\n\s*\n+', '\n\n', texto_completo)
+
+    # Remover múltiplos espaços dentro das linhas
+    texto_limpo = re.sub(r'[ ]{2,}', ' ', texto_limpo)
+
+    # Remover espaços em branco no início e no fim das linhas
+    linhas = texto_limpo.split('\n')
+    linhas = [linha.strip() for linha in linhas]
+
+    # Remover linhas completamente vazias
+    linhas = [linha for linha in linhas if linha != '']
+
+    # Reunir as linhas em um único texto
+    texto_final = '\n'.join(linhas)
+
+    # Calcular o número de tokens usando tiktoken
+    tokens = encoding.encode(texto_final)
+    numero_de_tokens = len(tokens)
+
+    # Adicionar os dados à lista
+    dados.append({
+        'path': pdf_path,
+        'filename': base_name,
+        'tipo_de_arquivo': tipo_de_arquivo,
+        'instituicao': instituicao,
+        'extracted_text': texto_final,
+        'numero_de_tokens': numero_de_tokens
+    })
+
+    print(f'Extração concluída para "{pdf_path}". Número de tokens: {numero_de_tokens}\n')
+
+# Criar o dataframe
+df = pd.DataFrame(dados, columns=['path', 'filename', 'tipo_de_arquivo', 'instituicao', 'extracted_text', 'numero_de_tokens'])
+
+# Exibir o dataframe
+print(df)
+
+# Processar cada linha do dataframe com a API GPT
+for index, row in df.iterrows():
+    nome_relatorio = row['filename']
+    tipo_de_arquivo = row['tipo_de_arquivo']
+    instituicao = row['instituicao']
+    relatorio = row['extracted_text']
+
+    # Ajustar o prompt dinamicamente com base no 'tipo_de_arquivo'
+    if tipo_de_arquivo.lower() == 'acordao':
+        prompt = f"""
+Você receberá um acórdão do {instituicao.upper()}.
+
+**Nome do Relatório:** {nome_relatorio}
+
+**Acórdão:**
+{relatorio}
+
+**Sua tarefa é:**
+
+1. **Detectar os riscos envolvidos para o Banco do Brasil.**
+
+2. **Retornar o resultado no seguinte formato JSON:**
+
+```json
+{{
+  "resultado": [
+    {{
+      "nr_oficio": "número do ofício",
+      "responsabilidade BB": "responsabilidade do Banco do Brasil",
+      "risco BB": "risco para o Banco do Brasil"
+    }}
+  ]
+}}
+
+    """
+elif tipo_de_arquivo.lower() == 'relatório técnico':
+    prompt = f"""
+
     # Envie o prompt para a API do GPT
     resposta = enviar_para_gpt(prompt)
 
