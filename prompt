@@ -209,3 +209,47 @@ elif tipo_de_arquivo.lower() == 'relatório técnico':
 
     # Processar a resposta conforme necessário (por exemplo, adicionar ao dataframe)
     df.at[index, 'resultado'] = resposta
+
+
+
+# Exemplo de função para criar o prompt
+def criar_prompt(nome_relatorio, tipo_de_arquivo, instituicao, relatorio_texto):
+    if tipo_de_arquivo.lower() == 'acordao':
+        prompt = f"""
+Você receberá um acórdão do {instituicao.upper()} relacionado ao Banco do Brasil.
+
+**Nome do Documento:** {nome_relatorio}
+
+**Acórdão:**
+{relatorio_texto}
+
+**Sua tarefa é analisar o acórdão a partir da perspectiva do Banco do Brasil e fornecer as seguintes informações:**
+
+1. **Identificar os riscos e impactos para o Banco do Brasil:**
+   - Riscos legais, financeiros ou operacionais.
+   - Penalidades ou sanções potenciais.
+
+2. **Detalhar as responsabilidades e obrigações atribuídas ao Banco:**
+   - Obrigações de cumprimento de prazos.
+   - Requisitos para fornecimento de informações ou implementação de medidas.
+
+3. **Listar as recomendações ou determinações que afetam o Banco:**
+   - Como o Banco deve proceder para atender a essas recomendações.
+
+4. **Destacar quaisquer prazos ou cronogramas importantes:**
+   - Datas limites para ações específicas.
+
+5. **Fornecer um resumo executivo dos principais pontos relevantes para o Banco do Brasil.**
+
+**Retorne o resultado no seguinte formato JSON:**
+
+```json
+{{
+  "resultado": {{
+    "riscos_e_impactos": "Descrição dos riscos e impactos.",
+    "responsabilidades_obrigacoes": "Descrição das responsabilidades.",
+    "recomendacoes_determinacoes": "Lista de recomendações.",
+    "prazos_cronogramas": "Descrição dos prazos.",
+    "resumo_executivo": "Resumo dos pontos-chave."
+  }}
+}}
