@@ -85,3 +85,46 @@ print(f"Modelo com maior F1-score: {nome_melhor_modelo}")
 print(f"Tipo de exercicio12e: {type(exercicio12e)}")
 print(f"Tipo de exercicio12f: {type(exercicio12f)}")
 print(f"Tipo de exercicio12g: {type(exercicio12g)}")
+
+
+
+# Mapear modelos para os nomes de variáveis
+model_objects = {
+    'logreg': exercicio12e,  # Regressão Logística
+    'clf': exercicio12f,     # Árvore de Decisão
+    'svc': exercicio12g      # Support Vector Machine
+}
+
+# Atribuir o identificador com o melhor F1-score
+exercicio12d = max(f1_scores, key=f1_scores.get)  # Isso agora será 'logreg', 'clf', ou 'svc'
+melhor_modelo = model_objects[exercicio12d]  # Agora melhor_modelo será o objeto correto
+
+# Exibir o modelo com o maior F1-score
+print(f"Modelo com maior F1-score: {exercicio12d}")
+
+# A partir daqui, continue com o código de avaliação, usando melhor_modelo
+if isinstance(melhor_modelo, LogisticRegression):
+    y_pred_melhor_modelo = melhor_modelo.predict(X_test_escalonado)
+elif isinstance(melhor_modelo, DecisionTreeClassifier):
+    y_pred_melhor_modelo = melhor_modelo.predict(X_test_imputado)
+elif isinstance(melhor_modelo, SVC):
+    y_pred_melhor_modelo = melhor_modelo.predict(X_test_escalonado)
+else:
+    raise ValueError("Modelo desconhecido.")
+    
+# Matriz de confusão e análise dos resultados
+matriz_confusao = confusion_matrix(exercicio11d, y_pred_melhor_modelo)
+verdadeiros_negativos = matriz_confusao[0, 0]
+falsos_positivos = matriz_confusao[0, 1]
+falsos_negativos = matriz_confusao[1, 0]
+verdadeiros_positivos = matriz_confusao[1, 1]
+
+# Atribuir os resultados às variáveis solicitadas
+exercicio13a = int(falsos_positivos)
+exercicio13b = int(falsos_negativos)
+exercicio13c = 'b'  # Falso negativo é mais crítico neste contexto
+
+# Exibir os resultados
+print(f"Falsos Positivos (exercicio13a): {exercicio13a}")
+print(f"Falsos Negativos (exercicio13b): {exercicio13b}")
+print(f"Erro mais crítico (exercicio13c): {exercicio13c}")
