@@ -1,0 +1,87 @@
+# Importações ajustadas
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model._logistic import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.svm._classes import SVC
+from sklearn.metrics import f1_score
+
+# Verificar a versão do scikit-learn
+import sklearn
+print(f"Versão do scikit-learn: {sklearn.__version__}")
+
+# Criar um imputador para substituir valores ausentes pela média
+imputador = SimpleImputer(strategy='mean')
+
+# Ajustar o imputador nos dados de treino e transformá-los
+X_train_imputado = imputador.fit_transform(exercicio11a)
+# Transformar os dados de teste
+X_test_imputado = imputador.transform(exercicio11b)
+
+# Criar um escalonador
+escalonador = StandardScaler()
+
+# Ajustar o escalonador nos dados de treino e transformá-los
+X_train_escalonado = escalonador.fit_transform(X_train_imputado)
+# Transformar os dados de teste
+X_test_escalonado = escalonador.transform(X_test_imputado)
+
+# Criar e treinar o modelo de Regressão Logística
+exercicio12e = LogisticRegression(random_state=42, max_iter=1000)
+exercicio12e.fit(X_train_escalonado, exercicio11c.values.ravel())
+
+# Criar e treinar o modelo de Árvore de Decisão
+exercicio12f = DecisionTreeClassifier(random_state=42)
+exercicio12f.fit(X_train_imputado, exercicio11c.values.ravel())
+
+# Criar e treinar o modelo SVM
+exercicio12g = SVC(random_state=42)
+exercicio12g.fit(X_train_escalonado, exercicio11c.values.ravel())
+
+# Fazer previsões com o modelo de Regressão Logística
+y_pred_logistic = exercicio12e.predict(X_test_escalonado)
+# Fazer previsões com o modelo de Árvore de Decisão
+y_pred_tree = exercicio12f.predict(X_test_imputado)
+# Fazer previsões com o modelo SVM
+y_pred_svm = exercicio12g.predict(X_test_escalonado)
+
+# Calcular o F1-score para cada modelo
+# Regressão Logística
+exercicio12a = round(f1_score(exercicio11d, y_pred_logistic), 3)
+# Árvore de Decisão
+exercicio12b = round(f1_score(exercicio11d, y_pred_tree), 3)
+# Support Vector Machine
+exercicio12c = round(f1_score(exercicio11d, y_pred_svm), 3)
+
+# Dicionário com os modelos e seus F1-scores
+modelos = {
+    exercicio12e: exercicio12a,  # Regressão Logística
+    exercicio12f: exercicio12b,  # Árvore de Decisão
+    exercicio12g: exercicio12c   # Support Vector Machine
+}
+
+# Identificar o modelo com o maior F1-score
+exercicio12d = max(modelos, key=modelos.get)
+
+# Dicionário para mapear modelos aos seus nomes
+nomes_modelos = {
+    exercicio12e: 'Regressão Logística',
+    exercicio12f: 'Árvore de Decisão',
+    exercicio12g: 'Support Vector Machine'
+}
+
+# Obter o nome do melhor modelo
+nome_melhor_modelo = nomes_modelos[exercicio12d]
+
+# Exibir os F1-scores
+print(f"F1-score Regressão Logística: {exercicio12a}")
+print(f"F1-score Árvore de Decisão: {exercicio12b}")
+print(f"F1-score Support Vector Machine: {exercicio12c}")
+
+# Exibir o modelo com o maior F1-score
+print(f"Modelo com maior F1-score: {nome_melhor_modelo}")
+
+# Verificar os tipos das variáveis
+print(f"Tipo de exercicio12e: {type(exercicio12e)}")
+print(f"Tipo de exercicio12f: {type(exercicio12f)}")
+print(f"Tipo de exercicio12g: {type(exercicio12g)}")
