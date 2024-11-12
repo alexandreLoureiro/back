@@ -637,3 +637,12 @@ disp_bal.plot()
 O logreg não tem condições de ser avaliado.
 O clf não tem condições de ser avaliado.
 O svc não tem condições de ser avaliado.
+
+
+
+
+exercicio12
+1208 - O valor do F1-Score informado não corresponde com o valor real obtido pelo modelo enviado. Atenção: os modelos serão re-treinados na validação, portanto certifique-se de definir as variáveis de forma automatizada, uma vez que os os valores podem sofrer alterações após o re-treino.
+
+,
+0 - ERR_SYS_01 - Exercício possui pendências que precisam de resolução para que seja validado ou, então, os artefatos para validação não foram criados.
