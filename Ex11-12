@@ -290,7 +290,44 @@ print(f"F1 Score: {f1_smote:.4f}")
 disp_smote = ConfusionMatrixDisplay(confusion_matrix=cm_smote, display_labels=['Não Churn', 'Churn'])
 disp_smote.plot()
 
+======================
 
+
+Exercício 14 - Balanceamento dos dados com SMOTE
+Faça o oversampling dos dados produzidos no exercício 11 utilizando a técnica SMOTE, porém, de forma a não enviesar os dados de teste.
+
+O objeto SMOTE deve ser criado numa variável chamada smt.
+
+Use random_state=42 no SMOTE
+
+O resultado do balanceamento dos dados de treinamento deve ser salvo nas variáveis exercicio14a e exercicio14b.
+
+exercicio14a : Dados de treino para as variáveis preditoras (X)
+exercicio14b : Dados de treino para a variável alvo (y)
+Crie as variáveis exercicio14c, exercicio14d, exercicio14e e exercicio14f:
+
+Guarde as quantidades de amostras das classe 0 e classe 1 ANTES a utilização do SMOTE nas variáveis exercicio14c e exercicio14d.
+Guarde as quantidades de amostras das classe 0 e classe 1 APÓS a utilização do SMOTE nas variáveis exercicio14e e exercicio14f.
+Abaixo temos um exemplo fictício de como ficaria o print da quantidade de amostras por classe ANTES da aplicação do SMOTE. Na sequência os prints dos valores do exemplo nas variáveis exercicio14c e exercicio14d.
+
+0.0    4533
+1.0    1767
+Name: IN_EVS, dtype: int64
+print(exercicio14c)
+OUTPUT: 4533
+
+print(exercicio14d)
+OUTPUT: 1767
+Abaixo temos um exemplo fictício de como ficaria o print da quantidade de amostras por classe APÓS a aplicação do SMOTE. Na sequência os prints dos valores do exemplo nas variáveis exercicio14e e exercicio14f.
+
+0.0    4533
+1.0    4533
+Name: IN_EVS, dtype: int64
+print(exercicio14e)
+OUTPUT: 4533
+
+print(exercicio14f)
+OUTPUT: 4533
 
 
 
