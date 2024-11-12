@@ -1,0 +1,100 @@
+# Importar bibliotecas necessárias
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+
+# Definir semente para reprodutibilidade
+np.random.seed(42)
+
+# Excluir a coluna 'QT_RCLM_CLI' das variáveis preditivas
+variaveis_preditivas = exercicio10b.columns.drop('QT_RCLM_CLI')[:21]
+
+# Criar os DataFrames X (variáveis preditoras) e y (variável alvo)
+X = exercicio10b[variaveis_preditivas]
+y = exercicio10c['IN_EVS']
+
+# Divisão dos dados em treino e teste, com 30% para teste
+exercicio11a, exercicio11b, exercicio11c, exercicio11d = train_test_split(
+    X, y, test_size=0.30, random_state=42, shuffle=True
+)
+
+# Resetar os índices para evitar problemas futuros
+exercicio11a.reset_index(drop=True, inplace=True)
+exercicio11b.reset_index(drop=True, inplace=True)
+exercicio11c.reset_index(drop=True, inplace=True)
+exercicio11d.reset_index(drop=True, inplace=True)
+
+# Garantir que as variáveis estejam no formato de DataFrame
+exercicio11a = pd.DataFrame(exercicio11a, columns=variaveis_preditivas)
+exercicio11b = pd.DataFrame(exercicio11b, columns=variaveis_preditivas)
+exercicio11c = pd.DataFrame(exercicio11c, columns=['IN_EVS'])
+exercicio11d = pd.DataFrame(exercicio11d, columns=['IN_EVS'])
+
+
+# Importar bibliotecas necessárias
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.svm import SVC
+from sklearn.metrics import f1_score
+
+# 1. Variáveis preditivas e alvo (do exercício 11)
+X_train = exercicio11a.copy()
+X_test = exercicio11b.copy()
+y_train = exercicio11c.values.ravel()
+y_test = exercicio11d.values.ravel()
+
+# 2. Escalonamento dos dados (apenas para modelos que necessitam)
+escalonador = StandardScaler()
+
+# Ajustar o escalonador nos dados de treino e aplicar nos dados de teste
+X_train_escalado = escalonador.fit_transform(X_train)
+X_test_escalado = escalonador.transform(X_test)
+
+# 3. Criação dos modelos
+exercicio12e = LogisticRegression(random_state=42, max_iter=1000)
+exercicio12f = DecisionTreeClassifier(random_state=42)
+exercicio12g = SVC(random_state=42)
+
+# 4. Treinamento dos modelos
+# 4.1. Regressão Logística e SVM com dados escalonados
+exercicio12e.fit(X_train_escalado, y_train)
+exercicio12g.fit(X_train_escalado, y_train)
+
+# 4.2. Árvore de Decisão com dados originais (sem escalonamento)
+exercicio12f.fit(X_train, y_train)
+
+# 5. Realizando previsões
+# 5.1. Regressão Logística
+y_pred_logreg = exercicio12e.predict(X_test_escalado)
+
+# 5.2. Árvore de Decisão
+y_pred_tree = exercicio12f.predict(X_test)
+
+# 5.3. SVM
+y_pred_svm = exercicio12g.predict(X_test_escalado)
+
+# 6. Calculando os F1-scores
+exercicio12a = round(f1_score(y_test, y_pred_logreg), 3)
+exercicio12b = round(f1_score(y_test, y_pred_tree), 3)
+exercicio12c = round(f1_score(y_test, y_pred_svm), 3)
+
+# 7. Identificando o melhor modelo
+f1_scores = {
+    'LogisticRegression': exercicio12a,
+    'DecisionTreeClassifier': exercicio12b,
+    'SVC': exercicio12c
+}
+melhor_modelo_nome = max(f1_scores, key=f1_scores.get)
+modelos = {
+    'LogisticRegression': exercicio12e,
+    'DecisionTreeClassifier': exercicio12f,
+    'SVC': exercicio12g
+}
+exercicio12d = modelos[melhor_modelo_nome]
+
+# 8. Exibindo os resultados
+print(f"F1-score Regressão Logística (exercicio12a): {exercicio12a}")
+print(f"F1-score Árvore de Decisão (exercicio12b): {exercicio12b}")
+print(f"F1-score SVM (exercicio12c): {exercicio12c}")
+print(f"Melhor modelo (exercicio12d): {type(exercicio12d).__name__}")
