@@ -1,4 +1,26 @@
-# Importar bibliotecas necessárias
+# 
+Claro! Aqui está uma mensagem simples e concisa que você pode enviar ao seu orientador:
+
+Prezado [Nome do Orientador],
+
+Segui todas as orientações que me foram passadas para ajustar os exercícios 11, 12, 14 e 15. Excluí a coluna QT_RCLM_CLI no exercício 11, não apliquei imputação nos dados após o exercício 11 e utilizei as variáveis exatamente como especificado.
+
+No entanto, ao submeter o código para validação, continuo recebendo o seguinte erro no exercício 12:
+
+1208 - O valor do F1-Score informado não corresponde com o valor real obtido pelo modelo enviado. Atenção: os modelos serão re-treinados na validação, portanto certifique-se de definir as variáveis de forma automatizada, uma vez que os valores podem sofrer alterações após o re-treino.
+
+Gostaria de saber se há algum outro ajuste que preciso fazer ou se poderia me orientar sobre como proceder para resolver esse problema.
+
+Agradeço antecipadamente pela sua ajuda.
+
+Atenciosamente,
+
+[Seu Nome]
+
+Essa mensagem comunica de forma clara que você realizou todas as orientações, mas ainda está enfrentando um problema, e solicita assistência adicional.
+
+
+Importar bibliotecas necessárias
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
