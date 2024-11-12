@@ -483,6 +483,41 @@ print(f"F1 Score: {f1_bal:.4f}")
 disp_bal = ConfusionMatrixDisplay(confusion_matrix=cm_bal, display_labels=['Não Churn', 'Churn'])
 disp_bal.plot()
 
+Pré validação do código antes de submeter, deu erro nas variáveis logreg, clf, svc
+# Favor não alterar esta célula
+# verificar a existência das variáveis e gerar artefatos para verificação
+if 'exercicio1' in globals():
+    print('DataFrame exercicio1 localizado. Ele poderá ser enviado para validação.')
+    with open(f'{chaveF}_exercicio1.pkl','wb') as f:
+        pickle.dump(exercicio1, f)
+if 'exercicio15f' in globals():
+    print('Objeto exercicio15f localizado. Ele poderá ser enviado para validação.')
+    with open(f'{chaveF}_exercicio15f.pkl','wb') as f:
+        pickle.dump(exercicio15f, f)
+else:
+    print('O exercicio15f não tem condições de ser avaliado.')
+
+if 'logreg' in globals():
+    print('Variável logreg localizada. Ele poderá ser enviado para validação.')
+    with open(f'{chaveF}_logreg.pkl','wb') as f:
+        pickle.dump(logreg, f)
+else:
+    print('O logreg não tem condições de ser avaliado.')
+
+if 'clf' in globals():
+    print('Variável clf localizada. Ele poderá ser enviado para validação.')
+    with open(f'{chaveF}_clf.pkl','wb') as f:
+        pickle.dump(clf, f)
+else:
+    print('O clf não tem condições de ser avaliado.')
+
+if 'svc' in globals():
+    print('Variável svc localizada. Ele poderá ser enviado para validação.')
+    with open(f'{chaveF}_svc.pkl','wb') as f:
+        pickle.dump(svc, f)
+else:
+    print('O svc não tem condições de ser avaliado.')
+    
 O logreg não tem condições de ser avaliado.
 O clf não tem condições de ser avaliado.
 O svc não tem condições de ser avaliado.
