@@ -67,3 +67,22 @@ Alexandre, no ex. 9 já é realizado o escalonamento dos dados pelo método minm
 Não tem a necessidade de fazer um novo escalonamento pelo método de normalização z. 
  
 Além disso, o validador usa as variáveis do ex. 11 para validar o ex. 12, e como vc treina com os dados escalonados, na hora de validar, o validador irá predizer com os dados não escalonados, ou seja, o resultado vai estar bem alterado e o f1 vai tender à zero por causa dessa mudança de escala.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+x
