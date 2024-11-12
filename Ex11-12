@@ -483,11 +483,6 @@ print(f"F1 Score: {f1_bal:.4f}")
 disp_bal = ConfusionMatrixDisplay(confusion_matrix=cm_bal, display_labels=['Não Churn', 'Churn'])
 disp_bal.plot()
 
-
-
-print(exercicio14f)
-OUTPUT: 4533
-
-
-
-
+O logreg não tem condições de ser avaliado.
+O clf não tem condições de ser avaliado.
+O svc não tem condições de ser avaliado.
