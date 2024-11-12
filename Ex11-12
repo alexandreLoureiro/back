@@ -92,6 +92,11 @@ modelos = {
     'SVC': exercicio12g
 }
 exercicio12d = modelos[melhor_modelo_nome]
+# 8. Exibindo os resultados
+print(f"F1-score Regressão Logística (exercicio12a): {exercicio12a}")
+print(f"F1-score Árvore de Decisão (exercicio12b): {exercicio12b}")
+print(f"F1-score SVM (exercicio12c): {exercicio12c}")
+print(f"Melhor modelo (exercicio12d): {type(exercicio12d).__name__}")
 
 
 
@@ -220,8 +225,3 @@ disp_smote.plot()
 
 
 
-# 8. Exibindo os resultados
-print(f"F1-score Regressão Logística (exercicio12a): {exercicio12a}")
-print(f"F1-score Árvore de Decisão (exercicio12b): {exercicio12b}")
-print(f"F1-score SVM (exercicio12c): {exercicio12c}")
-print(f"Melhor modelo (exercicio12d): {type(exercicio12d).__name__}")
