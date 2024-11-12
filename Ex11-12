@@ -364,6 +364,127 @@ Name: IN_EVS, dtype: int64
 print(exercicio14e)
 OUTPUT: 4533
 
+
+
+
+
+
+
+# Importar bibliotecas necessárias
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.svm import SVC
+from sklearn.metrics import f1_score, confusion_matrix, precision_score, recall_score, ConfusionMatrixDisplay
+
+# 1. Preparação dos dados
+
+# 1.1. Dados de treino balanceados (do exercício 14)
+X_train_bal = exercicio14a
+y_train_bal = exercicio14b
+
+# 1.2. Dados de teste (do exercício 11)
+X_test = exercicio11b
+y_test = exercicio11d.values.ravel()  # Garantir que y_test está no formato correto
+
+# 2. Escalonamento dos dados (para modelos que necessitam)
+
+# 2.1. Escalonamento dos dados balanceados de treino
+escalonador_bal = StandardScaler()
+X_train_bal_escalado = escalonador_bal.fit_transform(X_train_bal)
+
+# 2.2. Escalonamento dos dados de teste usando o mesmo escalonador ajustado nos dados de treino balanceados
+X_test_escalado = escalonador_bal.transform(X_test)
+
+# 3. Definição dos modelos
+logreg_bal = LogisticRegression(random_state=42, max_iter=1000)
+clf_bal = DecisionTreeClassifier(random_state=42)
+svc_bal = SVC(random_state=42)
+
+# 4. Treinamento dos modelos com dados balanceados
+# 4.1. Regressão Logística e SVM com dados escalonados
+logreg_bal.fit(X_train_bal_escalado, y_train_bal)
+svc_bal.fit(X_train_bal_escalado, y_train_bal)
+
+# 4.2. Árvore de Decisão com dados originais (não escalonados)
+clf_bal.fit(X_train_bal, y_train_bal)
+
+# 5. Realizando previsões
+# 5.1. Regressão Logística
+y_pred_logreg_bal = logreg_bal.predict(X_test_escalado)
+
+# 5.2. Árvore de Decisão
+y_pred_clf_bal = clf_bal.predict(X_test)
+
+# 5.3. SVM
+y_pred_svc_bal = svc_bal.predict(X_test_escalado)
+
+# 6. Calculando os F1-scores
+exercicio15a = round(f1_score(y_test, y_pred_logreg_bal), 3)
+exercicio15b = round(f1_score(y_test, y_pred_clf_bal), 3)
+exercicio15c = round(f1_score(y_test, y_pred_svc_bal), 3)
+
+# 7. Identificando o melhor modelo
+f1_scores_bal = {
+    'LogisticRegression': exercicio15a,
+    'DecisionTreeClassifier': exercicio15b,
+    'SVC': exercicio15c
+}
+melhor_modelo_nome_bal = max(f1_scores_bal, key=f1_scores_bal.get)
+modelos_bal = {
+    'LogisticRegression': logreg_bal,
+    'DecisionTreeClassifier': clf_bal,
+    'SVC': svc_bal
+}
+exercicio15d = modelos_bal[melhor_modelo_nome_bal]
+
+# 8. Exibindo os resultados
+print(f"F1-score Regressão Logística (exercicio15a): {exercicio15a}")
+print(f"F1-score Árvore de Decisão (exercicio15b): {exercicio15b}")
+print(f"F1-score SVM (exercicio15c): {exercicio15c}")
+print(f"Melhor modelo (exercicio15d): {type(exercicio15d).__name__}")
+
+# 9. Criação da Matriz de Confusão para o Melhor Modelo Balanceado
+# 9.1. Escolhendo o conjunto de teste apropriado
+if isinstance(exercicio15d, (LogisticRegression, SVC)):
+    X_test_input_bal = X_test_escalado
+elif isinstance(exercicio15d, DecisionTreeClassifier):
+    X_test_input_bal = X_test
+else:
+    raise ValueError("Modelo desconhecido.")
+
+# 9.2. Realizando previsões com o melhor modelo balanceado
+y_pred_melhor_bal = exercicio15d.predict(X_test_input_bal)
+
+# 9.3. Calculando a matriz de confusão
+cm_bal = confusion_matrix(y_test, y_pred_melhor_bal)
+print("Matriz de Confusão:")
+print(cm_bal)
+
+# 9.4. Extraindo os valores TN, FP, FN, TP
+TN_bal, FP_bal, FN_bal, TP_bal = cm_bal.ravel()
+exercicio15e = FP_bal
+exercicio15f = FN_bal
+
+# 9.5. Exibindo os resultados
+print(f"Falsos Positivos (exercicio15e): {exercicio15e}")
+print(f"Falsos Negativos (exercicio15f): {exercicio15f}")
+
+# 9.6. Calculando métricas adicionais
+precisao_bal = precision_score(y_test, y_pred_melhor_bal)
+recall_bal = recall_score(y_test, y_pred_melhor_bal)
+f1_bal = f1_score(y_test, y_pred_melhor_bal)
+
+print(f"Precisão: {precisao_bal:.4f}")
+print(f"Recall: {recall_bal:.4f}")
+print(f"F1 Score: {f1_bal:.4f}")
+
+# 9.7. Visualizando a matriz de confusão
+disp_bal = ConfusionMatrixDisplay(confusion_matrix=cm_bal, display_labels=['Não Churn', 'Churn'])
+disp_bal.plot()
+
+
+
 print(exercicio14f)
 OUTPUT: 4533
 
