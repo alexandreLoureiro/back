@@ -210,6 +210,76 @@ print(f"Falsos Negativos (exercicio15f): {exercicio15f}")
 # 9.6. Calculando métricas adicionais
 precisao_smote = precision_score(y_test, y_pred_melhor_smote)
 recall_smote = recall_score(y_test, y_pred_melhor_smote)
+
+
+
+
+
+# Importar bibliotecas necessárias
+from sklearn.model_selection import cross_val_score
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.svm import SVC
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import make_scorer, f1_score
+
+# Definir a métrica de avaliação como F1-score
+f1_scorer = make_scorer(f1_score)
+
+# 1. Preparação dos dados
+# Usar X_train e y_train definidos no exercício 12
+# Como a Validação Cruzada envolve múltiplas divisões dos dados, vamos combinar X_train e X_test
+X_full = pd.concat([X_train, X_test], axis=0).reset_index(drop=True)
+y_full = np.concatenate([y_train, y_test], axis=0)
+
+# 2. Escalonamento dos dados para modelos que necessitam
+escalonador = StandardScaler()
+X_full_escalado = escalonador.fit_transform(X_full)
+
+# 3. Definição dos modelos
+modelo_logreg = LogisticRegression(random_state=42, max_iter=1000)
+modelo_tree = DecisionTreeClassifier(random_state=42)
+modelo_svm = SVC(random_state=42)
+
+# 4. Avaliação dos modelos com Validação Cruzada
+# 4.1. Regressão Logística
+scores_logreg = cross_val_score(
+    modelo_logreg, X_full_escalado, y_full, cv=5, scoring=f1_scorer
+)
+media_logreg = round(scores_logreg.mean(), 3)
+desvio_logreg = round(scores_logreg.std(), 3)
+
+# 4.2. Árvore de Decisão
+scores_tree = cross_val_score(
+    modelo_tree, X_full, y_full, cv=5, scoring=f1_scorer
+)
+media_tree = round(scores_tree.mean(), 3)
+desvio_tree = round(scores_tree.std(), 3)
+
+# 4.3. SVM
+scores_svm = cross_val_score(
+    modelo_svm, X_full_escalado, y_full, cv=5, scoring=f1_scorer
+)
+media_svm = round(scores_svm.mean(), 3)
+desvio_svm = round(scores_svm.std(), 3)
+
+# 5. Exibindo os resultados
+print("Desempenho dos modelos com Validação Cruzada:")
+print(f"Regressão Logística - Média F1-score: {media_logreg}, Desvio Padrão: {desvio_logreg}")
+print(f"Árvore de Decisão - Média F1-score: {media_tree}, Desvio Padrão: {desvio_tree}")
+print(f"SVM - Média F1-score: {media_svm}, Desvio Padrão: {desvio_svm}")
+
+# 6. Identificando o melhor modelo
+medias = {
+    'LogisticRegression': media_logreg,
+    'DecisionTreeClassifier': media_tree,
+    'SVC': media_svm
+}
+melhor_modelo_nome = max(medias, key=medias.get)
+print(f"O melhor modelo é: {melhor_modelo_nome}")
+
+
+
 f1_smote = f1_score(y_test, y_pred_melhor_smote)
 
 print(f"Precisão: {precisao_smote:.4f}")
