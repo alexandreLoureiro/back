@@ -322,6 +322,44 @@ Abaixo temos um exemplo fictício de como ficaria o print da quantidade de amost
 
 0.0    4533
 1.0    4533
+
+# Importar bibliotecas necessárias
+from imblearn.over_sampling import SMOTE
+import pandas as pd
+
+# 1. Definir o objeto SMOTE
+smt = SMOTE(random_state=42)
+
+# 2. Preparar os dados de treino (do exercício 11)
+# Usamos exercicio11a (X_train) e exercicio11c (y_train)
+
+# 2.1. Garantir que y_train está no formato correto (array unidimensional)
+y_train = exercicio11c.values.ravel()
+
+# 2.2. Contar as amostras por classe ANTES do SMOTE
+contagem_antes = pd.Series(y_train).value_counts()
+exercicio14c = contagem_antes.get(0, 0)
+exercicio14d = contagem_antes.get(1, 0)
+
+# Exibir as contagens antes do SMOTE
+print("Contagem de amostras por classe ANTES do SMOTE:")
+print(contagem_antes)
+print(f"exercicio14c (Classe 0 antes): {exercicio14c}")
+print(f"exercicio14d (Classe 1 antes): {exercicio14d}")
+
+# 3. Aplicar o SMOTE nos dados de treino
+exercicio14a, exercicio14b = smt.fit_resample(exercicio11a, y_train)
+
+# 4. Contar as amostras por classe APÓS o SMOTE
+contagem_depois = pd.Series(exercicio14b).value_counts()
+exercicio14e = contagem_depois.get(0, 0)
+exercicio14f = contagem_depois.get(1, 0)
+
+# Exibir as contagens após o SMOTE
+print("\nContagem de amostras por classe APÓS o SMOTE:")
+print(contagem_depois)
+print(f"exercicio14e (Classe 0 após): {exercicio14e}")
+print(f"exercicio14f (Classe 1 após): {exercicio14f}")
 Name: IN_EVS, dtype: int64
 print(exercicio14e)
 OUTPUT: 4533
