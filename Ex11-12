@@ -1,192 +1,100 @@
-Está ocorrendo um erro de existência de nulos na sua variável exercicio11b
- 
-provavelmente pela presença da coluna QT_RCLM_CLI
- 
-Nós rodamos os modelos enviados para validar seus dados, então exclua essa coluna do exercicio11b
- 
-variaveis_preditivas = exercicio10b.columns[:21]  # Ajuste conforme necessário para selecionar as variáveis certas
+Exercício 14 - Balanceamento dos dados com SMOTE
+Faça o oversampling dos dados produzidos no exercício 11 utilizando a técnica SMOTE, porém, de forma a não enviesar os dados de teste.
 
- 
-Aqui você está pegando as primeiras colnas
- 
-Selecione com outro critério ou simplesmente exclua a QT_RCLM_CLI
- 
-Nós usamos as variáveis do 11 para validar o 12
- 
-No caso, exercicio12e.predict(exercicio11b) está ocasionando um erro. Pode testar aí no seu, vai ver que ocorre
- 
-# 1. Imputação de dados faltantes
+O objeto SMOTE deve ser criado numa variável chamada smt.
 
-imputador = SimpleImputer(strategy='mean')
+Use random_state=42 no SMOTE
 
-X_train_imputado = imputador.fit_transform(exercicio11a)
+O resultado do balanceamento dos dados de treinamento deve ser salvo nas variáveis exercicio14a e exercicio14b.
 
-X_test_imputado = imputador.transform(exercicio11b)
- 
-Estou vendo que treinou com outra variável, que não as do exercicio 11
- 
-Nós vamos usar essas variáveis para validar, as do exercício 11
- 
-Então você deve treinar com elas
- 
-Mesma coisa com escalonamento,
-# 2. Escalonamento dos dados
+exercicio14a : Dados de treino para as variáveis preditoras (X)
+exercicio14b : Dados de treino para a variável alvo (y)
+Crie as variáveis exercicio14c, exercicio14d, exercicio14e e exercicio14f:
 
-escalonador = StandardScaler()
+Guarde as quantidades de amostras das classe 0 e classe 1 ANTES a utilização do SMOTE nas variáveis exercicio14c e exercicio14d.
+Guarde as quantidades de amostras das classe 0 e classe 1 APÓS a utilização do SMOTE nas variáveis exercicio14e e exercicio14f.
+Abaixo temos um exemplo fictício de como ficaria o print da quantidade de amostras por classe ANTES da aplicação do SMOTE. Na sequência os prints dos valores do exemplo nas variáveis exercicio14c e exercicio14d.
 
-X_train_escalado = escalonador.fit_transform(X_train_imputado)
+0.0    4533
+1.0    1767
+Name: IN_EVS, dtype: int64
+print(exercicio14c)
+OUTPUT: 4533
 
-X_test_escalado = escalonador.transform(X_test_imputado)
- 
-Não deve transformar depois pois usamos as variáveis do 11 para validar.
- 
-E o erro está relacionado com os valores nulos na coluna QT_RCLM_CLI que ocasionam em erro no validador.
- 
-Você evita esse erro com o seu imputer em cima das variáveis do 11, mas no validador, vamos usar a do 11
- 
-Bom dia, Alexandre, vou dar uma olhada no seu caso, mas o validador está funcionando corretamente e normalmente, vou ver se seu caderno está ocasionando um erro
- 
-O valor do F1Score obtido pelo validador para regressão logística está dando 0.0
- 
+print(exercicio14d)
+OUTPUT: 1767
+Abaixo temos um exemplo fictício de como ficaria o print da quantidade de amostras por classe APÓS a aplicação do SMOTE. Na sequência os prints dos valores do exemplo nas variáveis exercicio14e e exercicio14f.
 
-Você está transformando os dados para treinar e prever... Claro que não vai dar certo. Tem que usar as variáveis do exercício 11, sem escalar, sem imputar, pois nós vamos usar as variáveis para bater os valores de F1Score
- 
-# 2. Escalonamento dos dados (apenas para modelos que necessitam)
+0.0    4533
+1.0    4533
+Name: IN_EVS, dtype: int64
+print(exercicio14e)
+OUTPUT: 4533
 
-escalonador = StandardScaler()
- 
-# Ajustar o escalonador nos dados de treino e aplicar nos dados de teste
+print(exercicio14f)
+OUTPUT: 4533
 
-X_train_escalado = escalonador.fit_transform(X_train)
+# 1. Definir o objeto SMOTE
+smt = SMOTE(random_state=42)
 
-X_test_escalado = escalonador.transform(X_test)
+# 2. Preparar os dados de treino (do exercício 11)
+# Usamos exercicio11a (X_train) e exercicio11c (y_train)
 
- 
-Alexandre, no ex. 9 já é realizado o escalonamento dos dados pelo método minmax. 
- 
-Não tem a necessidade de fazer um novo escalonamento pelo método de normalização z. 
- 
-Além disso, o validador usa as variáveis do ex. 11 para validar o ex. 12, e como vc treina com os dados escalonados, na hora de validar, o validador irá predizer com os dados não escalonados, ou seja, o resultado vai estar bem alterado e o f1 vai tender à zero por causa dessa mudança de escala.
-
-# Importar bibliotecas necessárias
-import pandas as pd
-import numpy as np
-from sklearn.model_selection import train_test_split
-
-# Definir semente para reprodutibilidade
-np.random.seed(42)
-
-# Excluir a coluna 'QT_RCLM_CLI' das variáveis preditivas
-variaveis_preditivas = exercicio10b.columns.drop('QT_RCLM_CLI')
-
-# Criar os DataFrames X (variáveis preditoras) e y (variável alvo)
-X = exercicio10b[variaveis_preditivas]
-y = exercicio10c['IN_EVS']
-
-# Divisão dos dados em treino e teste, com 30% para teste
-exercicio11a, exercicio11b, exercicio11c, exercicio11d = train_test_split(
-    X, y, test_size=0.30, random_state=42, shuffle=True
-)
-
-# Resetar os índices para evitar problemas futuros
-exercicio11a.reset_index(drop=True, inplace=True)
-exercicio11b.reset_index(drop=True, inplace=True)
-exercicio11c.reset_index(drop=True, inplace=True)
-exercicio11d.reset_index(drop=True, inplace=True)
-
-# Garantir que as variáveis estejam no formato de DataFrame
-exercicio11a = pd.DataFrame(exercicio11a, columns=variaveis_preditivas)
-exercicio11b = pd.DataFrame(exercicio11b, columns=variaveis_preditivas)
-exercicio11c = pd.DataFrame(exercicio11c, columns=['IN_EVS'])
-exercicio11d = pd.DataFrame(exercicio11d, columns=['IN_EVS'])
-
-# Importar bibliotecas necessárias
-from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.svm import SVC
-from sklearn.metrics import f1_score
-
-# 1. Preparação dos dados (utilizando as variáveis do exercício 11)
-X_train = exercicio11a.copy()
-X_test = exercicio11b.copy()
+# 2.1. Garantir que y_train está no formato correto (array unidimensional)
 y_train = exercicio11c.values.ravel()
-y_test = exercicio11d.values.ravel()
 
-# 2. Criação dos modelos
-exercicio12e = LogisticRegression(random_state=42, max_iter=1000)
-exercicio12f = DecisionTreeClassifier(random_state=42)
-exercicio12g = SVC(random_state=42)
+# 2.2. Contar as amostras por classe ANTES do SMOTE
+contagem_antes = pd.Series(y_train).value_counts()
+exercicio14c = contagem_antes.get(0, 0)
+exercicio14d = contagem_antes.get(1, 0)
 
-# 3. Treinamento dos modelos (sem aplicar escalonamento)
-exercicio12e.fit(X_train, y_train)
-exercicio12f.fit(X_train, y_train)
-exercicio12g.fit(X_train, y_train)
+# Exibir as contagens antes do SMOTE
+print("Contagem de amostras por classe ANTES do SMOTE:")
+print(contagem_antes)
+print(f"exercicio14c (Classe 0 antes): {exercicio14c}")
+print(f"exercicio14d (Classe 1 antes): {exercicio14d}")
 
-# 4. Realizando previsões (usando os dados de teste do exercício 11)
-y_pred_logreg = exercicio12e.predict(X_test)
-y_pred_tree = exercicio12f.predict(X_test)
-y_pred_svm = exercicio12g.predict(X_test)
+# 3. Aplicar o SMOTE nos dados de treino
+exercicio14a, exercicio14b = smt.fit_resample(exercicio11a, y_train)
 
-# 5. Calculando os F1-scores
-exercicio12a = round(f1_score(y_test, y_pred_logreg), 3)
-exercicio12b = round(f1_score(y_test, y_pred_tree), 3)
-exercicio12c = round(f1_score(y_test, y_pred_svm), 3)
+# 4. Contar as amostras por classe APÓS o SMOTE
+contagem_depois = pd.Series(exercicio14b).value_counts()
+exercicio14e = contagem_depois.get(0, 0)
+exercicio14f = contagem_depois.get(1, 0)
 
-# 6. Identificando o melhor modelo
-f1_scores = {
-    'LogisticRegression': exercicio12a,
-    'DecisionTreeClassifier': exercicio12b,
-    'SVC': exercicio12c
-}
-melhor_modelo_nome = max(f1_scores, key=f1_scores.get)
-modelos = {
-    'LogisticRegression': exercicio12e,
-    'DecisionTreeClassifier': exercicio12f,
-    'SVC': exercicio12g
-}
-exercicio12d = modelos[melhor_modelo_nome]
-
-# 7. Exibindo os resultados
-print(f"F1-score Regressão Logística (exercicio12a): {exercicio12a}")
-print(f"F1-score Árvore de Decisão (exercicio12b): {exercicio12b}")
-print(f"F1-score SVM (exercicio12c): {exercicio12c}")
-print(f"Melhor modelo (exercicio12d): {type(exercicio12d).__name__}")
-
-# Supondo que o exercício 13 envolva avaliação dos modelos
-
-# Importar bibliotecas necessárias
-from sklearn.metrics import accuracy_score, precision_score, recall_score, confusion_matrix
-
-# 1. Utilizar os modelos treinados no exercício 12
-# Os modelos são exercicio12e, exercicio12f, exercicio12g
-
-# 2. Realizar previsões nos dados de teste do exercício 11
-y_pred_logreg = exercicio12e.predict(exercicio11b)
-y_pred_tree = exercicio12f.predict(exercicio11b)
-y_pred_svm = exercicio12g.predict(exercicio11b)
-
-# 3. Calcular métricas de avaliação
-# Exemplo para Regressão Logística
-accuracy_logreg = accuracy_score(exercicio11d, y_pred_logreg)
-precision_logreg = precision_score(exercicio11d, y_pred_logreg)
-recall_logreg = recall_score(exercicio11d, y_pred_logreg)
-
-# Repetir para os outros modelos conforme necessário
-
-# 4. Exibir os resultados
-print(f"Acurácia Regressão Logística: {accuracy_logreg:.3f}")
-print(f"Precisão Regressão Logística: {precision_logreg:.3f}")
-print(f"Recall Regressão Logística: {recall_logreg:.3f}")
-
-# Repetir para os outros modelos
+# Exibir as contagens após o SMOTE
+print("\nContagem de amostras por classe APÓS o SMOTE:")
+print(contagem_depois)
+print(f"exercicio14e (Classe 0 após): {exercicio14e}")
+print(f"exercicio14f (Classe 1 após): {exercicio14f}")
 
 
-# Importar bibliotecas necessárias
-from imblearn.over_sampling import SMOTE
-from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.svm import SVC
-from sklearn.metrics import f1_score, confusion_matrix
+
+Exercício 15 - Balanceamento dos dados com SMOTE e comparação dos resultados
+Parte 1
+Refaça o exercício 12 alterando o nome das variáveis conforme explicado abaixo utilizando os dados balanceados pelo SMOTE. Se atente a usar o mesmo conjunto de teste nos exercícios 12 e 15, para comparar os resultados do treinamento com e sem SMOTE.
+
+Atribua o valor do F1-score deste exercício do modelo Regressão Logística para a variável exercicio15a
+
+Atribua o valor do F1-score deste exercício do modelo Árvore de Decisão para a variável exercicio15b
+
+Atribua o valor do F1-score deste exercício do modelo Support Vector Machine para a variável exercicio15c
+
+Atribua o valor do modelo com maior F1-score deste exercício para a variável exercicio15d
+
+Crie as variáveis abaixo aplicando os modelos preditivos conforme orientações detalhadas:
+
+Nome da Variável	Modelo	Tipo
+logreg	Regressão Logística	sklearn.linear_model._logistic.LogisticRegression
+clf	Árvore de Decisão	sklearn.tree.DecisionTreeClassifier
+svc	Support Vector Machine	sklearn.svm._classes.SVC
+Parte 2
+Faça a Matriz de Confusão (confusion_matriz) do seu modelo de melhor F1-score com os dados balanceados pelo SMOTE, conforme resposta do Exercício 14, em seguida crie as variáveis exercicio15e, exercicio15f e para responder às perguntas:
+
+exercicio15e) Quantos foram os casos de falso positivo do seu modelo, ou seja, os casos em que o modelo previu que a pessoa sairia (churn), mas ela não saiu?
+
+exercicio15f) Quantos foram os casos de falso negativo?
+
 
 # 1. Preparação dos dados
 
@@ -257,6 +165,107 @@ exercicio15f = FN
 print(f"Falsos Positivos (exercicio15e): {exercicio15e}")
 print(f"Falsos Negativos (exercicio15f): {exercicio15f}")
 
+exercicio15
+1509 - O valor do F1-Score informado não corresponde com o valor real obtido pelo modelo enviado. Atenção: os modelos serão re-treinados na validação, portanto certifique-se de definir as variáveis de forma automatizada, uma vez que os os valores podem sofrer alterações após o re-treino.
+
+,
+1510 - Valor de falsos positivos não corresponde ao obtido pelo modelo. Atenção: os modelos serão re-treinados na validação, portanto certifique-se de definir as variáveis de forma automatizada, uma vez que os os valores podem sofrer alterações após o re-treino.
+
+,
+1511 - Valor de falsos negativos não corresponde ao obtido pelo modelo. Atenção: os modelos serão re-treinados na validação, portanto certifique-se de definir as variáveis de forma automatizada, uma vez que os os valores podem sofrer alterações após o re-treino.
+
+,
+0 - ERR_SYS_01 - Exercício possui pendências que precisam de resolução para que seja validado ou, então, os artefatos para validação não foram criados.
+
+segue historico dos orientadores que tive para fazer o exercicio 12, acredito de deve ser do mesmo estilo:
+
+Está ocorrendo um erro de existência de nulos na sua variável exercicio11b
+ 
+provavelmente pela presença da coluna QT_RCLM_CLI
+ 
+Nós rodamos os modelos enviados para validar seus dados, então exclua essa coluna do exercicio11b
+ 
+variaveis_preditivas = exercicio10b.columns[:21]  # Ajuste conforme necessário para selecionar as variáveis certas
+
+ 
+Aqui você está pegando as primeiras colnas
+ 
+Selecione com outro critério ou simplesmente exclua a QT_RCLM_CLI
+ 
+Nós usamos as variáveis do 11 para validar o 12
+ 
+No caso, exercicio12e.predict(exercicio11b) está ocasionando um erro. Pode testar aí no seu, vai ver que ocorre
+ 
+# 1. Imputação de dados faltantes
+
+imputador = SimpleImputer(strategy='mean')
+
+X_train_imputado = imputador.fit_transform(exercicio11a)
+
+X_test_imputado = imputador.transform(exercicio11b)
+ 
+Estou vendo que treinou com outra variável, que não as do exercicio 11
+ 
+Nós vamos usar essas variáveis para validar, as do exercício 11
+ 
+Então você deve treinar com elas
+ 
+Mesma coisa com escalonamento,
+# 2. Escalonamento dos dados
+
+escalonador = StandardScaler()
+
+X_train_escalado = escalonador.fit_transform(X_train_imputado)
+
+X_test_escalado = escalonador.transform(X_test_imputado)
+ 
+Não deve transformar depois pois usamos as variáveis do 11 para validar.
+ 
+E o erro está relacionado com os valores nulos na coluna QT_RCLM_CLI que ocasionam em erro no validador.
+ 
+Você evita esse erro com o seu imputer em cima das variáveis do 11, mas no validador, vamos usar a do 11
+ 
+Bom dia, Alexandre, vou dar uma olhada no seu caso, mas o validador está funcionando corretamente e normalmente, vou ver se seu caderno está ocasionando um erro
+ 
+O valor do F1Score obtido pelo validador para regressão logística está dando 0.0
+ 
+
+Você está transformando os dados para treinar e prever... Claro que não vai dar certo. Tem que usar as variáveis do exercício 11, sem escalar, sem imputar, pois nós vamos usar as variáveis para bater os valores de F1Score
+ 
+# 2. Escalonamento dos dados (apenas para modelos que necessitam)
+
+escalonador = StandardScaler()
+ 
+# Ajustar o escalonador nos dados de treino e aplicar nos dados de teste
+
+X_train_escalado = escalonador.fit_transform(X_train)
+
+X_test_escalado = escalonador.transform(X_test)
+
+ 
+Alexandre, no ex. 9 já é realizado o escalonamento dos dados pelo método minmax. 
+ 
+Não tem a necessidade de fazer um novo escalonamento pelo método de normalização z. 
+ 
+Além disso, o validador usa as variáveis do ex. 11 para validar o ex. 12, e como vc treina com os dados escalonados, na hora de validar, o validador irá predizer com os dados não escalonados, ou seja, o resultado vai estar bem alterado e o f1 vai tender à zero por causa dessa mudança de escala.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -272,3 +281,6 @@ print(f"Falsos Negativos (exercicio15f): {exercicio15f}")
 
 
 x
+
+
+
