@@ -1,4 +1,150 @@
-# 
+Prezado [Nome do Orientador],
+
+Gostaria de informar que fiz todos os ajustes conforme suas orientações nos exercícios 11 e 12. Abaixo, explico detalhadamente as alterações que realizei, incluindo trechos do código que utilizei para os ajustes.
+
+Exercício 11 - Separação dos Dados
+
+Orientações Seguidas:
+	1.	Exclusão da coluna QT_RCLM_CLI: Conforme solicitado, excluí a coluna QT_RCLM_CLI das variáveis preditivas devido à presença de valores nulos que estavam causando problemas no validador.
+	2.	Utilização das variáveis do exercício 11 nos exercícios subsequentes: Certifiquei-me de que as mesmas variáveis preditivas definidas no exercício 11 estão sendo usadas nos exercícios seguintes, sem aplicar transformações que possam causar inconsistências.
+
+Código Ajustado:
+
+# Importar bibliotecas necessárias
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+
+# Definir semente para reprodutibilidade
+np.random.seed(42)
+
+# Excluir a coluna 'QT_RCLM_CLI' das variáveis preditivas
+variaveis_preditivas = exercicio10b.columns.drop('QT_RCLM_CLI')[:21]
+
+# Criar os DataFrames X (variáveis preditoras) e y (variável alvo)
+X = exercicio10b[variaveis_preditivas]
+y = exercicio10c['IN_EVS']
+
+# Divisão dos dados em treino e teste, com 30% para teste
+exercicio11a, exercicio11b, exercicio11c, exercicio11d = train_test_split(
+    X, y, test_size=0.30, random_state=42, shuffle=True
+)
+
+# Resetar os índices para evitar problemas futuros
+exercicio11a.reset_index(drop=True, inplace=True)
+exercicio11b.reset_index(drop=True, inplace=True)
+exercicio11c.reset_index(drop=True, inplace=True)
+exercicio11d.reset_index(drop=True, inplace=True)
+
+# Garantir que as variáveis estejam no formato de DataFrame
+exercicio11a = pd.DataFrame(exercicio11a, columns=variaveis_preditivas)
+exercicio11b = pd.DataFrame(exercicio11b, columns=variaveis_preditivas)
+exercicio11c = pd.DataFrame(exercicio11c, columns=['IN_EVS'])
+exercicio11d = pd.DataFrame(exercicio11d, columns=['IN_EVS'])
+
+Exercício 12 - Criação e Treinamento dos Modelos
+
+Orientações Seguidas:
+	1.	Não aplicar imputação nos dados: Seguindo sua orientação, não apliquei imputação de valores faltantes nos dados após o exercício 11, já que o validador utiliza as variáveis do exercício 11 exatamente como estão.
+	2.	Utilização das variáveis do exercício 11: Usei as variáveis preditivas e a variável alvo exatamente como definidas no exercício 11.
+	3.	Escalonamento dos dados apenas quando necessário: Apliquei o escalonamento somente nos modelos que necessitam (Regressão Logística e SVM), sem modificar os dados originais do exercício 11.
+
+Código Ajustado:
+
+# Importar bibliotecas necessárias
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.svm import SVC
+from sklearn.metrics import f1_score
+
+# 1. Variáveis preditivas e alvo (do exercício 11)
+X_train = exercicio11a.copy()
+X_test = exercicio11b.copy()
+y_train = exercicio11c.values.ravel()
+y_test = exercicio11d.values.ravel()
+
+# 2. Escalonamento dos dados (apenas para modelos que necessitam)
+escalonador = StandardScaler()
+
+# Ajustar o escalonador nos dados de treino e aplicar nos dados de teste
+X_train_escalado = escalonador.fit_transform(X_train)
+X_test_escalado = escalonador.transform(X_test)
+
+# 3. Criação dos modelos
+exercicio12e = LogisticRegression(random_state=42, max_iter=1000)
+exercicio12f = DecisionTreeClassifier(random_state=42)
+exercicio12g = SVC(random_state=42)
+
+# 4. Treinamento dos modelos
+# 4.1. Regressão Logística e SVM com dados escalonados
+exercicio12e.fit(X_train_escalado, y_train)
+exercicio12g.fit(X_train_escalado, y_train)
+
+# 4.2. Árvore de Decisão com dados originais (não escalonados)
+exercicio12f.fit(X_train, y_train)
+
+# 5. Realizando previsões
+# 5.1. Regressão Logística
+y_pred_logreg = exercicio12e.predict(X_test_escalado)
+
+# 5.2. Árvore de Decisão
+y_pred_tree = exercicio12f.predict(X_test)
+
+# 5.3. SVM
+y_pred_svm = exercicio12g.predict(X_test_escalado)
+
+# 6. Calculando os F1-scores
+exercicio12a = round(f1_score(y_test, y_pred_logreg), 3)
+exercicio12b = round(f1_score(y_test, y_pred_tree), 3)
+exercicio12c = round(f1_score(y_test, y_pred_svm), 3)
+
+# 7. Identificando o melhor modelo
+f1_scores = {
+    'LogisticRegression': exercicio12a,
+    'DecisionTreeClassifier': exercicio12b,
+    'SVC': exercicio12c
+}
+melhor_modelo_nome = max(f1_scores, key=f1_scores.get)
+modelos = {
+    'LogisticRegression': exercicio12e,
+    'DecisionTreeClassifier': exercicio12f,
+    'SVC': exercicio12g
+}
+exercicio12d = modelos[melhor_modelo_nome]
+
+# 8. Exibindo os resultados
+print(f"F1-score Regressão Logística (exercicio12a): {exercicio12a}")
+print(f"F1-score Árvore de Decisão (exercicio12b): {exercicio12b}")
+print(f"F1-score SVM (exercicio12c): {exercicio12c}")
+print(f"Melhor modelo (exercicio12d): {type(exercicio12d).__name__}")
+
+Resultado e Dúvidas
+
+Apesar de ter seguido todas as orientações, ainda estou recebendo o seguinte erro ao submeter o código para validação:
+
+1208 - O valor do F1-Score informado não corresponde com o valor real obtido pelo modelo enviado. Atenção: os modelos serão re-treinados na validação, portanto, certifique-se de definir as variáveis de forma automatizada, uma vez que os valores podem sofrer alterações após o re-treino.
+
+Possíveis Causas que Verifiquei:
+	•	Reprodutibilidade: Defini random_state=42 em todas as funções que envolvem aleatoriedade e não estou utilizando valores hardcoded para os F1-scores.
+	•	Utilização das Variáveis do Exercício 11: Estou utilizando exatamente as variáveis preditivas e a variável alvo do exercício 11, sem aplicar transformações que possam causar inconsistências.
+	•	Formatação das Variáveis: Certifiquei-me de que as variáveis solicitadas estão definidas corretamente e disponíveis no escopo global.
+
+Solicitação de Orientação:
+
+Gostaria de saber se há algum outro ajuste que preciso fazer ou se poderia me orientar sobre como proceder para resolver esse problema. Pode ser que esteja faltando algum detalhe específico que não estou conseguindo identificar.
+
+Agradeço antecipadamente pela sua ajuda.
+
+Atenciosamente,
+
+[Seu Nome]
+
+
+
+
+
+
 Claro! Aqui está uma mensagem simples e concisa que você pode enviar ao seu orientador:
 
 Prezado [Nome do Orientador],
