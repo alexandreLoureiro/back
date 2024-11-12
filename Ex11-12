@@ -93,6 +93,133 @@ modelos = {
 }
 exercicio12d = modelos[melhor_modelo_nome]
 
+
+
+
+
+# Supondo que o exercício 14 envolve alguma análise com os dados de treino
+
+# Utilize X_train em vez de X_train_imputado
+# Por exemplo, se estiver aplicando alguma técnica de balanceamento ou transformação:
+
+from imblearn.over_sampling import SMOTE
+
+# Balanceamento dos dados de treino
+smote = SMOTE(random_state=42)
+X_train_bal, y_train_bal = smote.fit_resample(X_train, y_train)
+
+# Continuar com o código normalmente, utilizando X_train_bal e y_train_bal
+
+
+
+
+# Importar bibliotecas necessárias
+from imblearn.over_sampling import SMOTE
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import f1_score, confusion_matrix, precision_score, recall_score, ConfusionMatrixDisplay
+
+# 1. Balanceamento dos dados de treino
+smote = SMOTE(random_state=42)
+X_train_bal, y_train_bal = smote.fit_resample(X_train, y_train)
+
+# 2. Escalonamento dos dados balanceados (para modelos que precisam)
+escalonador_smote = StandardScaler()
+X_train_bal_escalado = escalonador_smote.fit_transform(X_train_bal)
+
+# 3. Definição dos modelos
+logreg = LogisticRegression(random_state=42, max_iter=1000)
+clf = DecisionTreeClassifier(random_state=42)
+svc = SVC(random_state=42)
+
+# 4. Treinamento dos modelos com dados balanceados
+# 4.1. Regressão Logística e SVM com dados escalonados
+logreg.fit(X_train_bal_escalado, y_train_bal)
+svc.fit(X_train_bal_escalado, y_train_bal)
+
+# 4.2. Árvore de Decisão com dados originais (não escalonados)
+clf.fit(X_train_bal, y_train_bal)
+
+# 5. Realizando previsões
+# 5.1. Regressão Logística
+y_pred_logreg_smote = logreg.predict(X_test_escalado)
+
+# 5.2. Árvore de Decisão
+y_pred_clf_smote = clf.predict(X_test)
+
+# 5.3. SVM
+y_pred_svm_smote = svc.predict(X_test_escalado)
+
+# 6. Calculando os F1-scores
+exercicio15a = round(f1_score(y_test, y_pred_logreg_smote), 3)
+exercicio15b = round(f1_score(y_test, y_pred_clf_smote), 3)
+exercicio15c = round(f1_score(y_test, y_pred_svm_smote), 3)
+
+# 7. Identificando o melhor modelo
+f1_scores_smote = {
+    'LogisticRegression': exercicio15a,
+    'DecisionTreeClassifier': exercicio15b,
+    'SVC': exercicio15c
+}
+
+melhor_modelo_nome_smote = max(f1_scores_smote, key=f1_scores_smote.get)
+modelos_smote = {
+    'LogisticRegression': logreg,
+    'DecisionTreeClassifier': clf,
+    'SVC': svc
+}
+
+exercicio15d = modelos_smote[melhor_modelo_nome_smote]
+
+# 8. Exibindo os resultados
+print(f"F1-score Regressão Logística (exercicio15a): {exercicio15a}")
+print(f"F1-score Árvore de Decisão (exercicio15b): {exercicio15b}")
+print(f"F1-score SVM (exercicio15c): {exercicio15c}")
+print(f"Melhor modelo (exercicio15d): {type(exercicio15d).__name__}")
+
+# 9. Criação da Matriz de Confusão para o Melhor Modelo Balanceado
+# 9.1. Escolhendo o conjunto de teste apropriado
+if isinstance(exercicio15d, (LogisticRegression, SVC)):
+    X_test_input_smote = X_test_escalado
+elif isinstance(exercicio15d, DecisionTreeClassifier):
+    X_test_input_smote = X_test
+else:
+    raise ValueError("Modelo desconhecido.")
+
+# 9.2. Realizando previsões com o melhor modelo balanceado
+y_pred_melhor_smote = exercicio15d.predict(X_test_input_smote)
+
+# 9.3. Calculando a matriz de confusão
+cm_smote = confusion_matrix(y_test, y_pred_melhor_smote)
+print("Matriz de Confusão:")
+print(cm_smote)
+
+# 9.4. Extraindo os valores TN, FP, FN, TP
+TN_smote, FP_smote, FN_smote, TP_smote = cm_smote.ravel()
+exercicio15e = FP_smote
+exercicio15f = FN_smote
+
+# 9.5. Exibindo os resultados
+print(f"Falsos Positivos (exercicio15e): {exercicio15e}")
+print(f"Falsos Negativos (exercicio15f): {exercicio15f}")
+
+# 9.6. Calculando métricas adicionais
+precisao_smote = precision_score(y_test, y_pred_melhor_smote)
+recall_smote = recall_score(y_test, y_pred_melhor_smote)
+f1_smote = f1_score(y_test, y_pred_melhor_smote)
+
+print(f"Precisão: {precisao_smote:.4f}")
+print(f"Recall: {recall_smote:.4f}")
+print(f"F1 Score: {f1_smote:.4f}")
+
+# 9.7. Visualizando a matriz de confusão
+disp_smote = ConfusionMatrixDisplay(confusion_matrix=cm_smote, display_labels=['Não Churn', 'Churn'])
+disp_smote.plot()
+
+
+
+
+
+
 # 8. Exibindo os resultados
 print(f"F1-score Regressão Logística (exercicio12a): {exercicio12a}")
 print(f"F1-score Árvore de Decisão (exercicio12b): {exercicio12b}")
