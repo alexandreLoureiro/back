@@ -1,3 +1,16 @@
+Para que o modelo de LLM considere apenas os casos em que o auditor explicitamente deixou claro que os achados foram regularizados durante o trabalho, e ainda analise as principais constatações para confirmar a regularização, o prompt pode ser formulado de forma mais específica. Veja uma sugestão de prompt aprimorado:
+
+“Analise o seguinte relatório de auditoria e identifique exclusivamente os achados que foram explicitamente declarados como regularizados pelo auditor durante o trabalho. Em seguida, revise as principais constatações para verificar a consistência dessa informação e confirme se os achados realmente foram resolvidos, evitando qualquer ambiguidade com achados não resolvidos. Liste apenas os achados que foram claramente regularizados, detalhando as ações corretivas e o impacto da regularização.”
+
+Esse prompt orienta o modelo a:
+	1.	Considerar apenas achados claramente marcados como regularizados.
+	2.	Verificar a consistência entre a declaração do auditor e as principais constatações.
+	3.	Evitar listar achados que ainda estão pendentes ou não resolvidos.
+
+Caso tenha mais detalhes específicos do relatório, podemos adicionar nuances ao prompt para uma análise ainda mais precisa.
+
+
+
 Apresentação do Projeto Aplicado: Defesa Cibernética contra IA Generativa em Ambientes Bancários
 01. Apresentação: Quem sou eu?
 [INSIRA AQUI SUA APRESENTAÇÃO]
