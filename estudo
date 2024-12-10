@@ -1,56 +1,25 @@
-%Macro Envia_Email;
-    proc sql noprint;
-        select count(*) into :row_count from WORK.cria_dados_email;
-    quit;
+Olá! A materialidade registrada nos destaques de auditoria refere-se à importância ou relevância do fato gerador do destaque.
+Isso pode incluir eventos de risco avaliados, itens do processo vinculados à recomendação, entre outros. 
+É importante que haja coerência entre a materialidade citada no destaque e a materialidade do fato gerador do destaque. 
+Além disso, a adequação da materialidade do destaque com a materialidade do processo avaliado deve ser observada na
+elaboração do destaque. Essas informações estão contidas na Instrução Normativa 978-2/4.7.1.2.5 e 978-1/4.8.3.4.
 
-    %if &row_count > 0 %then %do;
-        options emailauthprotocol=none
-                emailid='email@com.br'
-                emailsys=smtp
-                emailhost='smtp.bb.com.br'
-                emailport=25;
-        filename newEmail email lrecl=64000;
+Campo materialidade: preenchimento obrigatório para destaques de qualquer origem.
 
-        data _null_;
-            SET work.cria_dados_email END=FINAL;
+Campo Imagem da Materialidade: opcional, destina-se a incluir gráfico que clarifique a informação contida 
+na materialidade.
 
-            /* Limpar os endereços de email */
-            destino1 = compress(strip(destino), "'"" ");
-            destino2 = compress(strip(destino_cc), "'"" ");
-            destino3 = compress(strip(destino_cco), "'"" ");
-            assunto = "quero que vc ... : " || strip(titulo) || ".";
+Priorize as informações de maior relevância e limite, sempre que possível, a quatro, os itens em 
+cada Ponto apresentado.
 
-            /* Depuração: imprimir valores no log */
-            put 'DEBUG: destino1="' destino1 +(-1) '"';
-            put 'DEBUG: destino2="' destino2 +(-1) '"';
-            put 'DEBUG: destino3="' destino3 +(-1) '"';
-            put 'DEBUG: assunto="' assunto +(-1) '"';
-
-            /* Configurar o arquivo de email */
-            file newEmail
-                from  = "audit.mefis@bb.com.br"
-                content_type = "text/html";
-
-            /* Especificar destinatários e assunto */
-            put '!EM_TO!' destino1;
-            put '!EM_CC!' destino2;
-            put '!EM_BCC!' destino3;
-            put '!EM_SUBJECT!' assunto;
-
-            /* Escrever o corpo do email */
-            put mensagem_html;
-
-            /* Enviar o email e iniciar um novo, se não for o último */
-            put '!EM_SEND!';
-            if not FINAL then
-                put '!EM_NEWMSG!';
-            else
-                put '!EM_ABORT!';
-        run;
-
-        /* Limpar a referência ao arquivo */
-        filename newEmail clear;
-    %end;
-%Mend;
-
-%Envia_Email;
+Padronize a redação de valores (R$ 10 mil, R$ 20 mi, R$ 1 bi) e de datas (ex.: março de 2022).
+São consideradas práticas inapropriadas:
+Referência ou crédito a gerências de auditoria.​
+Menção a diretorias, unidades do Banco ou, ainda, a clientes e operações.​
+Reapresentação de destaques já analisados e não aprovados.​
+Reaproveitamento de fatos aprovados em destaques anteriores, sem novas informações relevantes ou ganhos de
+auditoria a acrescentar.​
+Citação de mesmo fato fracionado em vários destaques.​
+Uso de jargões, como as ações de gerenciamento de riscos e controles... ou em trabalho de auditoria foi
+identificado....​
+Basear o conteúdo do destaque em recomendações criticidade C.​
