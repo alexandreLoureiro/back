@@ -1,3 +1,83 @@
+
+
+---
+
+### Código em Python
+
+Abaixo está o código Python ajustado para processar o texto e gerar um único objeto JSON consolidado:
+
+```python
+import openai
+import json
+
+# Configuração da API
+openai.api_key = "SUA_API_KEY"
+
+# Função para análise consolidada de destaques de auditoria
+def analisar_destaque_auditoria_consolidado(texto):
+    prompt = f"""
+    Você é um assistente especializado em auditoria no contexto do Banco do Brasil. Sua tarefa é analisar os destaques de auditoria fornecidos, capturar informações consolidadas relacionadas à materialidade, práticas consideradas inadequadas e informações relevantes para auditoria. Retorne os dados como um único objeto JSON.
+
+    Siga estas instruções ao processar o texto:
+
+    1. Materialidade:
+       - Extraia o valor total consolidado relacionado à materialidade (ex.: "R$ 25,8 bi", "R$ 12.000.000,00").
+       - Explique o significado dos valores identificados de forma consolidada.
+
+    2. Práticas Inadequadas:
+       - Identifique se há menção a práticas consideradas inadequadas, como:
+         - Uso de jargões.
+         - Fracionamento de fatos em múltiplos destaques.
+         - Citação de gerências, diretorias, unidades do banco, clientes ou operações.
+       - Liste todas as práticas inadequadas detectadas em um único campo.
+
+    3. Informações Relevantes:
+       - Resuma as informações relevantes no contexto da auditoria, como:
+         - Quantidade de operações (ex.: "330 mil operações").
+         - Número de processos (ex.: "722 mil processos").
+         - Outros dados relevantes relacionados ao destaque.
+
+    4. Formato de Saída:
+       - Retorne as informações como um único objeto JSON consolidado no seguinte formato:
+       {{
+           "materialidade": {{
+               "valor_total": "R$ 25,8 bi",
+               "descricao": "Consolidado de operações e valores financeiros relacionados à materialidade, incluindo saldo contábil e transações"
+           }},
+           "praticas_inadequadas": [
+               "Uso de jargões",
+               "Fracionamento de fatos em múltiplos destaques"
+           ],
+           "informacoes_relevantes": {{
+               "quantidade_operacoes": "330 mil",
+               "numero_processos": "722 mil",
+               "descricao": "Dados consolidados sobre operações e processos envolvidos no destaque de auditoria"
+           }}
+       }}
+
+    Texto:
+    {texto}
+    """
+    response = openai.Completion.create(
+        engine="text-davinci-003",
+        prompt=prompt,
+        max_tokens=1000,
+        temperature=0
+    )
+    return json.loads(response['choices'][0]['text'])
+
+# Exemplo de texto para análise
+texto = """
+Materialidade: Em fevereiro de 2024, existiam 330 mil operações contratadas nas modalidades FOPAG Covid-19 e PEAC, totalizando um saldo contábil de R$ 25,8 bi. Lucro líquido da rede externa foi de R$ 4,1 bi em 2023. No Banco do Brasil, o valor da PDC constituída é R$ 17,4 bi, envolvendo 722 mil processos. Uso de jargões como 'ações de gerenciamento de riscos e controles...' foi detectado no destaque.
+"""
+
+# Chamar a função para processar o texto
+resultado = analisar_destaque_auditoria_consolidado(texto)
+
+# Exibir o resultado em JSON
+print(json.dumps(resultado, indent=4, ensure_ascii=False))
+
+
 Olá! A materialidade registrada nos destaques de auditoria refere-se à importância ou relevância do fato gerador do destaque.
 Isso pode incluir eventos de risco avaliados, itens do processo vinculados à recomendação, entre outros. 
 É importante que haja coerência entre a materialidade citada no destaque e a materialidade do fato gerador do destaque. 
