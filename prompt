@@ -1,3 +1,60 @@
+conn, engine = postgres()
+
+eng = engine.connect()
+
+query = """
+    SELECT distinct
+    t1.nr_trabalho, t1.nm_trab, t1.obj_trab, t1.justif, 
+    t1.tx_rel_atvd, t2.tx_rel_atvd as tx_rel_atvd_completa, t1.tx_constatacao
+FROM 
+    ptai.com_resultado AS t1
+LEFT JOIN 
+    ptai.com_resultado_tx_completo AS t2 
+ON 
+    t1.cd_atvd = t2.cd_atvd 
+    AND t1.cd_tip_rel_atvd = t2.cd_tip_rel_atvd  
+    AND t1.cd_rel_atvd = t2.cd_rel_atvd 
+WHERE 
+    t1.nr_trabalho in (49699, 49659, 49664, 51471, 46911, 46712, 47777, 49860, 47588) ;
+
+"""
+
+df_temp = pd.read_sql(text(query), eng)
+
+ 484 ) -> DataFrame | Iterator[DataFrame]:
+    485     """
+    486     Read SQL query or database table into a DataFrame.
+    487 
+   (...)
+    597     1           1  2010-11-12
+    598     """
+--> 599     pandas_sql = pandasSQL_builder(con)
+    601     if isinstance(pandas_sql, SQLiteDatabase):
+    602         return pandas_sql.read_query(
+    603             sql,
+    604             index_col=index_col,
+   (...)
+    608             chunksize=chunksize,
+    609         )
+
+File ~/anaconda3/lib/python3.9/site-packages/pandas/io/sql.py:788, in pandasSQL_builder(con, schema, meta, is_cursor)
+    786 con = _engine_builder(con)
+    787 if _is_sqlalchemy_connectable(con):
+--> 788     return SQLDatabase(con, schema=schema, meta=meta)
+    789 elif isinstance(con, str):
+    790     raise ImportError("Using URI string without sqlalchemy installed.")
+
+File ~/anaconda3/lib/python3.9/site-packages/pandas/io/sql.py:1410, in SQLDatabase.__init__(self, engine, schema, meta)
+   1407 if not meta:
+   1408     from sqlalchemy.schema import MetaData
+-> 1410     meta = MetaData(self.connectable, schema=schema)
+   1412 self.meta = meta
+
+TypeError: __init__() got multiple values for argument 'schema'
+
+
+
+
 /usr/local/lib/python3.8/dist-packages/sqlalchemy/engine/base.py in execute(self, statement, parameters, execution_options)
    1414             meth = statement._execute_on_connection
    1415         except AttributeError as err:
