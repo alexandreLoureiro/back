@@ -28,280 +28,55 @@ def postgres(ht="172.16.13.65", db="mefis", **auth):
                                                                                           database=db))
     
     return conn, engine
-    {conf_constatacao}
 
-    **Sua tarefa é:**
 
-    1. **Extrair as seguintes informações do campo 'relatorio':**
-       - **data_relatorio**: a data em que o relatório foi emitido.
-       - **area_resp**: a área responsável mencionada no relatório.
-       - **constatacoes**: as constatações listadas no relatório.
-
-    2. **Comparar as 'constatacoes' com 'conf_constatacao':**
-       - Identificar quais constatações têm uma similaridade superior a 90% com as entradas em 'conf_constatacao'.
-       - Incluir essas constatações correspondentes no campo 'conf_constatacoes'.
-
-    3. **Retornar o resultado no seguinte formato JSON:**
-
-    ```json
-    {{
-      "resultado": [
-        {{
-          "data_relatorio": "data do relatório",
-          "area_resp": "área responsável",
-          "constatacoes": "lista de constatações",
-          "conf_constatacoes": "lista de constatações com similaridade >90%"
-        }}
-      ]
-    }}
-    ```
-    """
-
-
-
-from pdfminer.high_level import extract_text
-import re
-import os
-import pandas as pd
-import tiktoken
-import openai  # Biblioteca para interagir com a API OpenAI
-
-# Configure sua chave de API da OpenAI
-openai.api_key = 'SUA_CHAVE_DE_API_AQUI'
-
-# Função para enviar o prompt para a API GPT
-def enviar_para_gpt(prompt, modelo='gpt-4'):
-    response = openai.ChatCompletion.create(
-        model=modelo,
-        messages=[
-            {"role": "user", "content": prompt}
-        ],
-        max_tokens=1500,  # Ajuste conforme necessário
-        n=1,
-        stop=None,
-        temperature=0.7,
-    )
-    return response['choices'][0]['message']['content']
-
-# Lista de dicionários contendo o caminho do PDF, tipo de arquivo e instituição
-pdf_files = [
-    {'path': '/Users/alexandreloureiro/bb/mefis/estudo_risco.pdf', 'tipo_de_arquivo': 'Relatório técnico', 'instituicao': 'Bacen'},
-    {'path': '/Users/alexandreloureiro/bb/mefis/estrategia.pdf', 'tipo_de_arquivo': 'Relatório técnico', 'instituicao': 'Bacen'},
-    {'path': '/caminho/para/terceiro.pdf', 'tipo_de_arquivo': 'acordao', 'instituicao': 'tcu'},
-    {'path': '/caminho/para/quarto.pdf', 'tipo_de_arquivo': 'acordao', 'instituicao': 'tcu'}
-]
-
-# Definir o modelo e obter o codificador apropriado
-modelo = 'gpt-4'
-try:
-    encoding = tiktoken.encoding_for_model(modelo)
-except KeyError:
-    print(f'Modelo "{modelo}" não encontrado. Usando codificação padrão "cl100k_base".')
-    encoding = tiktoken.get_encoding('cl100k_base')
-
-# Lista para armazenar os dados
-dados = []
-
-for file_info in pdf_files:
-    pdf_path = file_info['path']
-    tipo_de_arquivo = file_info['tipo_de_arquivo']
-    instituicao = file_info['instituicao']
-
-    # Verificar se o arquivo existe
-    if not os.path.isfile(pdf_path):
-        print(f'Arquivo não encontrado: {pdf_path}')
-        continue
-
-    # Obter o nome base do arquivo (sem o caminho completo)
-    base_name = os.path.basename(pdf_path)
-    # Remover a extensão '.pdf' do nome base
-    file_name_no_ext = os.path.splitext(base_name)[0]
-
-    print(f'Processando o arquivo: {pdf_path}')
-    # Extrair todo o texto do PDF
-    texto_completo = extract_text(pdf_path)
-
-    # Remover múltiplas quebras de linha consecutivas
-    texto_limpo = re.sub(r'\n\s*\n+', '\n\n', texto_completo)
-
-    # Remover múltiplos espaços dentro das linhas
-    texto_limpo = re.sub(r'[ ]{2,}', ' ', texto_limpo)
-
-    # Remover espaços em branco no início e no fim das linhas
-    linhas = texto_limpo.split('\n')
-    linhas = [linha.strip() for linha in linhas]
-
-    # Remover linhas completamente vazias
-    linhas = [linha for linha in linhas if linha != '']
-
-    # Reunir as linhas em um único texto
-    texto_final = '\n'.join(linhas)
-
-    # Calcular o número de tokens usando tiktoken
-    tokens = encoding.encode(texto_final)
-    numero_de_tokens = len(tokens)
-
-    # Adicionar os dados à lista
-    dados.append({
-        'path': pdf_path,
-        'filename': base_name,
-        'tipo_de_arquivo': tipo_de_arquivo,
-        'instituicao': instituicao,
-        'extracted_text': texto_final,
-        'numero_de_tokens': numero_de_tokens
-    })
-
-    print(f'Extração concluída para "{pdf_path}". Número de tokens: {numero_de_tokens}\n')
-
-# Criar o dataframe
-df = pd.DataFrame(dados, columns=['path', 'filename', 'tipo_de_arquivo', 'instituicao', 'extracted_text', 'numero_de_tokens'])
-
-# Exibir o dataframe
-print(df)
-
-# Processar cada linha do dataframe com a API GPT
-for index, row in df.iterrows():
-    nome_relatorio = row['filename']
-    tipo_de_arquivo = row['tipo_de_arquivo']
-    instituicao = row['instituicao']
-    relatorio = row['extracted_text']
-
-    # Ajustar o prompt dinamicamente com base no 'tipo_de_arquivo'
-    if tipo_de_arquivo.lower() == 'acordao':
-        prompt = f"""
-Você receberá um acórdão do {instituicao.upper()}.
-
-**Nome do Relatório:** {nome_relatorio}
-
-**Acórdão:**
-{relatorio}
-
-**Sua tarefa é:**
-
-1. **Detectar os riscos envolvidos para o Banco do Brasil.**
-
-2. **Retornar o resultado no seguinte formato JSON:**
-
-```json
-{{
-  "resultado": [
-    {{
-      "nr_oficio": "número do ofício",
-      "responsabilidade BB": "responsabilidade do Banco do Brasil",
-      "risco BB": "risco para o Banco do Brasil"
-    }}
-  ]
-}}
-
-    """
-elif tipo_de_arquivo.lower() == 'relatório técnico':
-    prompt = f"""
-
-    # Envie o prompt para a API do GPT
-    resposta = enviar_para_gpt(prompt)
-
-    # Processar a resposta conforme necessário (por exemplo, adicionar ao dataframe)
-    df.at[index, 'resultado'] = resposta
-
-
-
-# Exemplo de função para criar o prompt
-def criar_prompt(nome_relatorio, tipo_de_arquivo, instituicao, relatorio_texto):
-    if tipo_de_arquivo.lower() == 'acordao':
-        prompt = f"""
-Você receberá um acórdão do {instituicao.upper()} relacionado ao Banco do Brasil.
-
-**Nome do Documento:** {nome_relatorio}
-
-**Acórdão:**
-{relatorio_texto}
-
-**Sua tarefa é analisar o acórdão a partir da perspectiva do Banco do Brasil e fornecer as seguintes informações:**
-
-1. **Identificar os riscos e impactos para o Banco do Brasil:**
-   - Riscos legais, financeiros ou operacionais.
-   - Penalidades ou sanções potenciais.
-
-2. **Detalhar as responsabilidades e obrigações atribuídas ao Banco:**
-   - Obrigações de cumprimento de prazos.
-   - Requisitos para fornecimento de informações ou implementação de medidas.
-
-3. **Listar as recomendações ou determinações que afetam o Banco:**
-   - Como o Banco deve proceder para atender a essas recomendações.
-
-4. **Destacar quaisquer prazos ou cronogramas importantes:**
-   - Datas limites para ações específicas.
-
-5. **Fornecer um resumo executivo dos principais pontos relevantes para o Banco do Brasil.**
-
-**Retorne o resultado no seguinte formato JSON:**
-
-```json
-{{
-  "resultado": {{
-    "riscos_e_impactos": "Descrição dos riscos e impactos.",
-    "responsabilidades_obrigacoes": "Descrição das responsabilidades.",
-    "recomendacoes_determinacoes": "Lista de recomendações.",
-    "prazos_cronogramas": "Descrição dos prazos.",
-    "resumo_executivo": "Resumo dos pontos-chave."
-  }}
-}}
-
-
-
-
-
-def criar_prompt(nome_relatorio, tipo_de_arquivo, instituicao, relatorio_texto):
-    if tipo_de_arquivo.lower() == 'relatório técnico':
-        prompt = f"""
-Você receberá um relatório técnico emitido pelo {instituicao.upper()}, relacionado ao Banco do Brasil.
-
-**Nome do Documento:** {nome_relatorio}
-
-**Relatório Técnico:**
-{relatorio_texto}
-
-**Sua tarefa é analisar o relatório técnico a partir da perspectiva do Banco do Brasil e fornecer as seguintes informações:**
-
-1. **Citações e referências ao Banco do Brasil:**
-   - Liste todas as menções diretas ou indiretas ao Banco.
-   - Contextualize o significado de cada citação.
-
-2. **Responsabilidades e obrigações atribuídas ao Banco:**
-   - Detalhe quaisquer responsabilidades destacadas.
-   - Identifique obrigações legais ou regulatórias.
-
-3. **Recomendações e ações necessárias:**
-   - Liste as ações recomendadas que o Banco deve tomar.
-   - Sugira possíveis medidas para cumprir as recomendações.
-
-4. **Prazos e cronogramas:**
-   - Identifique quaisquer prazos estabelecidos no relatório.
-   - Destaque datas críticas para o cumprimento das obrigações.
-
-5. **Riscos e impactos potenciais:**
-   - Descreva os riscos identificados que podem afetar o Banco.
-   - Analise os impactos financeiros, operacionais ou reputacionais.
-
-6. **Conformidade e regulamentação:**
-   - Avalie questões relacionadas à conformidade com leis e regulamentos.
-   - Indique se há necessidade de ajustes em políticas internas.
-
-7. **Resumo executivo:**
-   - Forneça um resumo dos principais pontos relevantes para o Banco do Brasil.
-
-**Retorne o resultado no seguinte formato JSON:**
-
-```json
-{{
-  "resultado": {{
-    "citacoes_referencias": "Listagem e contextualização das citações.",
-    "responsabilidades_obrigacoes": "Descrição das responsabilidades.",
-    "recomendacoes_acoes": "Lista de recomendações e ações necessárias.",
-    "prazos_cronogramas": "Descrição dos prazos e datas importantes.",
-    "riscos_impactos": "Análise dos riscos e impactos potenciais.",
-    "conformidade_regulamentacao": "Avaliação de conformidade e necessidades regulatórias.",
-    "resumo_executivo": "Resumo dos pontos-chave."
-  }}
-}}
+query = """
+    SELECT distinct
+    t1.nr_trabalho, t1.nm_trab, t1.obj_trab, t1.justif, 
+    t1.tx_rel_atvd, t2.tx_rel_atvd as tx_rel_atvd_completa, t1.tx_constatacao
+FROM 
+    ptai.com_resultado AS t1
+LEFT JOIN 
+    ptai.com_resultado_tx_completo AS t2 
+ON 
+    t1.cd_atvd = t2.cd_atvd 
+    AND t1.cd_tip_rel_atvd = t2.cd_tip_rel_atvd  
+    AND t1.cd_rel_atvd = t2.cd_rel_atvd 
+WHERE 
+    t1.nr_trabalho in (49699, 49659, 49664, 51471, 46911, 46712, 47777, 49860, 47588) ;
+
+"""
+
+df_temp = pd.read_sql(query, engine)
+
+
+   ---------------------------------------------------------------------------
+AttributeError                            Traceback (most recent call last)
+/tmp/ipykernel_700/2782855730.py in <module>
+     16 """
+     17 
+---> 18 df_temp = pd.read_sql(query, engine)
+
+~/.local/lib/python3.8/site-packages/pandas/io/sql.py in read_sql(sql, con, index_col, coerce_float, params, parse_dates, columns, chunksize)
+    588         )
+    589     else:
+--> 590         return pandas_sql.read_query(
+    591             sql,
+    592             index_col=index_col,
+
+~/.local/lib/python3.8/site-packages/pandas/io/sql.py in read_query(self, sql, index_col, coerce_float, parse_dates, params, chunksize, dtype)
+   1558         args = _convert_params(sql, params)
+   1559 
+-> 1560         result = self.execute(*args)
+   1561         columns = result.keys()
+   1562 
+
+~/.local/lib/python3.8/site-packages/pandas/io/sql.py in execute(self, *args, **kwargs)
+   1403     def execute(self, *args, **kwargs):
+   1404         """Simple passthrough to SQLAlchemy connectable"""
+-> 1405         return self.connectable.execution_options().execute(*args, **kwargs)
+   1406 
+   1407     def read_table(
+
+AttributeError: 'OptionEngine' object has no attribute 'execute'
 
