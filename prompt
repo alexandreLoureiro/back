@@ -1,3 +1,6 @@
+pip install --upgrade pandas==1.5.3 SQLAlchemy==1.4.46
+
+
 with engine.connect() as connection:
     df_temp = pd.read_sql_query(query, con=connection)
 
