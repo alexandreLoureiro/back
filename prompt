@@ -1,3 +1,14 @@
+/usr/local/lib/python3.8/dist-packages/sqlalchemy/engine/base.py in execute(self, statement, parameters, execution_options)
+   1414             meth = statement._execute_on_connection
+   1415         except AttributeError as err:
+-> 1416             raise exc.ObjectNotExecutableError(statement) from err
+   1417         else:
+   1418             return meth(
+
+ObjectNotExecutableError: Not an executable object: '\n    SELECT distinct\n    t1.nr_trabalho, t1.nm_trab, t1.obj_trab, t1.justif, \n    t1.tx_rel_atvd, t2.tx_rel_atvd as tx_rel_atvd_completa, t1.tx_constatacao\nFROM \n    ptai.com_resultado AS t1\nLEFT JOIN \n    ptai.com_resultado_tx_completo AS t2 \nON \n    t1.cd_atvd = t2.cd_atvd \n    AND t1.cd_tip_rel_atvd = t2.cd_tip_rel_atvd  \n    AND t1.cd_rel_atvd = t2.cd_rel_atvd \nWHERE \n    t1.nr_trabalho in (49699, 49659, 49664, 51471, 46911, 46712, 47777, 49860, 47588) ;\n\n'
+
+
+
 with engine.connect() as conn:
     df_temp = pd.read_sql(query, conn)
 
