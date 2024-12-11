@@ -1,40 +1,33 @@
-# Ler o arquivo CSV correspondente
-csv_path = os.path.join(os.path.dirname(pdf_path), f'{file_name_no_ext}.csv')
-if os.path.isfile(csv_path):
-    try:
-        df_csv = pd.read_csv(csv_path)
-        if 'constatação' in df_csv.columns:
-            # Concatenar todas as constatações em uma única string
-            constatacoes = ' '.join(df_csv['constatação'].astype(str).tolist())
-        else:
-            print(f'Coluna "constatação" não encontrada em {csv_path}.')
-            constatacoes = ''
-    except Exception as e:
-        print(f'Erro ao ler {csv_path}: {e}')
-        constatacoes = ''
-else:
-    print(f'Arquivo CSV correspondente não encontrado: {csv_path}')
-    constatacoes = ''
 
+def postgres(ht="172.16.13.65", db="mefis", **auth):
+    """
+    Retorna uma conexao com o PostgreSQL.
+    Parâmetros:
+    
+    ht - host (endereço IP ou nome de host onde o banco de dados está hospedado)
+    db - database (nome do banco de dados)
+    auth - parâmetros de autenticação (usr e pw) conforme abaixo. Devem ser informados como parãmetros nomeados.
+        usr - user (nome do usuário para autenticar no banco de dados)
+        pw - password (senha do usuário para conexão)
+    """
+    
+    
+    usr=auth.setdefault('usr', USR_PG_ROOT)
+    pw=auth.setdefault('pw', PWD_PG_ROOT)
+    
 
-
-import pandas as pd
-
-# Supondo que 'df' é o seu dataframe
-for index, row in df.iterrows():
-    nome_relatorio = row['nome_relatorio']
-    relatorio = row['relatorio']
-    conf_constatacao = row['conf_costatacao']
-
-    prompt = f"""
-    Você receberá os seguintes dados de um relatório de auditoria externa:
-
-    **Nome do Relatório:** {nome_relatorio}
-
-    **Relatório:**
-    {relatorio}
-
-    **Conferência de Constatações:**
+    
+    conn = psycopg2.connect(host=ht,
+                            database=db, 
+                            user=usr, 
+                            password=pw)
+    
+    engine = create_engine('postgresql://{user}:{password}@{host}:5432/{database}'.format(user=usr, 
+                                                                                          password=pw, 
+                                                                                          host=ht, 
+                                                                                          database=db))
+    
+    return conn, engine
     {conf_constatacao}
 
     **Sua tarefa é:**
