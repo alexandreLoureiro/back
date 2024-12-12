@@ -1,141 +1,91 @@
-Você é um assistente especializado em análise de destaques de auditoria. Dado um texto que descreve um determinado destaque de auditoria, extraia as seguintes informações e retorne-as em um objeto JSON estruturado conforme o modelo a seguir. Utilize as instruções e regras fornecidas.
-
-Instruções e contexto:
-
-O campo “materialidade” é obrigatório e deve conter a relevância ou importância do fato gerador do destaque.
-Podem existir valores monetários (ex.: R$ 12.000.000,00, R$ 10 mil, R$ 20 mi, R$ 1 bi) ou quantitativos (ex.: 130 mil operações, 3 mil clientes, 5 bilhões de transações) que indicam volume, quantidade ou valor associado ao destaque.
-Devem ser observadas padronizações (por exemplo, usar “R$ 10 mil” no lugar de “R$10.000,00” quando possível, ou converter expressões para um formato coerente).
-É importante detectar se o destaque incorre em práticas inapropriadas, tais como:
-Fazer referência a gerências específicas de auditoria.
-Mencionar diretorias, unidades do Banco, clientes ou operações específicas.
-Reapresentar destaques já analisados e não aprovados, sem novas informações.
-Reutilizar fatos aprovados anteriormente sem ganhos adicionais.
-Fracionar o mesmo fato em vários destaques.
-Usar jargões como “as ações de gerenciamento de riscos e controles...”, “em trabalho de auditoria foi identificado...”.
-Basear o conteúdo do destaque apenas em recomendações de criticidade “C”.
-Caso sejam identificadas práticas inapropriadas, descreva-as no campo específico.
-Se houver imagem da materialidade (gráfico), indicar se a menção existe.
-Priorizar informações mais relevantes. Limitar, quando possível, a quatro itens por ponto.
-Se houver datas, padronizar para o formato mês/ano (ex: março de 2022).
+A aplicação de métodos ágeis em auditoria oferece uma série de benefícios claros, mas também enfrenta resistências que são comuns em processos de mudança
 
 
-{
-  "materialidade": "string obrigatória que descreve a relevância",
-  "valores_identificados": [
-    {
-      "tipo": "monetário ou quantitativo",
-      "valor_original": "string valor original encontrado no texto",
-      "valor_normalizado": "opcional, valor convertido em formato padronizado, se aplicável"
-    }
-  ],
-  "imagem_materialidade": "boolean indicando se há menção a imagem/gráfico",
-  "praticas_inapropriadas": [
-    "lista de práticas inapropriadas identificadas, se houver"
-  ],
-  "outras_informacoes": "string com detalhes adicionais relevantes, se houver"
-}
+
+Benefícios do Uso de Métodos Ágeis em Auditoria (ideal para trabalhos complexos e que envolve integração entre as GA)
+
+                •             Flexibilidade e adaptação: O método ágil permite ajustes no escopo ou nos objetivos do trabalho de auditoria em tempo real, de acordo com descobertas ou prioridades emergentes.
 
 
----
 
-### Código em Python
+                •             Entregas incrementais: Em vez de esperar meses por um relatório final, o método ágil possibilita entregar insights mais rápidos e parciais, que podem ser usados imediatamente pela organização.
 
-Abaixo está o código Python ajustado para processar o texto e gerar um único objeto JSON consolidado:
+                •             Colaboração e comunicação: O trabalho em ciclos curtos promove maior interação entre as partes interessadas (auditores, auditados e gestão), reduzindo ruídos e aumentando o entendimento das expectativas.
 
-```python
-import openai
-import json
-
-# Configuração da API
-openai.api_key = "SUA_API_KEY"
-
-# Função para análise consolidada de destaques de auditoria
-def analisar_destaque_auditoria_consolidado(texto):
-    prompt = f"""
-    Você é um assistente especializado em auditoria no contexto do Banco do Brasil. Sua tarefa é analisar os destaques de auditoria fornecidos, capturar informações consolidadas relacionadas à materialidade, práticas consideradas inadequadas e informações relevantes para auditoria. Retorne os dados como um único objeto JSON.
-
-    Siga estas instruções ao processar o texto:
-
-    1. Materialidade:
-       - Extraia o valor total consolidado relacionado à materialidade (ex.: "R$ 25,8 bi", "R$ 12.000.000,00").
-       - Explique o significado dos valores identificados de forma consolidada.
-
-    2. Práticas Inadequadas:
-       - Identifique se há menção a práticas consideradas inadequadas, como:
-         - Uso de jargões.
-         - Fracionamento de fatos em múltiplos destaques.
-         - Citação de gerências, diretorias, unidades do banco, clientes ou operações.
-       - Liste todas as práticas inadequadas detectadas em um único campo.
-
-    3. Informações Relevantes:
-       - Resuma as informações relevantes no contexto da auditoria, como:
-         - Quantidade de operações (ex.: "330 mil operações").
-         - Número de processos (ex.: "722 mil processos").
-         - Outros dados relevantes relacionados ao destaque.
-
-    4. Formato de Saída:
-       - Retorne as informações como um único objeto JSON consolidado no seguinte formato:
-       {{
-           "materialidade": {{
-               "valor_total": "R$ 25,8 bi",
-               "descricao": "Consolidado de operações e valores financeiros relacionados à materialidade, incluindo saldo contábil e transações"
-           }},
-           "praticas_inadequadas": [
-               "Uso de jargões",
-               "Fracionamento de fatos em múltiplos destaques"
-           ],
-           "informacoes_relevantes": {{
-               "quantidade_operacoes": "330 mil",
-               "numero_processos": "722 mil",
-               "descricao": "Dados consolidados sobre operações e processos envolvidos no destaque de auditoria"
-           }}
-       }}
-
-    Texto:
-    {texto}
-    """
-    response = openai.Completion.create(
-        engine="text-davinci-003",
-        prompt=prompt,
-        max_tokens=1000,
-        temperature=0
-    )
-    return json.loads(response['choices'][0]['text'])
-
-# Exemplo de texto para análise
-texto = """
-Materialidade: Em fevereiro de 2024, existiam 330 mil operações contratadas nas modalidades FOPAG Covid-19 e PEAC, totalizando um saldo contábil de R$ 25,8 bi. Lucro líquido da rede externa foi de R$ 4,1 bi em 2023. No Banco do Brasil, o valor da PDC constituída é R$ 17,4 bi, envolvendo 722 mil processos. Uso de jargões como 'ações de gerenciamento de riscos e controles...' foi detectado no destaque.
-"""
-
-# Chamar a função para processar o texto
-resultado = analisar_destaque_auditoria_consolidado(texto)
-
-# Exibir o resultado em JSON
-print(json.dumps(resultado, indent=4, ensure_ascii=False))
+                •             Foco no valor agregado: As auditorias ágeis tendem a priorizar áreas e processos de maior risco e impacto, alinhando-se aos objetivos estratégicos do banco.
 
 
-Olá! A materialidade registrada nos destaques de auditoria refere-se à importância ou relevância do fato gerador do destaque.
-Isso pode incluir eventos de risco avaliados, itens do processo vinculados à recomendação, entre outros. 
-É importante que haja coerência entre a materialidade citada no destaque e a materialidade do fato gerador do destaque. 
-Além disso, a adequação da materialidade do destaque com a materialidade do processo avaliado deve ser observada na
-elaboração do destaque. Essas informações estão contidas na Instrução.
 
-Campo materialidade: preenchimento obrigatório para destaques de qualquer origem.
+                •             Eficiência e produtividade: Ciclos menores e bem definidos ajudam a manter o foco da equipe, eliminando esforços redundantes ou pouco relevantes.
 
-Campo Imagem da Materialidade: opcional, destina-se a incluir gráfico que clarifique a informação contida 
-na materialidade.
 
-Priorize as informações de maior relevância e limite, sempre que possível, a quatro, os itens em 
-cada Ponto apresentado.
 
-Padronize a redação de valores (R$ 10 mil, R$ 20 mi, R$ 1 bi) e de datas (ex.: março de 2022).
-São consideradas práticas inapropriadas:
-Referência ou crédito a gerências de auditoria.​
-Menção a diretorias, unidades do Banco ou, ainda, a clientes e operações.​
-Reapresentação de destaques já analisados e não aprovados.​
-Reaproveitamento de fatos aprovados em destaques anteriores, sem novas informações relevantes ou ganhos de
-auditoria a acrescentar.​
-Citação de mesmo fato fracionado em vários destaques.​
-Uso de jargões, como as ações de gerenciamento de riscos e controles... ou em trabalho de auditoria foi
-identificado....​
-Basear o conteúdo do destaque em recomendações criticidade C.​
+Alinhamento Estratégico: objetivos do ECBB (Estrutura de Controles Corporativos do BB) e às tendências de transformação digital:
+
+
+
+                •             A agilidade é essencial em um cenário bancário dinâmico, com mudanças constantes no mercado e regulações.
+
+
+
+                •             Ágil permite atender com mais eficiência às demandas regulatórias e mitigar riscos emergentes, como cibersegurança e compliance.
+
+
+
+
+
+Avaliação proporcional trabalhos com uso de métodos ágeis e convencional (trabalho com ao menos uma recomendação emitida)
+
+
+
+1. Notas Executivas Maiores e Mais Destaques
+
+O fato de os trabalhos conduzidos com método ágil terem, proporcionalmente, notas mais altas do executivo e mais destaques é um forte indicativo de valor percebido. Isso sugere que as entregas são mais relevantes, bem comunicadas e úteis para a alta gestão. 
+
+                •             Melhores avaliações refletem maior satisfação do cliente interno.
+
+
+
+                •             Um ambiente regulado e competitivo, qualidade e relevância da auditoria aumentam a segurança e a confiança na tomada de decisão da alta administração.
+
+
+
+2. Menor Quantidade de Recomendações, porém Mais Qualificadas
+
+Ao constatar que, no método ágil, a quantidade de recomendações emitidas é levemente menor, isso pode indicar que as recomendações são mais apuradas, relevantes e direcionadas. Em vez de gerar um grande volume de pontos a serem corrigidos, o ágil conduz a uma seleção mais criteriosa e assertiva, resultando em menor retrabalho e recomendações mais significativas e de maior impacto.
+
+                •             Trata de “menos auditoria” e sim de “melhor auditoria”.
+
+
+
+                •             Destacar que o foco está na qualidade e não na quantidade, evitando “enchimento” desnecessário de relatórios.
+
+
+
+3. Maior Tempo até a Emissão das Recomendações: Interação e Alinhamento
+
+O fato de levar mais tempo entre o início do trabalho e a emissão da recomendação pode inicialmente parecer uma desvantagem. Entretanto, esta demora é resultado de maior interação entre as áreas envolvidas e maior rigor na elaboração das recomendações. Isso reduz a probabilidade de recomendações não acatadas, contestadas ou descontextualizadas.
+
+                •             Tempo investido na interação antes de emitir uma recomendação leva a mais alinhamento, compreensão mútua e
+
+aceitação por parte da área auditada.
+
+
+
+                •             Evitar “surpresas de última hora” — o auditado já está ciente, preparado e, muitas vezes, já começa a implementar
+
+melhorias antes mesmo da emissão formal da recomendação.
+
+
+
+4. Ausência de Recomendações Surpresa 
+
+A ausência de recomendações “surpresa” é um sinal de maturidade no processo ágil. Isso indica que o diálogo contínuo mitiga riscos de choque ao final e promove um clima de confiança. Quando a recomendação chega, ela não é um “balde de água fria”, mas sim um passo natural em um processo já consolidado de comunicação e melhoria.
+
+                •             Aumenta a taxa de aceitação e a eficácia da implementação das recomendações, contribuindo para que as melhorias
+
+sejam efetivamente adotadas pela organização.
+
+
+
+                •             Destaque que a ausência de surpresas tende a reduzir a resistência, diminuir custos de remediação e reforçar o relacionamento entre auditoria e áreas auditadas.
