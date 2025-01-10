@@ -1,52 +1,224 @@
-**Aviso Importante**
+<p-toast></p-toast>
 
-- **Frequência de Envio**: Um e-mail será enviado **uma vez por mês**.
-- **Data de Envio**: O envio ocorrerá **após o dia 20** de cada mês.
-- **Dias de Envio**: Os e-mails serão enviados **apenas em dias úteis** (de segunda a sexta-feira).
-- **Envio Único Mensal**: Garantimos que **apenas um e-mail** será enviado nesse período, evitando mensagens duplicadas.
+<div class="dropdown-container">
+  <p-dropdown
+    [options]="trabalhos"
+    [(ngModel)]="selectedTrabalho"
+    placeholder="Selecione um trabalho"
+    [filter]="true"
+    filterPlaceholder="Pesquisar trabalho"
+    [showClear]="true"
+    (onChange)="onTrabalhoChange($event.value)"
+  ></p-dropdown>
+</div>
 
+<div class="chat-container">
+  <!-- Área de mensagens -->
+  <div class="messages" #messageContainer>
+    <div
+      *ngFor="let msg of messages"
+      [ngClass]="{
+        'user-message': msg.role === 'user',
+        'assistant-message': msg.role === 'assistant'
+      }"
+    >
+      <p-card styleClass="message-card" [style]="{ 'margin-bottom': '1rem' }">
+        <ng-container>
+          <span *ngIf="msg.role === 'user'">
+            <i class="pi pi-user" style="margin-right: .5rem;"></i>
+            Você:
+          </span>
+          <span *ngIf="msg.role === 'assistant'">
+            <i class="pi pi-android" style="margin-right: .5rem;"></i>
+            Assistente:
+          </span>
+          <br />
+          <span>{{ msg.content }}</span>
+        </ng-container>
+      </p-card>
+    </div>
+  </div>
 
+  <!-- Indicador de carregamento enquanto espera resposta -->
+  <div class="loading-indicator" *ngIf="loading">
+    <p-progressSpinner></p-progressSpinner>
+    <span style="margin-left: 8px;">Aguardando resposta...</span>
+  </div>
 
+  <!-- Barra de input e botão de enviar -->
+  <div class="input-bar">
+    <textarea
+      #textarea
+      [(ngModel)]="userMessage"
+      placeholder="Digite sua mensagem..."
+      (input)="adjustTextArea($event)"
+      (keydown)="handleEnterKey($event)"
+      [disabled]="!selectedTrabalho"
+      rows="1"
+      class="chat-textarea"
+    ></textarea>
 
+    <div class="input-action">
+      <i
+        class="pi pi-send"
+        (click)="sendMessage()"
+        [ngClass]="{ 'disabled': !selectedTrabalho || userMessage.trim().length === 0 || loading }"
+      ></i>
+    </div>
+  </div>
+</div>
+import { Component } from '@angular/core';
+import { MessageService } from 'primeng/api';
 
-%let data_hoje = %sysfunc(putn(%sysfunc(today()), date7.));
+@Component({
+  selector: 'app-chat',
+  templateUrl: './chat.component.html',
+  styleUrls: ['./chat.component.css'],
+  providers: [MessageService], // Adicione o serviço como provedor
+})
+export class ChatComponent {
+  // Suas variáveis existentes
+  sessionId = '12345';
+  userMessage = '';
+  selectedTrabalho: number | null = null;
+  loading = false;
 
-%let dia_atual = %sysfunc(day(%sysfunc(today())));
-%let mes_atual = %sysfunc(month(%sysfunc(today())));
-%let ano_atual = %sysfunc(year(%sysfunc(today())));
-%let dia_semana = %sysfunc(weekday(%sysfunc(today())));
+  constructor(private messageService: MessageService) {}
 
-data _null_;
-    set dados.data_envio_email;
-    format ultimo_envio date7.;
-    where month(ultimo_envio) = &mes_atual and year(ultimo_envio) = &ano_atual;
-    call symputx('data_envio', put(ultimo_envio, date7.));
-run;
+  // Método para exibir notificações
+  showNotification(severity: string, summary: string, detail: string) {
+    this.messageService.add({ severity, summary, detail });
+  }
 
-%put data ultimo envio &data_envio;
+  // Exemplo de uso no método sendMessage
+  sendMessage(): void {
+    const trimmedMessage = this.userMessage.trim();
 
-%let data_envio_num = %sysfunc(inputn(&data_envio., date7.));
-%let dia_envio = %sysfunc(day(&data_envio_num));
-%let mes_envio = %sysfunc(month(&data_envio_num));
-%let ano_envio = %sysfunc(year(&data_envio_num));
+    if (!this.selectedTrabalho) {
+      this.showNotification('warn', 'Atenção', 'Selecione um trabalho antes de enviar uma mensagem.');
+      return;
+    }
 
-%macro verificar_envio;
-    %if %eval(&dia_atual > 20) and %eval(%index(1 7, &dia_semana) = 0) %then %do;
-        %if %symexist(data_envio) and &dia_envio > 20 and &mes_envio = &mes_atual and &ano_envio = &ano_atual %then %do;
-            %put Já existe um envio registrado após o dia 20 deste mês;
-        %end;
-        %else %do;
-            %include "&PATH./controle_email.sas";
-            proc sql; 
-                insert into dados.data_envio_email (ultimo_envio) 
-                values ("&data_hoje."d); 
-            quit;
-        %end;
-    %end;
-    %else %do;
-        %put O dia atual é inferior ou igual ao dia 20 ou não é um dia útil. O script não será executado.;
-    %end;
-%mend verificar_envio;
+    if (!trimmedMessage) {
+      this.showNotification('warn', 'Atenção', 'Digite uma mensagem antes de enviar.');
+      return;
+    }
 
-%verificar_envio;
+    this.loading = true;
+    this.showNotification('info', 'Enviando', 'Sua mensagem está sendo processada.');
 
+    // Simulação de envio (substitua pelo seu serviço real)
+    setTimeout(() => {
+      this.showNotification('success', 'Sucesso', 'Mensagem enviada com sucesso.');
+      this.loading = false;
+      this.userMessage = '';
+    }, 2000);
+  }
+}
+onTrabalhoChange(nr_trabalho: number): void {
+  console.log(`Trabalho selecionado: ${nr_trabalho}`);
+
+  this.service.getTrabalhoDetails(nr_trabalho).subscribe({
+    next: (response) => {
+      console.log('Detalhes do trabalho:', response[0]);
+      this.showNotification('info', 'Trabalho Selecionado', `Trabalho ${nr_trabalho} carregado com sucesso.`);
+
+      this.service.resetSession(this.sessionId).subscribe({
+        next: () => {
+          console.log('Sessão resetada com sucesso.');
+          this.showNotification('info', 'Sessão Resetada', 'Sessão foi resetada.');
+
+          this.service.sendMessage(
+            this.sessionId,
+            '',
+            response[0].role_user,
+            response[0].role_assistant
+          ).subscribe({
+            next: () => {
+              this.showNotification('success', 'Sessão Inicializada', 'Pronto para interagir.');
+            },
+            error: (err) => {
+              this.showNotification('error', 'Erro', 'Erro ao inicializar sessão.');
+              console.error(err);
+            },
+          });
+        },
+        error: (err) => {
+          this.showNotification('error', 'Erro', 'Erro ao resetar a sessão.');
+          console.error(err);
+        },
+      });
+    },
+    error: (err) => {
+      this.showNotification('error', 'Erro', 'Erro ao carregar detalhes do trabalho.');
+      console.error(err);
+    },
+  });
+}
+sendMessage(): void {
+  const trimmedMessage = this.userMessage.trim();
+
+  if (!this.selectedTrabalho) {
+    this.showNotification('warn', 'Atenção', 'Selecione um trabalho antes de enviar uma mensagem.');
+    return;
+  }
+
+  if (!trimmedMessage) {
+    this.showNotification('warn', 'Atenção', 'Digite uma mensagem antes de enviar.');
+    return;
+  }
+
+  // Adiciona a mensagem do usuário ao histórico
+  this.messages.push({ role: 'user', content: trimmedMessage });
+
+  // Limpa o campo de input e redefine a altura da textarea
+  this.userMessage = '';
+  this.resetTextAreaHeight(); // Garante que o textarea volte para a altura padrão
+
+  this.loading = true;
+  this.showNotification('info', 'Enviando', 'Sua mensagem está sendo processada.');
+
+  // Chama o serviço para enviar a mensagem ao backend
+  this.service.sendMessage(this.sessionId, trimmedMessage).subscribe({
+    next: (response) => {
+      // Adiciona a resposta do assistente ao histórico
+      this.messages.push({ role: 'assistant', content: response.answer });
+      this.loading = false;
+
+      this.showNotification('success', 'Sucesso', 'Mensagem enviada com sucesso.');
+      this.scrollToBottom();
+    },
+    error: (err) => {
+      console.error('Erro ao processar mensagem:', err);
+      this.loading = false;
+
+      // Exibe uma mensagem de erro para o usuário
+      this.showNotification('error', 'Erro', 'Erro ao processar sua mensagem. Por favor, tente novamente mais tarde.');
+
+      // Adiciona uma mensagem de erro ao histórico
+      this.messages.push({
+        role: 'assistant',
+        content: 'Erro ao processar sua mensagem. Por favor, tente novamente mais tarde.',
+      });
+
+      this.scrollToBottom();
+    },
+  });
+}
+Serviço de Notificação
+Crie o método showNotification para reutilizar facilmente notificações no componente:
+
+showNotification(severity: string, summary: string, detail: string): void {
+  this.messageService.add({ severity, summary, detail });
+}
+
+Alteração no Template
+Certifique-se de que o componente <p-toast> esteja presente no template HTML:
+
+html
+Copiar código
+
+<p-toast></p-toast>
+<div class="chat-container">
+  <!-- Restante do código do chat -->
+</div>
