@@ -53,3 +53,61 @@ def chat_endpoint(req: ChatRequest):
 
     # Retorna a resposta em JSON
     return {"answer": answer_text}
+
+
+def assistentLLM(prompt: str, servico: str) -> str:
+    """
+    Faz uma chamada ao serviço LLM da empresa.
+
+    Args:
+        prompt (str): Entrada do usuário.
+        servico (str): URL do serviço LLM.
+
+    Returns:
+        str: Resposta gerada pelo modelo LLM.
+    """
+    try:
+        # Configuração do payload
+        payload = {
+            "data": {
+                "input": prompt,
+                "intents": [{}],
+                "entities": [{}],
+                "context": {
+                    "config": {
+                        "top_p": 0.95,
+                        "max_tokens": 4000,
+                        "temperature": 0.2
+                    }
+                }
+            }
+        }
+
+        # Chamada à API do serviço
+        response = requests.post(
+            servico,
+            data=json.dumps(payload),
+            headers={'Content-type': 'application/json', 'accept': 'application/json'}
+        )
+        response.raise_for_status()  # Levanta exceção para erros HTTP (4xx, 5xx)
+
+        # Parse da resposta
+        resp_dict = response.json()
+
+        # Extração do status
+        status = resp_dict.get('status')
+        if status != "success":
+            print(f"Erro na resposta da LLM: {status}")
+            raise ValueError("Erro na geração da resposta pelo modelo.")
+
+        # Extração do texto de resposta
+        texto_resposta = resp_dict["data"]["context"]["prompt_response"]["acs_llm_prompt_execution"]["result"]
+        return texto_resposta
+
+    except requests.exceptions.HTTPError as http_err:
+        print(f"Erro HTTP na chamada ao serviço LLM: {http_err}")
+        raise  # Relança o erro para ser tratado no endpoint
+    except Exception as e:
+        print(f"Erro na chamada ao serviço LLM: {e}")
+        raise  # Relança o erro para ser tratado no endpoint
+
