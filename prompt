@@ -1,84 +1,55 @@
-A aplicação de métodos ágeis em auditoria, especialmente em uma organização como o Banco do Brasil, oferece uma série de benefícios claros, mas também enfrenta resistências que são comuns em processos de mudança. Aqui estão alguns pontos importantes para abordar a questão e ajudar a convencer as gerências sobre a importância do método:
+@router.post("/apiptai/chat")
+def chat_endpoint(req: ChatRequest):
+    """
+    Endpoint para receber a mensagem do usuário e devolver a resposta da IA.
+    """
+    session_id = req.sessionId
+    user_message = req.userMessage.strip()  # Remove espaços em branco
+    role_user = req.roleUser
+    role_assistant = req.roleAssistant
 
-1. Benefícios do Uso de Métodos Ágeis em Auditoria
-	•	Flexibilidade e adaptação: O método ágil permite ajustes no escopo ou nos objetivos do trabalho de auditoria em tempo real, de acordo com descobertas ou prioridades emergentes.
-	•	Entregas incrementais: Em vez de esperar meses por um relatório final, o método ágil possibilita entregar insights mais rápidos e parciais, que podem ser usados imediatamente pela organização.
-	•	Colaboração e comunicação: O trabalho em ciclos curtos promove maior interação entre as partes interessadas (auditores, auditados e gestão), reduzindo ruídos e aumentando o entendimento das expectativas.
-	•	Foco no valor agregado: As auditorias ágeis tendem a priorizar áreas e processos de maior risco e impacto, alinhando-se aos objetivos estratégicos do banco.
-	•	Eficiência e produtividade: Ciclos menores e bem definidos ajudam a manter o foco da equipe, eliminando esforços redundantes ou pouco relevantes.
+    # Verificar se os campos obrigatórios estão presentes
+    if not session_id:
+        return {"error": "Session ID is required"}
+    if user_message == "" and (not role_user or not role_assistant):
+        return {"error": "User message or initial context (roleUser and roleAssistant) is required"}
 
-2. Como Convencer as Gerências que Resistentes?
+    # Inicializa a sessão se não existir
+    if session_id not in sessions:
+        sessions[session_id] = []
+        print("Sessão inicializada")
 
-a) Foco em Dados e Resultados
+    # Adiciona o contexto inicial à sessão, se fornecido
+    if role_user and role_assistant and len(sessions[session_id]) == 0:
+        print("Adicionando contexto inicial à sessão")
+        sessions[session_id].append({"role": "assistant", "content": role_assistant})
+        sessions[session_id].append({"role": "user", "content": role_user})
 
-Mostre resultados concretos de trabalhos realizados com o método ágil:
-	•	Utilize o painel Power BI que você mencionou para comparar as notas e o impacto dos trabalhos feitos com e sem métodos ágeis.
-	•	Destaque, por exemplo, a superioridade percentual de notas 5 no método ágil, evidenciando como ele contribui para maior qualidade percebida.
+    # Adiciona a mensagem do usuário ao histórico, se for válida
+    if user_message:
+        sessions[session_id].append({"role": "user", "content": user_message})
 
-b) Evidencie o Alinhamento Estratégico
+    # Valida o histórico da sessão antes de enviar
+    if len(sessions[session_id]) < 1:
+        return {"error": "Session history is empty or invalid"}
 
-Enfatize como o método ágil se alinha aos objetivos do ECBB (Estrutura de Controles Corporativos do BB) e às tendências de transformação digital:
-	•	A agilidade é essencial em um cenário bancário dinâmico, com mudanças constantes no mercado e regulações.
-	•	Aborde como o ágil permite atender com mais eficiência às demandas regulatórias e mitigar riscos emergentes, como cibersegurança e compliance.
+    # Concatena o histórico da sessão para enviar ao modelo LLM
+    prompt = "\n".join([f"{msg['role']}: {msg['content']}" for msg in sessions[session_id]])
 
-c) Use Casos de Sucesso
-	•	Traga exemplos de outras áreas ou empresas bancárias que adotaram o método ágil, mostrando ganhos em eficiência, colaboração e rapidez na entrega de valor.
-	•	Compare essas histórias de sucesso com a realidade atual da gerência, destacando onde o método ágil pode preencher lacunas.
+    # Faz a chamada para o modelo usando a API LLM da empresa
+    try:
+        answer_text = assistentLLM(prompt, servico="URL_DA_API_LLM")
+    except requests.exceptions.HTTPError as http_err:
+        # Tratar erro HTTP (como 500)
+        print(f"Erro HTTP na chamada ao serviço LLM: {http_err}")
+        return {"error": "Erro interno no servidor. Por favor, tente novamente mais tarde."}
+    except Exception as e:
+        # Tratar outros erros
+        print(f"Erro ao processar resposta da LLM: {e}")
+        return {"error": "Erro ao acessar o serviço de IA. Por favor, tente novamente mais tarde."}
 
-d) Mitigue Preocupações e Resistências
+    # Armazena a resposta do assistente no histórico
+    sessions[session_id].append({"role": "assistant", "content": answer_text})
 
-As resistências geralmente vêm de:
-	•	Medo do desconhecido: Promova workshops ou treinamentos para desmistificar o método.
-	•	Preocupações com controle: Explique que o ágil mantém a qualidade e a estrutura da auditoria tradicional, mas com mais interação e entregas incrementais.
-	•	Falta de confiança no método: Faça um piloto controlado em uma auditoria de menor escopo para demonstrar os resultados na prática.
-
-3. Reforce a Importância da Cultura Data-Driven
-	•	Explique que o método ágil está conectado à necessidade de decisões rápidas e orientadas por dados.
-	•	Use o PlanejAI como exemplo de como tecnologias inovadoras podem complementar métodos ágeis, ajudando a priorizar riscos e processos com base em inteligência de dados.
-
-4. Envolvimento e Apoio dos Líderes
-	•	Envolva as lideranças no processo de transição para o ágil, mostrando como isso pode fortalecer a imagem da gerência como inovadora e alinhada às melhores práticas de auditoria.
-	•	Conecte o método aos objetivos estratégicos do BB, como melhorar a experiência do cliente interno e externo.
-
-Com dados claros, exemplos concretos e um plano para mitigar resistências, a transição para métodos ágeis em auditoria tem potencial para ser aceita e até abraçada pelas gerências mais resistentes.
-
-
-
-A análise dos resultados que vocês obtiveram traz evidências importantes e valiosas para reforçar a eficácia do método ágil em auditoria. Ao apresentar esses achados para a gestão, é fundamental traduzir os números e indicadores em melhorias de qualidade, engajamento e valor estratégico para a organização. Vejamos alguns pontos-chave:
-
-1. Notas Executivas Maiores e Mais Destaques
-
-O fato de os trabalhos conduzidos com método ágil terem, proporcionalmente, notas mais altas do executivo e mais destaques é um forte indicativo de valor percebido. Isso sugere que as entregas são mais relevantes, bem comunicadas e úteis para a alta gestão. Ao evidenciar isso, vocês mostram que a abordagem ágil não só cumpre o papel básico de auditoria, mas agrega valor estratégico.
-
-Como reforçar:
-	•	Destacar que as melhores avaliações refletem maior satisfação do cliente interno.
-	•	Explicar que, em um ambiente regulado e competitivo como o bancário, qualidade e relevância da auditoria aumentam a segurança e a confiança na tomada de decisão da alta administração.
-
-2. Menor Quantidade de Recomendações, porém Mais Qualificadas
-
-Ao constatar que, no método ágil, a quantidade de recomendações emitidas é levemente menor, isso pode indicar que as recomendações são mais apuradas, relevantes e direcionadas. Em vez de gerar um grande volume de pontos a serem corrigidos, o ágil conduz a uma seleção mais criteriosa e assertiva, resultando em menor retrabalho e recomendações mais significativas e de maior impacto.
-
-Como reforçar:
-	•	Mostrar que não se trata de “menos auditoria” e sim de “melhor auditoria”.
-	•	Destacar que o foco está na qualidade e não na quantidade, evitando “enchimento” desnecessário de relatórios.
-
-3. Maior Tempo até a Emissão das Recomendações: Interação e Alinhamento
-
-O fato de levar mais tempo entre o início do trabalho e a emissão da recomendação pode inicialmente parecer uma desvantagem. Entretanto, esta demora é resultado de maior interação entre as áreas envolvidas e maior rigor na elaboração das recomendações. Isso reduz a probabilidade de recomendações não acatadas, contestadas ou descontextualizadas.
-
-Como reforçar:
-	•	Explicar que o tempo investido na interação antes de emitir uma recomendação leva a mais alinhamento, compreensão mútua e aceitação por parte da área auditada.
-	•	Ressaltar que isso evita “surpresas de última hora” — o auditado já está ciente, preparado e, muitas vezes, já começa a implementar melhorias antes mesmo da emissão formal da recomendação.
-
-4. Ausência de Recomendações Surpresa
-
-A ausência de recomendações “surpresa” é um sinal de maturidade no processo ágil. Isso indica que o diálogo contínuo mitiga riscos de choque ao final e promove um clima de confiança. Quando a recomendação chega, ela não é um “balde de água fria”, mas sim um passo natural em um processo já consolidado de comunicação e melhoria.
-
-Como reforçar:
-	•	Mostrar que isso aumenta a taxa de aceitação e a eficácia da implementação das recomendações, contribuindo para que as melhorias sejam efetivamente adotadas pela organização.
-	•	Destaque que a ausência de surpresas tende a reduzir a resistência, diminuir custos de remediação e reforçar o relacionamento entre auditoria e áreas auditadas.
-
-Em suma, os dados obtidos não só mostram que a abordagem ágil se traduz em melhores notas e destaques, como também sugerem uma maior qualidade das recomendações e um relacionamento mais colaborativo com as áreas auditadas. Esses pontos são essenciais para convencer a gestão resistente, pois evidenciam que o método ágil não se trata apenas de um modismo, mas sim de uma evolução na forma de conduzir auditorias, trazendo resultados mais robustos, eficazes e alinhados às necessidades estratégicas do Banco do Brasil.
-
-
-
+    # Retorna a resposta em JSON
+    return {"answer": answer_text}
