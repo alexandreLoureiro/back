@@ -219,3 +219,42 @@ Certifique-se de que o componente <p-toast> esteja presente no template HTML:
 <div class="chat-container">
   <!-- Restante do código do chat -->
 </div>
+
+sendMessage(sessionId: string, userMessage: string, roleUser?: string, roleAssistant?: string): Observable<any> {
+  const body = {
+    sessionId,
+    userMessage,
+    roleUser,
+    roleAssistant,
+  };
+  console.log('Enviando para o backend: ', body);
+
+  return this.http.post<any>(`${this.API_ptai}/chat`, body).pipe(
+    catchError((error: HttpErrorResponse) => {
+      // Tratamento de erros
+      let errorMessage = 'Erro desconhecido. Por favor, tente novamente mais tarde.';
+
+      if (error.error instanceof ErrorEvent) {
+        // Erro do lado do cliente
+        errorMessage = `Erro do cliente: ${error.error.message}`;
+      } else {
+        // Erro do lado do servidor
+        switch (error.status) {
+          case 400:
+            errorMessage = 'Requisição inválida. Verifique os dados enviados.';
+            break;
+          case 500:
+            errorMessage = 'Erro interno no servidor. Por favor, tente novamente mais tarde.';
+            break;
+          default:
+            errorMessage = `Erro (${error.status}): ${error.message}`;
+        }
+      }
+
+      console.error(`Erro na chamada ao backend:`, error);
+      // Lança o erro para ser tratado no componente
+      return throwError(() => new Error(errorMessage));
+    })
+  );
+}
+
