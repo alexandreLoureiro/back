@@ -215,9 +215,6 @@ showNotification(severity: string, summary: string, detail: string): void {
 Alteração no Template
 Certifique-se de que o componente <p-toast> esteja presente no template HTML:
 
-html
-Copiar código
-
 <p-toast></p-toast>
 <div class="chat-container">
   <!-- Restante do código do chat -->
