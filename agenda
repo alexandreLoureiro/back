@@ -1,17 +1,44 @@
-GET https://mefis.bb.com.br/styles-5INURTSO.css net::ERR_ABORTED 404 (Not Found)Understand this errorAI
-chat/:1 Access to script at 'https://login.intranet.bb.com.br/sso/UI/Login?realm=bb&goto=https%3A%2F%2Fauditgerencial.intranet.bb.com.br%3A443%2Fagent%2Fcustom-login-response%3Fstate%3DmU4WBDFN2ezt2RJ8ZByR_zfGIRQ%26realm%3Dbb&original_request_url=https%3A%2F%2Fauditgerencial.intranet.bb.com.br%3A443%2Fmain-WLFD2VR2.js' (redirected from 'https://mefis.bb.com.br/main-WLFD2VR2.js') from origin 'https://mefis.bb.com.br' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.Understand this errorAI
-chat/:10 
-        
-        
-       GET https://login.intranet.bb.com.br/sso/UI/Login?realm=bb&goto=https%3A%2F%2Fauditgerencial.intranet.bb.com.br%3A443%2Fagent%2Fcustom-login-response%3Fstate%3DmU4WBDFN2ezt2RJ8ZByR_zfGIRQ%26realm%3Dbb&original_request_url=https%3A%2F%2Fauditgerencial.intranet.bb.com.br%3A443%2Fmain-WLFD2VR2.js net::ERR_FAILED 302 (Found)Understand this errorAI
-chat/:1 Access to script at 'https://login.intranet.bb.com.br/sso/UI/Login?realm=bb&goto=https%3A%2F%2Fauditgerencial.intranet.bb.com.br%3A443%2Fagent%2Fcustom-login-response%3Fstate%3DAWZhRP1n2xyTUn3yUDmXZaB3B28%26realm%3Dbb&original_request_url=https%3A%2F%2Fauditgerencial.intranet.bb.com.br%3A443%2Fpolyfills-FFHMD2TL.js' (redirected from 'https://mefis.bb.com.br/polyfills-FFHMD2TL.js') from origin 'https://mefis.bb.com.br' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.Understand this errorAI
-chat/:10 
-        
-        
-       GET https://login.intranet.bb.com.br/sso/UI/Login?realm=bb&goto=https%3A%2F%2Fauditgerencial.intranet.bb.com.br%3A443%2Fagent%2Fcustom-login-response%3Fstate%3DAWZhRP1n2xyTUn3yUDmXZaB3B28%26realm%3Dbb&original_request_url=https%3A%2F%2Fauditgerencial.intranet.bb.com.br%3A443%2Fpolyfills-FFHMD2TL.js net::ERR_FAILED 302 (Found)Understand this errorAI
-chat/:1 Access to script at 'https://login.intranet.bb.com.br/sso/UI/Login?realm=bb&goto=https%3A%2F%2Fauditgerencial.intranet.bb.com.br%3A443%2Fagent%2Fcustom-login-response%3Fstate%3DqSHGjl8b6rPE0l7PedvTs08-srw%26realm%3Dbb&original_request_url=https%3A%2F%2Fauditgerencial.intranet.bb.com.br%3A443%2Fchunk-4NE2KPPW.js' (redirected from 'https://mefis.bb.com.br/chunk-4NE2KPPW.js') from origin 'https://mefis.bb.com.br' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.Understand this errorAI
-chat/:10 
-        
-        
-       GET https://login.intranet.bb.com.br/sso/UI/Login?realm=bb&goto=https%3A%2F%2Fauditgerencial.intranet.bb.com.br%3A443%2Fagent%2Fcustom-login-response%3Fstate%3DqSHGjl8b6rPE0l7PedvTs08-srw%26realm%3Dbb&original_request_url=https%3A%2F%2Fauditgerencial.intranet.bb.com.br%3A443%2Fchunk-4NE2KPPW.js net::ERR_FAILED 302 (Found)Understand this errorAI
+server {
+  listen 443 ssl;
 
+  server_name mefis.bb.com.br;
+
+  client_max_body_size 100M;
+
+
+  ssl_certificate /root/certificados/gamefis.pem;
+  ssl_certificate_key /root/certificados/gamefis-rsa.key;
+
+  access_log /var/log/nginx/access.log;
+  error_log /var/log/nginx/error.log;
+  error_page 500 502 503 504 /50x.html;
+  #add_header Access-Control-Allow-Origin *;
+
+  #server_tokens off;
+    location /50x.html {
+        root   /usr/share/nginx/php;
+        internal;
+    } 
+
+
+     
+
+    location /anaylitcs {
+        alias   /usr/share/nginx/html/angular;
+        index  index.html index.htm;
+    }
+
+    location /planejai {
+        alias   /usr/share/nginx/html/planejai;
+        index  index.html index.htm;
+    }
+
+    location /destaque {
+        alias   /usr/share/nginx/html/destaque;
+        index  index.html index.htm;
+
+        # Adicione os cabe�alhos CORS
+        add_header 'Access-Control-Allow-Origin' '*';
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+        add_header 'Access-Control-Allow-Headers' 'Origin, Content-Type, Accept, Authorization';
+    }
