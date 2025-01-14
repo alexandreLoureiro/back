@@ -1,3 +1,41 @@
+import { inject } from '@angular/core';
+import { CanActivateFn, Router } from '@angular/router';
+import { ServicoLLMService } from './servico-llm.service';
+import { Observable, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
+
+export const authGuard: CanActivateFn = (route, state) => {
+  const service = inject(ServicoLLMService);
+  const router = inject(Router);
+
+  // Rota atual em que o usuário tentou entrar
+  const goto = state.url; 
+
+  return service.getauthrestfunci(goto).pipe(
+    map((response) => {
+      if (response && response.user) {
+        // Backend retornou { user: ... } => usuário autenticado
+        console.log('Usuário autenticado:', response.user);
+        return true; // Libera a rota
+      } else if (response && response.redirectUrl) {
+        // Backend retornou { redirectUrl: ... } => deve redirecionar
+        console.warn('Usuário não autenticado. Redirecionando para:', response.redirectUrl);
+        // Redireciona o navegador para a URL informada
+        window.location.href = response.redirectUrl;
+        return false; // Bloqueia a rota
+      } else {
+        // Nem user nem redirectUrl => Bloqueia sem redirecionar
+        console.warn('Usuário não autenticado e sem redirectUrl. Bloqueando acesso.');
+        return false;
+      }
+    }),
+    catchError((error) => {
+      console.error('Erro ao autenticar:', error);
+      // Em caso de erro, bloqueia o acesso
+      return of(false);
+    })
+  );
+};
 Para que o modelo de LLM considere apenas os casos em que o auditor explicitamente deixou claro que os achados foram regularizados durante o trabalho, e ainda analise as principais constatações para confirmar a regularização, o prompt pode ser formulado de forma mais específica. Veja uma sugestão de prompt aprimorado:
 
 “Analise o seguinte relatório de auditoria e identifique exclusivamente os achados que foram explicitamente declarados como regularizados pelo auditor durante o trabalho. Em seguida, revise as principais constatações para verificar a consistência dessa informação e confirme se os achados realmente foram resolvidos, evitando qualquer ambiguidade com achados não resolvidos. Liste apenas os achados que foram claramente regularizados, detalhando as ações corretivas e o impacto da regularização.”
