@@ -1,3 +1,44 @@
+
+server {
+    listen 80;
+    server_name mefis.bb.com.br;
+    
+    # Ajuste este caminho para o diretório correto onde estão seus arquivos
+    root /var/www/html/mefis;
+    
+    # Importante: isso ajuda com as rotas do Angular
+    index index.html;
+    
+    # Configuração para servir arquivos estáticos
+    location / {
+        try_files $uri $uri/ /index.html;
+        # Adicione os headers de cache
+        add_header Cache-Control "no-cache, must-revalidate";
+    }
+
+    # Headers CORS para permitir chamadas da API
+    location /api {
+        proxy_pass https://auditgerencial.intranet.bb.com.br;
+        
+        # Headers CORS
+        add_header 'Access-Control-Allow-Origin' 'https://mefis.bb.com.br';
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, PUT, DELETE';
+        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization';
+        add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range';
+        
+        if ($request_method = 'OPTIONS') {
+            add_header 'Access-Control-Max-Age' 1728000;
+            add_header 'Content-Type' 'text/plain charset=UTF-8';
+            add_header 'Content-Length' 0;
+            return 204;
+        }
+        
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
 server {
   listen 443 ssl;
 
