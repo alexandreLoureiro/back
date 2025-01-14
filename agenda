@@ -16,7 +16,8 @@ export const authGuard: CanActivateFn = (route, state) => {
       if (response && response.user) {
         // Backend retornou { user: ... } => usuário autenticado
         console.log('Usuário autenticado:', response.user);
-        return true; // Libera a rota
+
+return true; // Libera a rota
       } else if (response && response.redirectUrl) {
         // Backend retornou { redirectUrl: ... } => deve redirecionar
         console.warn('Usuário não autenticado. Redirecionando para:', response.redirectUrl);
@@ -191,3 +192,38 @@ def gerar_email_phishing(nome_cliente, banco):
 # Exemplo de uso
 email_simulado = gerar_email_phishing("João Silva", "Banco XYZ")
 print(email_simulado)
+
+
+@router.post("/apiptai/authrestfunci/")
+async def authrestfunci(request_body: AuthRequest, request: Request):
+    goto = request_body.goto
+    environment = request_body.environment
+
+    # ...
+    if environment == "development":
+        tokenId = sso.getToken(request)
+        if tokenId:
+            mock_data = sso.getAtributosUsuarioMocked()
+            return JSONResponse(status_code=200, content={"user": mock_data})
+        else:
+            print("Usuário não autenticado (DEV). Instruindo frontend a redirecionar.")
+            return JSONResponse(status_code=200, content={
+                "redirectUrl": f"http://localhost:4200/login?next={goto}"
+            })
+
+    elif environment == "production":
+        # ...
+        if tokenId:
+            user_data = sso.getAtributosUsuario(tokenId)
+            if user_data:
+                return JSONResponse(status_code=200, content={"user": user_data})
+            else:
+                return JSONResponse(status_code=200, content={
+                    "redirectUrl": goto  # SSO real
+                })
+        else:
+            return JSONResponse(status_code=200, content={"redirectUrl": goto})
+    else:
+        raise HTTPException(status_code=400, detail="Ambiente inválido.")
+
+
