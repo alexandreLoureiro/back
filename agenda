@@ -1,85 +1,205 @@
+Para criar um componente de rota no Angular 19 que passa um parâmetro e exibe seu valor na página, siga os passos abaixo:
 
-server {
-    listen 80;
-    server_name mefis.bb.com.br;
-    
-    # Ajuste este caminho para o diretório correto onde estão seus arquivos
-    root /var/www/html/mefis;
-    
-    # Importante: isso ajuda com as rotas do Angular
-    index index.html;
-    
-    # Configuração para servir arquivos estáticos
-    location / {
-        try_files $uri $uri/ /index.html;
-        # Adicione os headers de cache
-        add_header Cache-Control "no-cache, must-revalidate";
-    }
+1. Criação do Componente
+Crie um componente para lidar com a rota. Por exemplo:
 
-    # Headers CORS para permitir chamadas da API
-    location /api {
-        proxy_pass https://auditgerencial.intranet.bb.com.br;
-        
-        # Headers CORS
-        add_header 'Access-Control-Allow-Origin' 'https://mefis.bb.com.br';
-        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, PUT, DELETE';
-        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization';
-        add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range';
-        
-        if ($request_method = 'OPTIONS') {
-            add_header 'Access-Control-Max-Age' 1728000;
-            add_header 'Content-Type' 'text/plain charset=UTF-8';
-            add_header 'Content-Length' 0;
-            return 204;
-        }
-        
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
+bash
+Copiar
+Editar
+ng generate component components/route-param --standalone --inline-template --inline-style
+Isso criará um componente standalone com arquivos inline.
+
+2. Configuração da Rota
+No arquivo de roteamento principal (app.routes.ts), adicione uma rota que inclua um parâmetro. Por exemplo:
+
+typescript
+Copiar
+Editar
+import { Routes } from '@angular/router';
+import { RouteParamComponent } from './components/route-param/route-param.component';
+
+export const routes: Routes = [
+  { path: 'param-route/:id', component: RouteParamComponent },
+];
+3. Modificação do Componente para Capturar o Parâmetro
+No componente gerado, importe o ActivatedRoute para capturar o parâmetro da URL.
+
+typescript
+Copiar
+Editar
+import { Component } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+
+@Component({
+  selector: 'app-route-param',
+  standalone: true,
+  template: `
+    <div>
+      <h1>Rota com Parâmetro</h1>
+      <p>O parâmetro recebido é: {{ param }}</p>
+    </div>
+  `,
+})
+export class RouteParamComponent {
+  param: string | null = null;
+
+  constructor(private route: ActivatedRoute) {
+    // Captura o parâmetro da rota
+    this.route.paramMap.subscribe((params) => {
+      this.param = params.get('id');
+    });
+  }
 }
-server {
-  listen 443 ssl;
+4. Adicione o Componente ao Módulo
+Certifique-se de adicionar o roteamento no arquivo principal do aplicativo (main.ts):
 
-  server_name mefis.bb.com.br;
+typescript
+Copiar
+Editar
+import { bootstrapApplication } from '@angular/platform-browser';
+import { provideRouter } from '@angular/router';
+import { AppComponent } from './app/app.component';
+import { routes } from './app/app.routes';
 
-  client_max_body_size 100M;
+bootstrapApplication(AppComponent, {
+  providers: [provideRouter(routes)],
+}).catch((err) => console.error(err));
+5. Testando a Rota
+Acesse a rota com um valor de parâmetro, como:
+
+bash
+Copiar
+Editar
+http://localhost:4200/param-route/123
+A página exibirá:
+
+mathematica
+Copiar
+Editar
+O parâmetro recebido é: 123
+Essa configuração garante que o parâmetro seja capturado e exibido dinamicamente no componente. Caso precise de mais ajuda, é só avisar! 🚀
 
 
-  ssl_certificate /root/certificados/gamefis.pem;
-  ssl_certificate_key /root/certificados/gamefis-rsa.key;
-
-  access_log /var/log/nginx/access.log;
-  error_log /var/log/nginx/error.log;
-  error_page 500 502 503 504 /50x.html;
-  #add_header Access-Control-Allow-Origin *;
-
-  #server_tokens off;
-    location /50x.html {
-        root   /usr/share/nginx/php;
-        internal;
-    } 
 
 
-     
 
-    location /anaylitcs {
-        alias   /usr/share/nginx/html/angular;
-        index  index.html index.htm;
-    }
 
-    location /planejai {
-        alias   /usr/share/nginx/html/planejai;
-        index  index.html index.htm;
-    }
 
-    location /destaque {
-        alias   /usr/share/nginx/html/destaque;
-        index  index.html index.htm;
 
-        # Adicione os cabe�alhos CORS
-        add_header 'Access-Control-Allow-Origin' '*';
-        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
-        add_header 'Access-Control-Allow-Headers' 'Origin, Content-Type, Accept, Authorization';
-    }
+Você disse:
+main está assim: import { bootstrapApplication } from '@angular/platform-browser';
+import { appConfig } from './app/app.config';
+import { AppComponent } from './app/app.component';
+
+bootstrapApplication(AppComponent, appConfig)
+  .catch((err) => console.error(err));  app config import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
+import { provideRouter } from '@angular/router';
+
+import { routes } from './app.routes';
+
+export const appConfig: ApplicationConfig = {
+  providers: [provideZoneChangeDetection({ eventCoalescing: true }), provideRouter(routes)]
+};
+O ChatGPT disse:
+ChatGPT
+Com base na estrutura fornecida, o Angular 19 já está configurado para usar um arquivo app.config.ts para configurar o roteamento e outras dependências. Vou ajustar o exemplo para se alinhar à sua configuração.
+
+Aqui está o passo a passo atualizado:
+
+1. Configuração de Rotas no app.routes.ts
+No arquivo app.routes.ts, configure a rota com um parâmetro. Por exemplo:
+
+typescript
+Copiar
+Editar
+import { Routes } from '@angular/router';
+import { RouteParamComponent } from './components/route-param/route-param.component';
+
+export const routes: Routes = [
+  { path: 'param-route/:id', component: RouteParamComponent },
+];
+2. Criação do Componente RouteParamComponent
+Gere o componente para lidar com o parâmetro da rota:
+
+bash
+Copiar
+Editar
+ng generate component components/route-param --standalone --inline-template --inline-style
+Altere o código do componente para capturar o parâmetro da rota e exibi-lo:
+
+typescript
+Copiar
+Editar
+import { Component } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+
+@Component({
+  selector: 'app-route-param',
+  standalone: true,
+  template: `
+    <div>
+      <h1>Rota com Parâmetro</h1>
+      <p>O parâmetro recebido é: {{ param }}</p>
+    </div>
+  `,
+})
+export class RouteParamComponent {
+  param: string | null = null;
+
+  constructor(private route: ActivatedRoute) {
+    // Observa as alterações nos parâmetros da rota
+    this.route.paramMap.subscribe((params) => {
+      this.param = params.get('id'); // Obtém o valor do parâmetro "id"
+    });
+  }
+}
+3. Atualização do app.config.ts
+O arquivo app.config.ts já está configurado para usar o roteamento, mas é sempre bom confirmar que o provideRouter está usando as rotas corretas:
+
+typescript
+Copiar
+Editar
+import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
+import { provideRouter } from '@angular/router';
+
+import { routes } from './app.routes';
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideZoneChangeDetection({ eventCoalescing: true }), 
+    provideRouter(routes),
+  ],
+};
+4. Testando a Rota
+Certifique-se de acessar a aplicação com a rota criada, como:
+
+bash
+Copiar
+Editar
+http://localhost:4200/param-route/123
+A página exibirá:
+
+mathematica
+Copiar
+Editar
+O parâmetro recebido é: 123
+Observação
+Como o bootstrapApplication já está configurado para usar o appConfig, você não precisa alterar nada no arquivo main.ts. Toda a configuração necessária está no app.routes.ts e no RouteParamComponent.
+
+Se precisar de mais ajustes ou explicações, é só avisar! 🚀
+
+
+
+
+
+
+
+Esta conversa foi útil até agora?
+
+
+
+
+
+
+
+
