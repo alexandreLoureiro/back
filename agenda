@@ -1,3 +1,40 @@
+
+ng generate component components/route-param --standalone --inline-template --inline-style
+
+import { Routes } from '@angular/router';
+import { RouteParamComponent } from './components/route-param/route-param.component';
+
+export const routes: Routes = [
+  { path: 'param-route/:id', component: RouteParamComponent },
+];
+
+import { Component } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+
+@Component({
+  selector: 'app-route-param',
+  standalone: true,
+  template: `
+    <div>
+      <h1>Rota com Parâmetro</h1>
+      <p>O parâmetro recebido é: {{ param }}</p>
+    </div>
+  `,
+})
+export class RouteParamComponent {
+  param: string | null = null;
+
+  constructor(private route: ActivatedRoute) {
+    // Observa as alterações nos parâmetros da rota
+    this.route.paramMap.subscribe((params) => {
+      this.param = params.get('id'); // Obtém o valor do parâmetro "id"
+    });
+  }
+}
+
+
+
+
 Para criar um componente de rota no Angular 19 que passa um parâmetro e exibe seu valor na página, siga os passos abaixo:
 
 1. Criação do Componente
