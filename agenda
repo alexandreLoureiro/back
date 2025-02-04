@@ -1,4 +1,18 @@
 
+proc sql;
+    select 
+        catx(', ', 
+             cat('id=', id), 
+             cat('nome=', nome), 
+             cat('idade=', idade)
+        ) into :concat_str separated by '; '
+    from meus_dados;
+quit;
+
+%put &concat_str;
+
+
+
 ng generate component components/route-param --standalone --inline-template --inline-style
 
 import { Routes } from '@angular/router';
