@@ -1,269 +1,258 @@
 
-proc sql;
-    select 
-        catx(', ', 
-             cat('id=', id), 
-             cat('nome=', nome), 
-             cat('idade=', idade)
-        ) into :concat_str separated by '; '
-    from meus_dados;
-quit;
-
-%put &concat_str;
-
-
-
-ng generate component components/route-param --standalone --inline-template --inline-style
-
-import { Routes } from '@angular/router';
-import { RouteParamComponent } from './components/route-param/route-param.component';
-
-export const routes: Routes = [
-  { path: 'param-route/:id', component: RouteParamComponent },
-];
-
-import { Component } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
-
-@Component({
-  selector: 'app-route-param',
-  standalone: true,
-  template: `
-    <div>
-      <h1>Rota com Parâmetro</h1>
-      <p>O parâmetro recebido é: {{ param }}</p>
-    </div>
-  `,
-})
-export class RouteParamComponent {
-  param: string | null = null;
-
-  constructor(private route: ActivatedRoute) {
-    // Observa as alterações nos parâmetros da rota
-    this.route.paramMap.subscribe((params) => {
-      this.param = params.get('id'); // Obtém o valor do parâmetro "id"
-    });
-  }
-}
-
-import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
-import { provideRouter } from '@angular/router';
-
-import { routes } from './app.routes';
-
-export const appConfig: ApplicationConfig = {
-  providers: [
-    provideZoneChangeDetection({ eventCoalescing: true }), 
-    provideRouter(routes),
-  ],
-};
-http://localhost:4200/param-route/123
-
-
-
-
-Para criar um componente de rota no Angular 19 que passa um parâmetro e exibe seu valor na página, siga os passos abaixo:
-
-1. Criação do Componente
-Crie um componente para lidar com a rota. Por exemplo:
-
-bash
-Copiar
-Editar
-ng generate component components/route-param --standalone --inline-template --inline-style
-Isso criará um componente standalone com arquivos inline.
-
-2. Configuração da Rota
-No arquivo de roteamento principal (app.routes.ts), adicione uma rota que inclua um parâmetro. Por exemplo:
-
-typescript
-Copiar
-Editar
-import { Routes } from '@angular/router';
-import { RouteParamComponent } from './components/route-param/route-param.component';
-
-export const routes: Routes = [
-  { path: 'param-route/:id', component: RouteParamComponent },
-];
-3. Modificação do Componente para Capturar o Parâmetro
-No componente gerado, importe o ActivatedRoute para capturar o parâmetro da URL.
-
-typescript
-Copiar
-Editar
-import { Component } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
-
-@Component({
-  selector: 'app-route-param',
-  standalone: true,
-  template: `
-    <div>
-      <h1>Rota com Parâmetro</h1>
-      <p>O parâmetro recebido é: {{ param }}</p>
-    </div>
-  `,
-})
-export class RouteParamComponent {
-  param: string | null = null;
-
-  constructor(private route: ActivatedRoute) {
-    // Captura o parâmetro da rota
-    this.route.paramMap.subscribe((params) => {
-      this.param = params.get('id');
-    });
-  }
-}
-4. Adicione o Componente ao Módulo
-Certifique-se de adicionar o roteamento no arquivo principal do aplicativo (main.ts):
-
-typescript
-Copiar
-Editar
-import { bootstrapApplication } from '@angular/platform-browser';
-import { provideRouter } from '@angular/router';
-import { AppComponent } from './app/app.component';
-import { routes } from './app/app.routes';
-
-bootstrapApplication(AppComponent, {
-  providers: [provideRouter(routes)],
-}).catch((err) => console.error(err));
-5. Testando a Rota
-Acesse a rota com um valor de parâmetro, como:
-
-bash
-Copiar
-Editar
-http://localhost:4200/param-route/123
-A página exibirá:
-
-mathematica
-Copiar
-Editar
-O parâmetro recebido é: 123
-Essa configuração garante que o parâmetro seja capturado e exibido dinamicamente no componente. Caso precise de mais ajuda, é só avisar! 🚀
-
-
-
-
-
-
-
-
-Você disse:
-main está assim: import { bootstrapApplication } from '@angular/platform-browser';
-import { appConfig } from './app/app.config';
-import { AppComponent } from './app/app.component';
-
-bootstrapApplication(AppComponent, appConfig)
-  .catch((err) => console.error(err));  app config import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
-import { provideRouter } from '@angular/router';
-
-import { routes } from './app.routes';
-
-export const appConfig: ApplicationConfig = {
-  providers: [provideZoneChangeDetection({ eventCoalescing: true }), provideRouter(routes)]
-};
-O ChatGPT disse:
-ChatGPT
-Com base na estrutura fornecida, o Angular 19 já está configurado para usar um arquivo app.config.ts para configurar o roteamento e outras dependências. Vou ajustar o exemplo para se alinhar à sua configuração.
-
-Aqui está o passo a passo atualizado:
-
-1. Configuração de Rotas no app.routes.ts
-No arquivo app.routes.ts, configure a rota com um parâmetro. Por exemplo:
-
-typescript
-Copiar
-Editar
-import { Routes } from '@angular/router';
-import { RouteParamComponent } from './components/route-param/route-param.component';
-
-export const routes: Routes = [
-  { path: 'param-route/:id', component: RouteParamComponent },
-];
-2. Criação do Componente RouteParamComponent
-Gere o componente para lidar com o parâmetro da rota:
-
-bash
-Copiar
-Editar
-ng generate component components/route-param --standalone --inline-template --inline-style
-Altere o código do componente para capturar o parâmetro da rota e exibi-lo:
-
-typescript
-Copiar
-Editar
-import { Component } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
-
-@Component({
-  selector: 'app-route-param',
-  standalone: true,
-  template: `
-    <div>
-      <h1>Rota com Parâmetro</h1>
-      <p>O parâmetro recebido é: {{ param }}</p>
-    </div>
-  `,
-})
-export class RouteParamComponent {
-  param: string | null = null;
-
-  constructor(private route: ActivatedRoute) {
-    // Observa as alterações nos parâmetros da rota
-    this.route.paramMap.subscribe((params) => {
-      this.param = params.get('id'); // Obtém o valor do parâmetro "id"
-    });
-  }
-}
-3. Atualização do app.config.ts
-O arquivo app.config.ts já está configurado para usar o roteamento, mas é sempre bom confirmar que o provideRouter está usando as rotas corretas:
-
-typescript
-Copiar
-Editar
-import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
-import { provideRouter } from '@angular/router';
-
-import { routes } from './app.routes';
-
-export const appConfig: ApplicationConfig = {
-  providers: [
-    provideZoneChangeDetection({ eventCoalescing: true }), 
-    provideRouter(routes),
-  ],
-};
-4. Testando a Rota
-Certifique-se de acessar a aplicação com a rota criada, como:
-
-bash
-Copiar
-Editar
-http://localhost:4200/param-route/123
-A página exibirá:
-
-mathematica
-Copiar
-Editar
-O parâmetro recebido é: 123
-Observação
-Como o bootstrapApplication já está configurado para usar o appConfig, você não precisa alterar nada no arquivo main.ts. Toda a configuração necessária está no app.routes.ts e no RouteParamComponent.
-
-Se precisar de mais ajustes ou explicações, é só avisar! 🚀
-
-
-
-
-
-
-
-Esta conversa foi útil até agora?
-
-
-
-
-
-
-
-
+def gpt_pln_trb(df_str):
+
+    orientacao = {}
+
+    orientacao['assitente'] = '''Você é um especialista em indicador de acordo de trabalho do banco do brasil,  vou iniciar um 
+                                chat que o usuário vai fazer perguntas espeficicamente sobre esse indicador, Planejamento Anual de trabalhos de auditoria – Quantidade
+                                qualquer solcitação fora do escopo da definição do indicador, nota de aprovação, publicação CGU e dados do trabalho, pode desconsiderar
+                                orientando o usuário que que a sua atribuição é fornecer informações sobre o indicador '''
+    
+    orientacao['definicao_indicador'] ='''Nome do Indicador/Componente: Planejamento Anual – Quantidade; Conceito do Indicador: Referencial para mensuração da quantidade de trabalhos de auditoria programada concluídos em relação ao número de trabalhos de auditoria programada previstos para o período, conforme Paint 2025 aprovado pelo CA (NT 135665); 
+                Meta 2025: 1º semestre: conclusão de 97% dos trabalhos de auditoria programada planejados para o semestre. 2º semestre: conclusão de 97% dos trabalhos de auditoria programada planejados para o ano (cumulativo no ano);
+                Composição: Razão entre “X” e “Y”, onde: “X” é a quantidade de trabalhos de auditoria programada concluídos no período. “Y” é a quantidade de trabalhos de auditoria programada planejados para o período. Transformação Digital e Processos
+                '''
+    orientacao['resumo_nt_135665'] ='''Nota Audit nº 135.665, de 29/11/2024 - Planejamento da Auditoria Interna para o triênio 2025 - 2027.
+                Informações:
+                A Auditoria Interna propõe ao Conselho de Administração (CA) a aprovação do Plano Anual de Auditoria Interna (PAINT) 2025 e conhecimento da avaliação dos processos corporativos e das Entidades Ligadas que compõem o Universo Auditável para o ciclo 2025
+                - 2027.
+                O planejamento da Audit orienta-se pelas Instruções Normativas nº 3, de 09.06.2017, e nº 5, de 27.08.2021, da Controladoria-Geral da União (CGU); pela Resolução nº 4879, de
+                23.12.2020, do Conselho Monetário Nacional (CMN); e pela Estrutura Internacional de Práticas Profissionais de Auditoria Interna, emitida pelo The Institute of Internal Auditors
+                (The IIA).
+                O documento contempla os principais riscos aos quais o Conglomerado está exposto e as percepções do Conselho de Administração (CA), Comitê de Auditoria (Coaud), Comitês de Riscos e de Capital (Coris), de Sustentabilidade Empresarial (Cosem), de Tecnologia e
+                Inovação (Cotei), de Pessoas, Remuneração e Elegibilidade (Corem), e dos principais gestores do Banco e das Entidades Ligadas ao Banco do Brasil (ELBB), além de eventuais solicitações de entidades de fiscalização e controle.
+                A Nota consigna (item 6.13) que a implementação da presente proposta é suportada pelo orçamento da Unidade (objeto do Parecer Coaud 2024/80). Para 2025, a Audit planeja
+                utilizar 864.107 horas para as suas atividades, as quais estão detalhadas no documento.
+                A proposta de Paint 2025 é consistente com a estrutura e o orçamento da Unidade e está em conformidade com os normativos aplicáveis'''
+
+    orientacao['resumo_publicacao_CGU'] =''' A Auditoria Interna do Banco do Brasil S.A., em atendimento ao art. 9º da Instrução Normativa nº 5, de 27/08/2021, da Secretaria Federal de Controle Interno, da Controladoria Geral da União (SFC/CGU), dá publicidade ao PAINT 2025, após aprovação, em 13/12/2024, pelo Conselho de Administração da Empresa.
+    O PAINT do Banco do Brasil S.A. também contempla os trabalhos a serem realizados nas entidades ligadas que utilizam a estrutura da Auditoria Interna do Controlador, conforme prevê o art. 14 do Decreto nº 8.945, de 27/12/2016.
+    As informações classificadas como sigilosas foram substituídas pela expressão [Informação Sigilosa], em conformidade com a IN 05 da SFC/CGU.
+    Sumário
+    APRESENTAÇÃO 3
+    A AUDITORIA INTERNA 4
+    METODOLOGIA 5
+    Abordagem quantitativa 5
+    Abordagem qualitativa 6
+    Avaliação Externa de Qualidade 6
+    ATIVIDADES DE AUDITORIA 8
+    AUDITORIAS PROGRAMADAS 8
+    Acompanhamento e Avaliação de Recomendações 9
+    AUDITORIAS ESPECIAIS 9
+    CONSULTORIA 10
+    DEMANDAS EXTERNAS 10
+    OUTRAS DEMANDAS 10
+    DEMANDAS EXTRAORDINÁRIAS 11
+    CAPACITAÇÃO 12
+    GESTÃO DA AUDITORIA 13
+    ANÁLISES AVANÇADAS DE INFORMAÇÃO 14
+    PREMISSAS, RESTRIÇÕES E RISCOS ASSOCIADOS 16
+    APRESENTAÇÃO
+    Apresentamos o Plano Anual de Auditoria Interna (Paint) do Banco do Brasil referente ao exercício de 2025, em conformidade com a Instrução Normativa nº 5, de 27 de agosto de 2021, da Controladoria-Geral da União/Secretaria Federal de Controle Interno.
+    Este Plano descreve as atividades da Unidade Auditoria Interna, detalhando a alocação de recursos e as horas destinadas aos trabalhos de Auditorias Programadas, Auditorias Especiais, Consultorias, Demandas Externas e Outras Demandas de Auditoria. Dimensiona, ainda, o total de horas destinadas para capacitação, atividades administrativas e afastamentos regulamentares.
+    A dinâmica de atuação da Unidade está fundamentada no método de auditoria integrada, baseada em riscos.
+    As ações desenvolvidas pela Auditoria Interna guardam aderência às normas internacionais do The Institute of Internal Auditors (The IIA) e aos demais normativos externos e internos, relacionados à atuação da Unidade.
+    A AUDITORIA INTERNA
+    A Auditoria Interna realiza avaliação dos processos corporativos e empresas ligadas e presta consultoria, de forma independente e objetiva, visando o aprimoramento da governança corporativa e do gerenciamento de riscos e controles, bem como o alcance dos objetivos estratégicos do Banco. 
+    Está inserida no sistema de controles internos da Instituição, no qual atua como terceira linha, buscando interação com as demais linhas, porém, preservando sua autonomia e independência.
+    Para a consecução do seu objetivo, a Auditoria Interna desenvolve suas atividades de maneira integrada e sinérgica, no Conglomerado BB, envolvendo todo o quadro de gerentes, coordenadores de auditoria e auditores, no país e no exterior.
+
+    METODOLOGIA
+    A atuação da Auditoria Interna está suportada pela metodologia de auditoria integrada baseada em riscos, considerando, no plano interno, a complexidade intrínseca dos processos da empresa e suas inter-relações e, na perspectiva externa, a interface da Organização com os ambientes regulatórios e com sua posição no ambiente competitivo em que atua.  
+    Busca realizar trabalhos, considerando a cobertura do universo auditável em ciclos de auditoria de até três anos, que reúnam elementos que permeiam diferentes processos corporativos, nos diversos níveis organizacionais onde ocorrem (no Brasil e no Exterior), gerando resultados que agregam valor à governança. 
+    A Audit utiliza visões quantitativas e qualitativas para definir os objetos que serão avaliados no ciclo. Essas visões e as análises conjuntas de seus componentes fornecem os subsídios para a priorização dos objetos e seleção dos temas para avaliação.
+    Abordagem quantitativa
+    Para a abordagem quantitativa, aplica-se a Metodologia de Priorização de Processo (MPP) que fornece pontuação com objetivo de sugerir ordem de avaliação em função do nível de exposição do processo. O modelo possui os seguintes componentes:
+    Impacto relativo dos riscos;
+    Cobertura dos riscos avaliados;
+    Notas dos eventos de riscos;
+    Horizonte temporal das avaliações;
+    Apontamento de entidades de fiscalização e controles;
+    Demandas da alta administração;
+    Impacto de auditorias especiais;
+    Nível do subprocesso; e
+    Criticidade do processo subordinante.
+    Esta metodologia foi implementada em 2023 e está em contínuo aprimoramento. Os elementos que compõem o modelo não são exaustivos e podem ser ajustados para melhor aferição da exposição a medida que o modelo e as avaliações evoluem.
+    A MPP viabiliza a seleção dos objetos baseada em riscos, pois há componentes que guardam relação direta com os riscos relevantes declarados pelo Banco. Esses riscos, e seus eventos descendentes, estão catalogados em um dicionário corporativo (Taxonomia Corporativa de Riscos e Controles) e integrados ao mapeamento de processo da Audit, o que possibilita maior ênfase na avaliação dos riscos corporativos.
+    Abordagem qualitativa
+    Ocorre por ocasião do processo de planejamento anual da Auditoria Interna, que é o processo que orienta as ações da Unidade de forma coordenada para permitir avaliações sistematizadas e integradas do universo auditável, considerando a alocação eficiente dos recursos e o alcance dos objetivos estratégicos da Organização. 
+    A cada ciclo de planejamento é realizada identificação dos maiores riscos aos quais o Conglomerado Banco do Brasil está exposto. Além de eventuais solicitações de entidades de fiscalização e controle, é realizado levantamento de percepções:
+    do Comitê de Administração da Auditoria Interna (ComAud);
+    das Gerências de Auditoria (GA);
+    do Conselho de Administração (CA);
+    do Comitê de Auditoria (Coaud);
+    do Comitê de Riscos e de Capital (Coris);
+    do Comitê de Sustentabilidade Empresarial (Cosem);
+    do Comitê de Tecnologia e Inovação (Cotei);
+    do Comitê de Pessoas, Remuneração e Elegibilidade (Corem);
+    dos principais gestores do Banco e das Entidades Ligadas ao Banco do Brasil (ELBB),
+    Complementarmente, são realizadas dinâmicas para identificação de temas com relevância estratégica para Audit visando: a integração entre os trabalhos (para otimizar a alocação de recursos em busca de ganhos de eficiência), possibilitar uma visão global dos riscos que permeiam os processos e a identificação de eventuais lacunas nas atividades previstas no planejamento.
+    Para 2025, como resultado dessas dinâmicas, foram relacionadas as seguintes avaliações estratégicas:
+    Avaliação Externa de Qualidade
+    Em 2023, o Instituto dos Auditores Internos do Brasil (IIA Brasil) renovou a certificação da Audit na Avaliação Externa de Qualidade (QA - Quality Assessment), conquistada em 2018. A manutenção da certificação reforça o nível de excelência da Unidade, o alinhamento às melhores práticas internacionais de auditoria interna e evidencia a robustez da metodologia de atuação adotada.
+    A consultoria externa especializada em Auditoria Interna, realizada pela empresa KPMG em 2022, também comprovou o elevado nível de maturidade da Audit, com destaque para sua governança, processos operacionais e metodologias. 
+    ATIVIDADES DE AUDITORIA
+    A Unidade distribui suas atividades em cinco categorias: Auditorias Programadas (AP), Auditorias Especiais (AE), Consultorias, Demandas Externas (DE) e Outras Demandas (OD). 
+    AUDITORIAS PROGRAMADAS
+    Contemplam as avaliações independentes nos processos corporativos e nas Entidades Ligadas ao Banco do Brasil, e as Auditorias de Caráter Obrigatório.
+    Processos Corporativos (PC): constituem o grupamento de trabalhos de maior relevância para a Auditoria Interna, uma vez que o seu conjunto representa os elementos constitutivos fundamentais do Banco, cujo desvio ou exposição a determinados níveis de risco pode comprometer a eficácia organizacional ou ameaçar sua perenidade.
+    Entidades Ligadas ao Banco do Brasil (ELBB): grupamento de trabalhos realizados nas empresas controladas, patrocinadas, administrada e na Fundação Banco do Brasil. As ELBB são avaliadas de acordo com a relevância de suas operações para o Conglomerado, sua complexidade e inter-relação com os processos corporativos sob análise. 
+    Como regra geral, as ELBB com auditoria interna própria são avaliadas com enfoque na governança corporativa e no sistema de controles internos. Nas demais empresas do universo auditável, a avaliação abrange também os processos internos.
+    Auditorias de Caráter Obrigatório (ACO): abrangem os trabalhos realizados em atendimento a dispositivos legais ou a contratos e convênios firmados com entidades externas. Os resultados dos trabalhos são utilizados como subsídios para as conclusões de auditoria dos processos corporativos aos quais estão relacionados.
+    [Informação Sigilosa]
+
+    O total das horas na atividade de auditoria programada contempla, além das necessárias para a realização dos trabalhos, as horas para acompanhamento e avaliação de recomendações, para revisão do universo auditável e para análises avançadas de informações. 
+    Acompanhamento e Avaliação de Recomendações
+    Trata-se do acompanhamento e avaliação das ações implementadas para solução dos apontamentos e a mitigação dos riscos vinculados, com vistas à melhoria da governança e do gerenciamento de riscos e controles.
+    A Auditoria Interna reporta mensalmente ao CA, Conselho Fiscal (CF), Coaud e Coris informações acerca das recomendações ainda não implementadas, com destaques para eventuais recomendações vencidas, bem como aquelas que possuem prorrogações recorrentes.
+    [Informação Sigilosa]
+    AUDITORIAS ESPECIAIS
+    São trabalhos conduzidos pela Auditoria Interna, enquanto instância de apuração no processo de Controle Disciplinar, que têm por objetivo identificar as circunstâncias e as consequências de irregularidades, bem como a análise de causas das ocorrências, contribuindo para a melhoria do gerenciamento de riscos e controles na Organização.
+    Nas apurações, busca-se delimitar a participação funcional, imputar responsabilidades, oportunizar o reposicionamento dos empregados e recompor a ordem interna, propiciando a melhoria das atividades e a quantificação de perdas.
+    As informações oriundas desses trabalhos acerca das irregularidades e de suas causas auxiliam a Auditoria Interna na avaliação dos processos corporativos e no encaminhamento de ações para aprimoramento dos produtos, serviços e sistemas do Banco.
+    CONSULTORIA
+    O posicionamento estratégico que a função de auditoria interna tem na organização lhe permite um olhar sistêmico da governança e do gerenciamento de riscos e controles, auxiliando na consecução dos objetivos estratégicos.
+    Com essa finalidade, a Auditoria Interna desenvolve consultorias nas modalidades de aconselhamento estratégico (orientação aos gestores em assuntos relacionados a processos, produtos e serviços; e projetos estratégicos), assessoramento (realização de análises específicas em notas técnicas, documentos, contratos etc.) e capacitação (realização de seminários, workshop, palestras etc.).
+    DEMANDAS EXTERNAS
+    Representa a atividade de relacionamento com as entidades de fiscalização e controle, e com a auditoria externa, cujo objetivo é prestar apoio especializado no fornecimento de informações pelas áreas responsáveis pelos processos do Banco e no atendimento a demandas decorrentes de trabalhos de auditoria e fiscalização, contribuindo para a qualidade e tempestividade das interações. 
+    Contempla o acompanhamento do resultado das fiscalizações e da solução dos apontamentos identificados, gerando insumos para subsidiar avaliações internas sobre os processos corporativos. As constatações, recomendações e as ações propostas para correção dos apontamentos são registradas e acompanhadas pela Auditoria Interna, que verifica a superação das fragilidades apontadas.
+    OUTRAS DEMANDAS
+    Compreendem:
+    atividades de planejamento da Auditoria Interna e desenvolvimento de metodologias, projetos e estudos específicos;
+    ações do Programa de Inovação no desenvolvimento de competências para proposição e implementação de soluções inovadoras;
+    trabalho de avaliação interna da qualidade das atividades da Auditoria Interna, realizado anualmente no âmbito do Programa de Gestão e Melhoria da Qualidade (PGMQ); 
+    assessoria ao ComAud e às GA na condução de assuntos relativos à governança e gerenciamento de riscos e controles; e
+    geração de informações para a Alta Administração do Banco e das ELBB.
+    DEMANDAS EXTRAORDINÁRIAS
+    Para tratamento de demandas extraordinárias envolvendo trabalhos em processos corporativos e nas ELBB são apartadas horas em Reserva Técnica a ser utilizada pelas Gerências de Auditoria no decorrer do exercício.  [Informação Sigilosa]
+    O monitoramento da utilização dessas horas ocorre pela atuação da Gerência de Auditoria Metodologia, Planejamento e Relacionamento com Entidades de Fiscalização (GA Mefis), que coordena o planejamento dos trabalhos da Unidade e acompanha sua execução. 
+    Alterações e cancelamentos dos trabalhos de Auditoria Programada previstos no Paint, bem como a inclusão de novos trabalhos, são acompanhados e analisados pela GA Mefis e submetidos ao ComAud para deliberação, quando necessário.  
+    As alterações significativas são reportadas mensalmente ao CA, CF e comitês de assessoramento ao CA (Coaud, Coris, Cotei, Cosem e Corem), por meio do Sumário Executivo da Auditoria Interna.   
+    CAPACITAÇÃO
+    A Auditoria Interna mantém Programa de Capacitação Profissional (Procap), com objetivo de orientar ações de capacitação continuada para o desenvolvimento e aperfeiçoamento profissional de seus funcionários.
+    Em novembro/2024, houve o lançamento da trilha de auditoria interna na Universidade Corporativa Banco do Brasil (UNIBB), contemplando cursos específicos voltados para a área-fim da Unidade, bem como temas transversais, relacionados aos processos críticos sob avaliação. 
+    Face às possibilidades advindas da entrega acima, a Unidade está revendo as ações para endereçamento do Procap na versão digital, uma vez que a trilha de auditoria na UNIBB pode suprir “gaps” que seriam endereçados exclusivamente no Procap. 
+    Também para 2025, está prevista a 2ª turma de especialização em Gestão de Riscos, Controles e Auditoria, a ser promovido pela Fundação Dom Cabral para auditores do BB, funcionários da Diretoria Controles Internos e da Vice-Presidência de Controles Internos e Gestão de Riscos. A 1ª. Turma desse curso foi avaliada com 85% de aprovação pelos alunos.
+    Além dessas iniciativas, estão previstos no Planejamento Anual de Educação Corporativa (PAEC) cursos e congressos externos, a serem promovidos por entidades de renome nacional, como Federação Brasileira de Bancos (Febraban), Instituto de Auditores Internos do Brasil (IIA), entre outros. 
+    Dentre as iniciativas de caráter permanente, destaca-se o incentivo às certificações profissionais, a exemplo do Certified Internal Auditor (CIA) e do Certified Information Systems Auditor (CISA). Trata-se de certificações reconhecidas internacionalmente no mercado para o exercício profissional na função de auditor. Por isso, todos os anos, os funcionários que são aprovados nessas provas internacionais são ressarcidos em 100% do montante investido. 
+    [Informação Sigilosa]
+
+    GESTÃO DA AUDITORIA
+    O quadro a seguir descreve as horas planejadas para as atividades da Auditoria Interna, cujo percentual pode ser ajustado ao longo do período em razão de eventual alteração na dotação de funcionários da Unidade.
+    Os recursos estão respaldados no Orçamento da Unidade, aprovado pelo CA, reforçando a autonomia e a independência da Auditoria Interna.
+
+    Quadro de Horas - 2025
+    Atividades da Auditoria Interna	Planejado
+    Qtd.%
+    I - Serviços de Auditoria
+    60,12%
+    Auditoria Programada 42,10%
+    Trabalhos 33,56%
+    Mapeamento de Processos e ELBB 0,97%
+    Analytics e Tecnologias Emergentes 7,57%
+    Auditorias Especiais (exceto AIQ) 15,19%
+    Apurações 14,99%
+    Analytics e Tecnologias Emergentes 0,20%
+    Consultoria 0,67%
+    Outras Demandas (exceto AIQ) 2,16%
+    II - Capacitação dos Auditores 5,45%
+    III - Monitoramento de Recomendações 1,75%
+    IV - Gestão e Melhoria da Qualidade
+    V - Gestão Interna da UAIG 14,09%
+    Assessoria Sede (Diger, Infor, Comitê e assistentes) 6,07%
+    Atividades Administrativas 2,70%
+    Gerenciamento (Gerentes de Auditoria) 3,30%
+    Metodologia e Planejamento (GA Mefis) 2,01%
+    VI - Demandas Externas 2,00%
+    VII - Reserva Técnica (Demandas Extraordinárias) 0,87%
+    VIII - Outros (afastamentos) 15,19%
+    Horas Totais 100,00%
+    ¹ O Quadro Técnico compreende Auditores, Coordenadores e Gerentes de Auditoria, no Brasil e no exterior.
+    ² A atividade “Gerenciamento” compreende a gestão realizada por gerentes de auditoria.
+    ANALYTICS E TECNOLOGIAS EMERGENTES
+    Alinhada ao processo de aceleração digital do Banco do Brasil, a Auditoria Interna continuará investindo, em 2025, na alocação de horas para evoluir na utilização de Data&Analytics (D&A), inteligência artificial (IA) e outras tecnologias emergentes, para apoiar a realização de avaliações de auditoria e outras atividades sob responsabilidade da Unidade.
+    [Informação Sigilosa]
+    A implementação e o monitoramento das soluções tecnológicas desenvolvidas visam alcançar o máximo retorno de valor nas avaliações de auditoria, seja por meio do aumento da produtividade ou da eficácia das avaliações. 
+    No próximo ano, uma parcela significativa das horas planejadas para prospecção, desenvolvimento e uso de tecnologias pela Auditoria Interna será dedicada a avanços no uso de IA, em especial IA Generativa, considerando que as iniciativas desenvolvidas em 2024 se mostraram viáveis, com resultados que demonstraram alto potencial de agregação de valor para a Auditoria Interna.
+    Do total de horas planejadas, cerca de 49% serão utilizadas pela Gerência de Auditoria Analytics e Tecnologias Emergentes (GA Antec), que atua como Centro de Excelência em Tecnologias (CoE) e é responsável pela coordenação do uso de D&A, IA e outras tecnologias emergentes na Auditoria Interna.
+    No planejamento e execução das horas dedicadas para projetos de desenvolvimento e uso de D&A, IA e tecnologias emergentes, serão consideradas as seguintes diretrizes, alinhadas à estratégia da Auditoria Interna para o tema: 
+    Incentivo e indução, por parte da Gestão, para a prospecção, desenvolvimento e uso de instrumentos avançados (preditivos e prescritivos), inclusive utilizando Inteligência Artificial/Machine Learning (IA/ML).
+    Internalização, nas próprias gerências responsáveis pela avaliação dos processos corporativos, da execução de tarefas de D&A que envolvam técnicas e ferramentas cujo uso já esteja disseminado na Auditoria Interna.
+    Monitoramento dos instrumentos diagnósticos, preditivos e prescritivos desenvolvidos para apoiar a avaliação dos processos corporativos. 
+    Seguir as diretrizes éticas em inteligência cognitiva e artificial, do BB, no desenvolvimento de soluções de IA para uso pela auditoria interna, em especial o conceito “the human in the loop”.
+    Com relação à cultura e à capacitação em D&A e IA, em 2025 será dada continuidade às ações da Jornada de Capacitação em D&A oferecida aos auditores e no programa de upskilling em fluência de dados para gestores, visando dotar a unidade com um corpo funcional (técnico e gerencial) preparado para alcançar o máximo valor no uso de dados e das tecnologias disponíveis, em favor da atuação da Auditoria Interna.
+    PREMISSAS, RESTRIÇÕES E RISCOS ASSOCIADOS
+    O Paint 2025 foi elaborado considerando a estrutura organizacional da Unidade, a dotação prevista de funcionários nas gerências de auditoria e a quantidade de horas líquidas de auditoria para execução dos trabalhos. 
+    A elaboração do planejamento está sujeita ao risco de alterações no ambiente de negócios que poderão impactar as premissas utilizadas para seleção dos itens dos processos a serem avaliados, bem como para alocação de recursos e atribuição de prazos das avaliações.
+    Ademais, há previsão de alteração da estrutura da Unidade a ser realizada durante o exercício, de forma que a execução do planejamento pode ser impactada tanto pela movimentação de pessoal e revisão/ampliação do universo auditável, como pela promoção de ações de upskilling e reskilling potencialmente necessárias para adequação à nova estrutura.
+    Para mitigação dos riscos, destacam-se as seguintes ações:
+    O acompanhamento e controle do planejamento são acompanhados pela GA Mefis. Alterações e cancelamentos dos trabalhos de Auditoria Programada previstos no Paint, bem como a inclusão de novos trabalhos, são analisados e submetidos ao ComAud para deliberação, quando necessário.  
+    O ambiente de negócios e a estratégia corporativa do Banco são acompanhados pelas gerências de auditoria, bem como pelo ComAud, que participa das reuniões do Conselho Diretor (CD) e CA, o que permite promover ajustes e adequações nos trabalhos planejados. As alterações são reportadas periodicamente ao Coaud, CA e CF. 
+    '''
+    
+    orientacao['descricao_princpais_tabelas_indicador'] ='''
+                   ### Descrição das Colunas da Tabela de Indicadores de Desempenho
+
+                        1. **Número do Trabalho**: Identificação única do trabalho.
+                        2. **Planejado no Paint**: Indica se o trabalho estava na relação do planejamento (paint).
+                        3. **Nome do Trabalho**: Nome do trabalho.
+                        4. **Objetivo do Trabalho**: Objetivo do trabalho.
+                        5. **Status Atual**: Status atual do trabalho.
+                        6. **Ano de Conclusão Atual**: Ano previsto para a conclusão do trabalho no planejamento atual.
+                        7. **Ano de Conclusão Original**: Ano planejado inicialmente no paint. Se nulo, o trabalho não estava no planejamento original. Atenção quando os anos forem distintos.
+                        8. **Data de Conclusão Atual**: Data prevista para o fim do planejamento atual.
+                        9. **Data de Conclusão Original**: Data prevista no paint para a conclusão do planejamento. Se diferente da data de conclusão atual, houve replanejamento.
+                        10. **Data Real de Conclusão**: Data real de conclusão do trabalho.
+
+                        ### Status de Alterações no Planejamento
+
+                        Esta coluna é crucial para explicar o cumprimento do indicador e possui os seguintes status:
+
+                        - **Reprogramado para Ano Posterior**: Trabalhos reprogramados para conclusão em ano posterior ao planejado inicialmente. Compromete o indicador.
+                        - **Aprovados Paint**: Trabalhos que mantêm o ano de previsão de conclusão no exercício do indicador. Espera-se a conclusão no ano previsto.
+                        - **Incluídos no Ano Anterior**: Trabalhos incluídos antes do fechamento do planejamento para o ano de exercício. Não compromete o indicador.
+                        - **Incluídos no Ano Atual**: Trabalhos incluídos após o fechamento do planejamento. Serão contabilizados como realizados se concluídos no ano do exercício do indicador.
+                        - **Cancelado no PTAI Atual**: Trabalhos cancelados que estavam no planejamento. Compromete o indicador.
+                        - **Cancelado Fora do PTAI**: Trabalhos cancelados que não estavam no planejamento. Não compromete o indicador.
+
+                        ### Status de Cancelamentos
+
+                        Esta coluna possui dois status que clarificam o cancelamento:
+
+                        - **Cancelado no PTAI Atual**: Trabalhos cancelados que estavam no planejamento.
+                        - **Cancelado Fora do PTAI**: Trabalhos cancelados que não estavam no planejamento.
+
+                        ### Observações Importantes
+
+                        - Sempre fique atento ao status de alterações no planejamento. Se o status for 'Aprovados Paint', não houve alteração significativa.
+                        - Se o status atual estiver em "Em replanejamento" mas o status de alterações for 'Aprovados Paint', o trabalho está normal, apenas com datas sendo definidas.
+                        - Atenção especial aos status de alterações diferentes de 'Aprovados Paint', pois indicam replanejamento.
+                        - Exemplo crítico: Se a data de conclusão original foi alterada para o ano subsequente, houve replanejamento. Analise o status de alterações para entender o impacto.
+
+                        ### Verificação Cruzada
+
+                        Antes de fornecer uma resposta, verifique cruzando as informações das datas e status para garantir a interpretação correta.
+
+                    '''
+
+    orientacao['base_de_dados'] = df_str
+
+    # Concatenar as informações para role_user
+    role_user = orientacao['assitente'] + " " + orientacao['definicao_indicador']  + " " + orientacao['descricao_princpais_tabelas_indicador'] + " " + orientacao['base_de_dados']
+    role_assistant = '''Você é um assistente e irá atuar como um chat para auxiliar os questionamentos sobre o indicador planejamento de trabalhos de auditoria.
+     A grande maioria das perguntas será sobre quais trabalhos foram reprogramados, cancelados, alterados. Para isso, informe o número do trabalho e, quando couber, 
+     o nome do trabalho. Seja conciso e direto. A necessidade é sempre saber o número e as datas que foram alteradas. Evite falar nomes de colunas da tabela porque o
+     auditor não conhece a tabela. Sempre atente para o status da coluna de alterações no planejamento diferente de 'Aprovados Paint'. Quando está diferente, é que
+     houve alteração significativa entre o planejado no paint e o que está ocorrendo.
+    '''
+    indicador = 'Planejamento de trabalhos de auditoria'
+    #text = ' '.join([f'{key}: {value}' for key, value in orientacao.items()])
+
+    
+   
+    
+    return [{
+        "role_user": role_user,
+        "role_assistant": role_assistant,
+        "indicador": indicador
+    }]
