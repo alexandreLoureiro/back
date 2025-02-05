@@ -1,4 +1,37 @@
 
+@router.post('/apiptai/agentesllm/')
+async def trbpln(request: Request):
+    try:
+        # Capturar o JSON enviado pelo cliente
+        data = await request.json()
+        print("Dados recebidos:", data)
+
+        # Processar os dados dinamicamente
+        agente = data.get("agente")
+        param1 = data.get("param1")
+        param2 = data.get("param2")
+        param3 = data.get("param3")
+
+        print('agente ', agente, 'param1 ', param1, 'param2 ', param2, 'param3 ', param3)
+
+        result = await chat_geral_query(data)  # Chama a função assíncrona
+
+        if data.get("agente") =='atb' and data.get("param1") =='plntrabalhos':
+            df = pd.DataFrame(result)
+
+            # Converter o DataFrame em JSON com orientação 'records'
+            df_str = df.to_json(orient='records')
+            return  gpt_pln_trb(df_str)
+        
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Erro ao processar dados: {str(e)}")
+ 
+
+
+
+
 def gpt_pln_trb(df_str):
 
     orientacao = {}
