@@ -1,4 +1,38 @@
 
+    elif  data.get("agente") =='atb' and data.get("param1") =='plntrabalhos':
+        
+        query = f"""SELECT DISTINCT 
+    t1.nr_trabalho, 
+    t1.in_abgc_elbb, 
+    t1.dt_inc_dmd, 
+    t1.dt_fin_dmd, 
+    t1.dt_inc_plnj,
+    t1.dt_fim_plnj AS data_fim_planejamento_atual, 
+    t1.p_dt_fim_plnj AS data_fim_planejamento_paint,
+    EXTRACT(YEAR FROM t1.dt_fim_plnj) AS ano_fim_planejamento_atual, 
+    EXTRACT(YEAR FROM t1.p_dt_fim_plnj) AS ano_fim_planejamento_paint,
+    t1.nm_trab, 
+    t1.obj_trab, 
+    t1.cd_tip_atvd_plnj, 
+    t1.nm_tip_atvd_plnj, 
+    /*
+    t1.cd_tip_est_atvd, 
+    t1.nm_tip_est_atvd, 
+    */
+    t1.nr_trabalho_pln, 
+    t1.pln_alteracoes, 
+    t1.pln_cancelamentos
+FROM 
+    atb.trabalhos_simulado AS t1;
+        """   
+
+    else:
+        query=''
+
+        
+    return await execute_query(query)
+
+
 @router.post('/apiptai/agentesllm/')
 async def trbpln(request: Request):
     try:
