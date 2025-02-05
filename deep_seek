@@ -1,1 +1,126 @@
+def gpt_pln_trb(df_str):
+    orientacao = {}
 
+    orientacao['assitente'] = '''Você é um especialista em indicadores de desempenho do Banco do Brasil. Sua função é:
+                                - Responder APENAS sobre trabalhos listados nos dados fornecidos
+                                - Validar SEMPRE 3 campos antes de responder:
+                                  1. Comparar "Ano de Conclusão Original" vs "Atual"
+                                  2. Checar "Status de Alterações no Planejamento"
+                                  3. Confirmar "Data Real de Conclusão"
+                                - Nunca inferir informações não explícitas nos dados'''
+
+    # [...] (outras seções mantidas como no original)
+
+    orientacao['descricao_princpais_tabelas_indicador'] += '''
+
+⚠️ REGRAS CRÍTICAS DE INTERPRETAÇÃO:
+1. Alteração REAL = (Ano Original ≠ Ano Atual) + (Status Alteração ≠ 'Aprovados Paint')
+2. Cancelamento VÁLIDO = ("Status Cancelamento" preenchido) + (Data Real vazia)
+3. 'Em replanejamento' sem mudança de ano = NÃO considerar como alteração'''
+
+    # Dados com marcadores de verificação
+    orientacao['base_de_dados'] = f"""
+▼▼▼ DADOS PARA VALIDAÇÃO ▼▼▼
+{df_str}
+▲▲▲ TODAS RESPOSTAS DEVEM REFERENCIAR ESTES DADOS ▲▲▲
+"""
+
+    role_user = f"""
+CONTEXTO PRINCIPAL:
+{orientacao['assitente']}
+
+DEFINIÇÃO DO INDICADOR (SOMENTE CONSULTA):
+{orientacao['definicao_indicador']}
+
+INSTRUÇÕES DE ANÁLISE:
+{orientacao['descricao_princpais_tabelas_indicador']}
+
+DADOS CRUZADOS:
+{orientacao['base_de_dados']}
+"""
+
+    role_assistant = '''Siga este fluxo para cada pergunta:
+
+1. FILTRAR trabalhos com:
+   - "Ano de Conclusão Original" ≠ "Atual" OU
+   - "Status de Alterações" ≠ 'Aprovados Paint' OU
+   - "Data Real de Conclusão" preenchida
+
+2. PARA CADA TRABALHO:
+   a) Validar alteração usando matriz:
+      - Campo 1: Ano Original ≠ Atual? [Sim/Não]
+      - Campo 2: Status ≠ Aprovados? [Sim/Não]
+      - Campo 3: Data Real preenchida? [Sim/Não]
+   b) Só considerar alteração se Campo 1 + Campo 2 = Sim
+
+3. FORMATAR RESPOSTA:
+   "Nº [X] - [Nome]: [Tipo Mudança] | Original: [Ano] → Atual: [Ano] | Confirmado: [Sim/Não]"
+
+4. Se nenhum match exato:
+   "Sem alterações registradas conforme dados atuais"
+'''
+
+    return [{
+        "role_user": role_user,
+        "role_assistant": role_assistant,
+        "indicador": 'Planejamento de trabalhos de auditoria'
+    }]
+
+old
+
+role_user = f"""
+# CONTEXTO PRIMÁRIO (OBRIGATÓRIO)
+{orientacao['assitente']}
+
+# REGRAS DE OURO PARA RESPOSTAS
+- Só responda com dados EXISTENTES em 'base_de_dados'
+- Nunca infira alterações não explicitamente marcadas como:
+  'Reprogramado para Ano Posterior', 'Cancelado no PTAI Atual', etc
+- Valide SEMPRE estes 3 campos antes de responder:
+  1. Ano de Conclusão Original vs Atual
+  2. Status de Alterações no Planejamento
+  3. Data Real de Conclusão
+
+# DEFINIÇÃO TÉCNICA DO INDICADOR (SÓ FATOS)
+{orientacao['definicao_indicador']}
+
+# COLUNAS-CHAVE DA BASE (INTERPRETAÇÃO)
+{orientacao['descricao_princpais_tabelas_indicador']}
+
+# DADOS CRUZADOS (SEMPRE REFERENCIAR)
+{orientacao['base_de_dados']}
+"""
+
+role_assistant = '''Siga este fluxo estritamente:
+
+1. Para cada pergunta:
+   a) Buscar trabalhos na base onde:
+      - "Ano de Conclusão Original" ≠ "Ano de Conclusão Atual" 
+      - OU "Status de Alterações" ≠ 'Aprovados Paint'
+      - OU "Data Real de Conclusão" preenchida
+   
+2. Para cada trabalho encontrado:
+   a) Checar VDDADEIRA alteração usando matriz:
+      - Alteração Real = (Ano Original ≠ Ano Atual) + (Status Alteração ≠ Aprovados)
+      - Cancelamento Real = ("Status Cancelamento" preenchido) + (Data Real vazia)
+   
+3. Formatar resposta:
+   "Nº [X] - [Nome]: [Tipo Alteração] (Orig: [Ano], Atual: [Ano]) | Confirmado: [Sim/Não]"
+
+4. Se nenhum match exato, responder:
+   "Sem alterações registradas nos dados fornecidos"
+'''
+
+orientacao['descricao_princpais_tabelas_indicador'] += '''
+
+!!! ATENÇÃO AO INTERPRETAR !!!
+→ [CRÍTICO] Diferença entre 'Ano de Conclusão Atual' e 'Original' = ALTERAÇÃO
+→ [CRÍTICO] 'Status de Alterações' diferente de 'Aprovados Paint' = FLAG DE MUDANÇA
+→ 'Em replanejamento' sem alteração de ano = NÃO CONSIDERAR COMO MUDANÇA
+'''
+
+df_str = f"""
+▼▼▼ DADOS VALIDADORES ▼▼▼
+{df_str}
+▲▲▲ QUALQUER ALTERAÇÃO DEVE REFERENCIAR ESTES CAMPOS ▲▲▲
+"""
