@@ -1,325 +1,1055 @@
+<div class="main-container">
+  <div class="container">
+    <div class="floating-feedback-buttons">
+      <p-button icon="pi pi-thumbs-up-fill" rounded text (click)="onFeedback('useful')"></p-button>
+      <p-button icon="pi pi-thumbs-down-fill" severity="secondary" rounded text
+        (click)="onFeedback('notUseful')"></p-button>
+    </div>
 
-    elif  data.get("agente") =='atb' and data.get("param1") =='plntrabalhos':
+    <p-toast></p-toast>
+
+    <p-panel *ngIf="!loading" [toggleable]="true" [collapsed]="isPanelCollapsed">
+      <ng-template #header>
+        <div class="flex items-center justify-between w-full">
+          <!-- Esquerda: Título e Avatar -->
+          <div class="flex items-center gap-2" style="align-items: center;">
+            <p-avatar image="assets/assistente.png" shape="circle" size="xlarge"></p-avatar>
+            <span class="font-bold pl-10 align-middle" style="display: inline-block; vertical-align: middle;">
+              <span *ngIf="!contexto_inicial">Analisando o objeto de auditoria
+                <br>
+                <span style="margin-left: 8px;">{{ currentLoadingMessage }}</span>
+              </span>
+
+              <span *ngIf="dynamicObject && contexto_inicial">Agênte selecionado:
+                <span *ngIf="dynamicObject['agente'] =='exterior'">
+                  Exterior por trabalhos especifico
+                </span>
+                <span *ngIf="dynamicObject['agente'] =='exteriorconsolidado'">
+                  Exterior visão consolidada por exercico
+                </span>
+                <span *ngIf="dynamicObject['agente'] =='atb'">
+                  GA Mefis - teste chat para o indicador planejamento de trabalhos
+                  <br>
+                  <br>
+
+                  <p-tag severity="success" value="Exemplo de perguntas para os testes:" />
+                   <br> 
+
+                  <div class="card flex justify-center">
+                    <p-virtualscroller [items]="items_atb_pln" [itemSize]="50" scrollHeight="200px" styleClass="border border-surface" [style]="{ width: '800px', height: '200px' }">
+                      <ng-template #item let-item let-options="options">
+                        <div class="flex items-center p-1" [ngClass]="{ 'bg-surface-100 dark:bg-surface-700': options.odd }" >
+                          {{ item.question }}
+                        </div>
+                      </ng-template>
+                    </p-virtualscroller>
+                  </div>
+                </span>
+              </span> 
+             </span>
+          </div>
+        </div>
+      </ng-template>
+      <ng-template #footer>
+      </ng-template>
+      <ng-template #icons>
+      </ng-template>
+      <div *ngIf="dynamicObject['agente'] =='exterior' && contexto_inicial">
+        Trabalho nº {{dynamicObject['param2']}}
+        <br>
+        Possui as informações sobre o relatório, principais constatações e as respectivas evidências e reconendações
+        vinculadas.
+
+      </div>
+
+      <div *ngIf="dynamicObject['agente'] =='exteriorconsolidado' && contexto_inicial">
+        Prefixo GA {{dynamicObject['param2']}}, ano do exercicio analisado: {{dynamicObject['param3']}}
+        <br>
+        Este chat responde perguntas sobre os pontos consolidados dos trabalhos desta GA/Exercício. <br>
+        Se necessitar de detalhes específicos de algum Trabalho de Auditoria (por ex.: recomendações detalhadas, 
+        justificativa, relatórios completos), é preciso acessar o agente específico do respectivo trabalho, 
+        pois lá há todo o relatório em profundidade.
+
+      </div>
+
+      <div *ngIf="dynamicObject['agente'] =='atb' && contexto_inicial">
+        <br>
+        Iniciando teste de chat do indicador ATB planejamento de trabalhos de auditoria
+
+      </div>
+
+    </p-panel>
+    <!--
+    <div class="chat-container">
+      <div class="messages" #messageContainer>
+        <div *ngFor="let msg of messages" [ngClass]="{
+            'user-message': msg.role === 'user',
+            'assistant-message': msg.role === 'assistant'
+          }">
+          <p-card styleClass="message-card" [style]="{ 'margin-bottom': '1rem', 'white-space': 'pre-wrap' }">
+            <ng-container>
+              <span *ngIf="msg.role === 'user'">
+                <i class="pi pi-user" style="margin-right: .5rem;"></i>
+                Você:
+              </span>
+              <span *ngIf="msg.role === 'assistant'">
+                <i class="pi pi-android" style="margin-right: .5rem;"></i>
+                Assistente:
+              </span>
+              <br />
+            
+              <span>{{ msg.content }}</span>
+            </ng-container>
+          </p-card>
+         </div>
+      </div>
+   
+      <div class="loading-indicator" *ngIf="loading">
+        <p-progressSpinner></p-progressSpinner>
+        <span style="margin-left: 8px;">{{ currentLoadingMessage }}</span>
+      </div>
+    
+      <div class="input-bar">
+        <textarea #textarea [(ngModel)]="userMessage" placeholder="Digite sua mensagem..."
+          (input)="adjustTextArea($event)" (keydown)="handleEnterKey($event)" rows="1" class="chat-textarea"></textarea>
+  
+        <div class="input-action">
+          <i class="pi pi-send" (click)="sendMessage()"
+            [ngClass]="{ 'disabled':  userMessage.trim().length === 0 || loading }"></i>
+        </div>
+      </div>
+    </div>
+    <br>
+  -->
+
+
+
+    <div class="chat-container">
+      <!-- Alerta caso nenhum trabalho esteja selecionado -->
+      <p-message *ngIf="!contexto_inicial" severity="warn"
+        text="Aguarde, analisando o objeto de auditoria."
+        [style]="{ 'margin-bottom': '1rem' }"></p-message>
+
+      <!-- Mensagens do Chat -->
+      <div class="messages" #messageContainer>
+        <div *ngFor="let msg of messages" [ngClass]="{
+          'user-message': msg.role === 'user',
+          'assistant-message': msg.role === 'assistant'
+        }" class="message-item">
+          <!-- Mensagem do Usuário ou Assistente -->
+          <p-card styleClass="message-card" [style]="{ 'margin-bottom': '1rem', 'white-space': 'pre-wrap' }">
+            <ng-container>
+              <span *ngIf="msg.role === 'user'">
+                <!--    <i class="pi pi-user" style="margin-right: .5rem;"></i>-->
+                <p-avatar *ngIf="msg.role === 'user'"
+                  [image]="'https://humanograma.intranet.bb.com.br/avatar/' + usuario?.chaveFuncionario" class="mr-2"
+                  size="large" shape="circle"></p-avatar>
+              </span>
+
+              <span *ngIf="msg.role === 'assistant'">
+                <p-avatar *ngIf="msg.role === 'assistant'" image="assets/assistente.png" class="mr-2" size="large"
+                  shape="circle"></p-avatar>
+              </span>
+              <br />
+              <span>{{ msg.content }}</span>
+            </ng-container>
+          </p-card>
+        </div>
+      </div>
+
+      <!-- Indicador de carregamento enquanto espera resposta -->
+      <div *ngIf="loading" class="loading-indicator">
+        <!-- Novo indicador de "digitando" -->
+        <div class="typing-indicator">
+          <span class="dot"></span>
+          <span class="dot"></span>
+          <span class="dot"></span>
+        </div>
+        <span style="margin-left: 8px;">{{ currentLoadingMessage }}</span>
+      </div>
+
+      <!-- Barra de input e botão de enviar -->
+      <div class="input-bar">
+        <textarea #textarea [(ngModel)]="userMessage" placeholder="Digite sua mensagem..."
+          (input)="adjustTextArea($event)" (keydown)="handleEnterKey($event)" rows="1" class="chat-textarea"></textarea>
+
+        <div class="input-action">
+          <i class="pi pi-send" (click)="sendMessage()" [ngClass]="{
+            'disabled': userMessage.trim().length === 0 || loading || !contexto_inicial
+          }"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer class="footer mt-auto py-2 bg-light"> <!-- Reduz o padding vertical -->
+    <div class="container">
+      <div class="row">
+        <div class="col text-right">
+          <i>GA MEFIS - 2025</i>
+        </div>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<p-dialog header="Nos ajude a melhorar" [modal]="true" [(visible)]="displayFeedbackDialog" [style]="{ width: '50rem' }">
+  <div class="flex flex-column gap-4 mb-4" style="padding: 0 10px;">
+    <p-floatlabel style="width: 100%;">
+      <textarea pTextarea id="over_label" [(ngModel)]="feedbackText" rows="5" style="resize: none; width: 100%;"
+        class="h-full"></textarea>
+      <label for="over_label">
+        Conte-nos mais sobre sua experiência.<br>
+        <small>(campo não obrigatório)</small>
+      </label>
+    </p-floatlabel>
+  </div>
+
+  <div class="flex justify-end gap-2" style="padding: 0 10px;">
+    <p-button label="Cancelar" severity="secondary" (click)="closeDialog()"></p-button>
+    <p-button label="Enviar" (click)="submitFeedback()"></p-button>
+  </div>
+</p-dialog>
+
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { RouterModule } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { MessageService } from 'primeng/api';
+import { ServicoLLMService } from '../servico-llm.service';
+import { ToastModule } from 'primeng/toast';
+import { AccordionModule } from 'primeng/accordion';
+import { CardModule } from 'primeng/card';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { MessageModule } from 'primeng/message';
+import { TabsModule } from 'primeng/tabs';
+import { BadgeModule } from 'primeng/badge';
+import { ScrollPanelModule } from 'primeng/scrollpanel';
+import { AvatarModule } from 'primeng/avatar';
+import { PanelModule } from 'primeng/panel';
+import { ButtonModule } from 'primeng/button';
+import { MenuModule } from 'primeng/menu';
+import { Dialog } from 'primeng/dialog';
+import { TextareaModule } from 'primeng/textarea';
+import { FloatLabel } from 'primeng/floatlabel';
+import { ScrollerModule } from 'primeng/scroller';
+import { Tag } from 'primeng/tag';
+
+import { FeedbackPayload } from '../models/models';
+
+import { MensagemPayloadGeral } from '../models/models';
+
+@Component({
+  selector: 'app-chatgeral',
+  imports: [
+    CommonModule, RouterModule, FormsModule, ToastModule, AccordionModule, CardModule,  ProgressSpinnerModule, MessageModule, TabsModule, BadgeModule,
+    ScrollPanelModule, AvatarModule, PanelModule, ButtonModule, MenuModule, Dialog, TextareaModule, FloatLabel, ScrollerModule, Tag
+  ],
+  templateUrl: './chatgeral.component.html',
+  styleUrls: ['./chatgeral.component.css'],
+  providers: [MessageService],
+})
+export class ChatgeralComponent implements OnInit {
+
+  // http://localhost:4200/chatgeral/agente/exterior/param1/relindividual/param2/51127
+  //http://localhost:4200/chatgeral/agente/exteriorconsolidado/param1/relconsolidado/param2/9646/param3/2024
+
+  params: string[] = [];
+  dynamicObject: { [key: string]: string } = {}; // Objeto dinâmico criado a partir dos params
+  usuario: any;
+
+  isPanelCollapsed: boolean = false;
+  nrTrabalho: any
+  trabalhoDetalhes: any; // Detalhes do trabalho
+  sessionId: string = '';   
+  messages: Array<{ role: string; content: string }> = []; // Histórico de mensagens
+  userMessage: string = ''; 
+  loading: boolean = false; // Indicador de carregamento
+  currentLoadingMessage: string = ''; // Mensagem de carregamento atual
+  loadingMessages: string[] = [
+    'Lendo o objetivo do trabalho...',
+    'Analisando a justificativa do trabalho...',
+    'Eventos de riscos avaliados e as respectivas notas...',
+    'Estudando o relatório de auditoria...',
+    'Lendo as principais constatações do relatório...',
+    'Obtendo os vínculos das ocorrências e evidências de achados de auditoria...',
+    'Recuperando recomendações vinculadas ao trabalho...'
+  ];
+
+  loadingMessagesExtCons: string[] = [
+    'Atenção, sou um agente que possui apenas os dados consolidados...',
+    'Lendo os pontos consolidados dos trabalhos desta GA/Exercício...',
+    'Analisando os princiapis pontos do trabalho...',
+    'Analisando os principais riscos avaliados e as respectivas notas...',
+    'Estudando os principais pontos do relatório de auditoria...',
+    'Lendo as principais constatações do relatório...',
+    'Atenção, sou um agente que possui apenas os dados consolidados...'
+  ];
+
+  loadingMessagesATBpln: string[] = [
+    'Indicador planejamento de trabalhos...',
+    'Lendo definição do indicador ...',
+    'Aprendendo a descrição das tabelas e os valores registrados...'
+   ];
+
+   items_atb_pln = [
+    { question: '1) Teve algum trabalho que não está na relação do paint e está na relação de trabalhos do indicador?' },
+    { question: '2) Teve algum trabalho cancelado que estava no orçado no indicador?' },
+    { question: '3) Teve algum trabalho que no planejamento do paint a previsão de conclusão era para 2025 e agora passou para 2026?' },
+    { question: '4) Quais trabalhos estão com o status em replanejamento?' },
+    { question: '5) Quais trabalhos estão com o status em cancelamento?' },
+    { question: '6) Esses trabalhos com status em cancelamento, qual o risco para o cumprir o indicador?' }
+  ];
+
+  loadingInterval: any;
+
+  displayFeedbackDialog: boolean = false; // Controla a visibilidade do dialog
+  feedbackText: string = ''; // Armazena o feedback do usuário
+  dialogHeader: string = ''; // Cabeçalho do dialog
+  feedbackType: string = ''; // Armazena se foi "useful" ou "notUseful"
+
+
+   // Referências ao container das mensagens e ao textarea (para rolagem e ajuste de altura)
+   @ViewChild('messageContainer') messageContainer!: ElementRef;
+   @ViewChild('textarea') textarea!: ElementRef;
+  objetoAudDetalhes: any;
+  contexto_inicial: boolean=false;
+
+  constructor(
+              private route: ActivatedRoute,
+              private servicoLLM: ServicoLLMService,
+              private messageService: MessageService
+              ) {}
+
+  ngOnInit(): void {
+    this.servicoLLM.user$.subscribe((user) => {
+      this.usuario = user;
+    });
+
+    // Cria uma nova sessão ao carregar o componente
+    this.servicoLLM.createSession().subscribe({
+      next: (response) => {
+        this.sessionId = response.sessionId;
+      },
+      error: (err) => {
+        console.error('Erro ao criar sessão:', err);
+      },
+    });
+  
+
+    this.route.params.subscribe((params) => {
+      const wildcard = params['wildcard']; // Ex: "nome/joao/idade/25"
+      if (wildcard) {
+        this.params = wildcard.split('/'); // Ex: ['nome', 'joao', 'idade', '25']
         
-        query = f"""SELECT DISTINCT 
-    t1.nr_trabalho, 
-    t1.in_abgc_elbb, 
-    t1.dt_inc_dmd, 
-    t1.dt_fin_dmd, 
-    t1.dt_inc_plnj,
-    t1.dt_fim_plnj AS data_fim_planejamento_atual, 
-    t1.p_dt_fim_plnj AS data_fim_planejamento_paint,
-    EXTRACT(YEAR FROM t1.dt_fim_plnj) AS ano_fim_planejamento_atual, 
-    EXTRACT(YEAR FROM t1.p_dt_fim_plnj) AS ano_fim_planejamento_paint,
-    t1.nm_trab, 
-    t1.obj_trab, 
-    t1.cd_tip_atvd_plnj, 
-    t1.nm_tip_atvd_plnj, 
+        // Criar o objeto dinâmico
+        this.dynamicObject = this.createDynamicObject(this.params);
+ 
+        if (this.dynamicObject){
+          this.startLoadingMessages();
+        }
+        
+        // Acessar valores específicos
+        const agente = this.dynamicObject['agente'];
+        const finalidade = this.dynamicObject['finalidade'];
+        const param1 = this.dynamicObject['param1'];
+        const param2 = this.dynamicObject['param2'];
+
+        // Enviar os dados ao backend
+        this.servicoLLM.servicosAgentes(this.dynamicObject).subscribe({
+          next: (response) => {
+            console.log('response: ', response)
+            this.objetoAudDetalhes = response[0]; // Detalhes do trabalho
+        this.showNotification('info', 'Objeto auditoria selecionado', `Iniciando análise do trabalho ${this.dynamicObject['agente'] }`);
+  
+        // Reseta a sessão no backend
+        this.servicoLLM.resetSession(this.sessionId).subscribe({
+          next: () => {
+            // Reenvia a role do user e assistant vinculadas ao trabalho
+            
+            this.servicoLLM.sendMessage(
+              this.sessionId,
+              '',
+              response[0].role_user,
+              response[0].role_assistant
+            ).subscribe({
+              next: () => {
+                // Exibe a notificação de sucesso e fecha o painel
+                this.showNotification('success', 'Sessão Inicializada', 'Pronto para interagir.');
+                this.isPanelCollapsed = true; // Fecha o painel automaticamente
+                this.loading = false;
+                this.contexto_inicial = true;
+                this.stopLoadingMessages();
+              },
+              error: (err) => {
+                console.error('Erro ao inicializar sessão:', err);
+                this.showNotification('error', 'Erro', 'Erro ao inicializar sessão.');
+                this.loading = false;
+                this.stopLoadingMessages();
+              },
+            });
+          },
+          error: (err) => {
+            console.error('Erro ao resetar a sessão:', err);
+            this.showNotification('error', 'Erro', 'Erro ao resetar sessão.');
+            this.loading = false;
+            this.stopLoadingMessages();
+          },
+        });
+          },
+          error: (err) => {
+            console.error('Erro ao enviar dados ao backend:', err);
+          }
+        });
+      } else {
+        console.log('Nenhum parâmetro extra na rota.');
+      }
+    });
+  }
+
+  // Método para criar um objeto dinâmico
+  createDynamicObject(params: string[]): { [key: string]: string } {
+    const obj: { [key: string]: string } = {};
+    for (let i = 0; i < params.length; i += 2) {
+      const key = params[i]; // Pega a chave
+      const value = params[i + 1]; // Pega o valor
+      if (key && value) {
+        obj[key] = value; // Adiciona ao objeto
+      }
+    }
+    return obj;
+  }
+
+  // http://localhost:4200/chatgeral/agente/exterior/finalidade/relexercicio/param1/47487
+
+  
+
+
+  // generico
+
+  showNotification(severity: string, summary: string, detail: string) {
+    this.messageService.add({ severity, summary, detail });
+  }
+
+  onTrabalhoChange_(nr_trabalho: number): void {
     /*
-    t1.cd_tip_est_atvd, 
-    t1.nm_tip_est_atvd, 
+    if (!nr_trabalho) {
+      this.showNotification(
+        'warn',
+        'Seleção de Trabalho',
+        'Por favor, selecione um trabalho antes de continuar.'
+      );
+      return;
+    }
     */
-    t1.nr_trabalho_pln, 
-    t1.pln_alteracoes, 
-    t1.pln_cancelamentos
-FROM 
-    atb.trabalhos_simulado AS t1;
-        """   
+    this.isPanelCollapsed = false;
+    this.resetMessages();
+    this.loading = true;
+    this.startLoadingMessages();
+  
+    // Abrir o painel imediatamente
+    
+  
+    this.servicoLLM.getTrabalhoDetails(nr_trabalho).subscribe({
+      next: (response) => {
+        this.trabalhoDetalhes = response[0]; // Detalhes do trabalho
+        this.showNotification('info', 'Trabalho Selecionado', `Iniciando análise do trabalho ${nr_trabalho}`);
+  
+        // Reseta a sessão no backend
+        this.servicoLLM.resetSession(this.sessionId).subscribe({
+          next: () => {
+            // Reenvia a role do user e assistant vinculadas ao trabalho
+            this.servicoLLM.sendMessage(
+              this.sessionId,
+              '',
+              response[0].role_user,
+              response[0].role_assistant
+            ).subscribe({
+              next: () => {
+                // Exibe a notificação de sucesso e fecha o painel
+                this.showNotification('success', 'Sessão Inicializada', 'Pronto para interagir.');
+                this.isPanelCollapsed = true; // Fecha o painel automaticamente
+                this.loading = false;
+                this.stopLoadingMessages();
+              },
+              error: (err) => {
+                console.error('Erro ao inicializar sessão:', err);
+                this.showNotification('error', 'Erro', 'Erro ao inicializar sessão.');
+                this.loading = false;
+                this.stopLoadingMessages();
+              },
+            });
+          },
+          error: (err) => {
+            console.error('Erro ao resetar a sessão:', err);
+            this.showNotification('error', 'Erro', 'Erro ao resetar sessão.');
+            this.loading = false;
+            this.stopLoadingMessages();
+          },
+        });
+      },
+      error: (err) => {
+        console.error('Erro ao carregar detalhes do trabalho:', err);
+        this.showNotification('error', 'Erro', 'Erro ao carregar detalhes do trabalho.');
+        this.loading = false;
+        this.stopLoadingMessages();
+      },
+    });
+  }
 
-    else:
-        query=''
+   
+  adjustTextArea(event: Event): void {
+    const textarea = event.target as HTMLTextAreaElement;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = `${textarea.scrollHeight}px`;
+    }
+  }
+
+  stopLoadingMessages(): void {
+    clearInterval(this.loadingInterval);
+    this.currentLoadingMessage = '';
+  }
+
+  sendMessage(): void {
+    const trimmedMessage = this.userMessage.trim();
+  
+    if (!trimmedMessage) {
+      this.showNotification('warn', 'Atenção', 'Digite uma mensagem antes de enviar.');
+      return;
+    }
+  
+    // Adiciona a mensagem do usuário ao histórico
+    this.messages.push({ role: 'user', content: trimmedMessage });
+  
+    // Limpa o campo de input e redefine a altura do textarea
+    this.userMessage = '';
+    this.resetTextAreaHeight();
+  
+    this.loading = true;
+    this.showNotification('info', 'Enviando', 'Sua mensagem está sendo processada.');
+  
+    // Envia a mensagem ao backend
+    this.servicoLLM.sendMessage(this.sessionId, trimmedMessage).subscribe({
+      next: (response) => {
+        // Adiciona a resposta do assistente ao histórico
+        this.messages.push({ role: 'assistant', content: response.answer });
+        this.loading = false;
+        this.showNotification('success', 'Sucesso', 'Mensagem enviada com sucesso.');
+        this.scrollToBottom();
+  
+        // Salvar mensagens no backend sem bloquear a interface
 
         
-    return await execute_query(query)
+        const mensagemPayloadGeral: MensagemPayloadGeral = {
+          objeto_auditoria: this.objetoAudDetalhes.objeto_auditoria ? this.objetoAudDetalhes.objeto_auditoria.toString() : '', // ou um valor padrão
+          matricula: this.usuario?.chaveFuncionario,
+          sessao: this.sessionId,
+          remetente: 'usuario',
+          conteudo: trimmedMessage
+      };
 
-
-@router.post('/apiptai/agentesllm/')
-async def trbpln(request: Request):
-    try:
-        # Capturar o JSON enviado pelo cliente
-        data = await request.json()
-        print("Dados recebidos:", data)
-
-        # Processar os dados dinamicamente
-        agente = data.get("agente")
-        param1 = data.get("param1")
-        param2 = data.get("param2")
-        param3 = data.get("param3")
-
-        print('agente ', agente, 'param1 ', param1, 'param2 ', param2, 'param3 ', param3)
-
-        result = await chat_geral_query(data)  # Chama a função assíncrona
-
-        if data.get("agente") =='atb' and data.get("param1") =='plntrabalhos':
-            df = pd.DataFrame(result)
-
-            # Converter o DataFrame em JSON com orientação 'records'
-            df_str = df.to_json(orient='records')
-            return  gpt_pln_trb(df_str)
-        
-        return result
-
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Erro ao processar dados: {str(e)}")
+        this.servicoLLM.salvarChatGeral(mensagemPayloadGeral).subscribe({
+          next: (res) => console.log('Mensagem do usuário salva:', res),
+          error: (err) => console.error('Erro ao salvar mensagem do usuário:', err)
+        });
+  /*
+        const payloadAssistente = {
+          numero_trabalho: this.nrTrabalho,
+          matricula: this.usuario?.chaveFuncionario,
+          sessao: this.sessionId,
+          remetente: 'assistente',
+          conteudo: response.answer
+        };
+        this.servicoLLM.salvarMensagem(payloadAssistente).subscribe({
+          next: (res) => console.log('Resposta do assistente salva:', res),
+          error: (err) => console.error('Erro ao salvar resposta do assistente:', err)
+        });
+        */
+      },
+      error: (err) => {
+        console.error('Erro ao processar mensagem:', err);
+        this.loading = false;
+        this.showNotification('error', 'Erro', 'Erro ao processar sua mensagem. Tente novamente mais tarde.');
+        this.messages.push({
+          role: 'assistant',
+          content: 'Erro ao processar sua mensagem. Por favor, tente novamente mais tarde.'
+        });
+        this.scrollToBottom();
+      },
+    }); 
+  }
+  
+  
  
 
+  handleEnterKey(event: KeyboardEvent): void {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      this.sendMessage();
+      this.resetTextAreaHeight();
+    }
+  }
+
+  resetTextAreaHeight(): void {
+    if (this.textarea) {
+      const textareaEl = this.textarea.nativeElement as HTMLTextAreaElement;
+      textareaEl.style.height = 'auto';
+    }
+  }
+
+  scrollToBottom(): void {
+    if (this.messageContainer) {
+      this.messageContainer.nativeElement.scrollTop =
+        this.messageContainer.nativeElement.scrollHeight;
+    }
+  }
+
+  resetMessages(): void {
+    this.messages = [];
+  }
+  startLoadingMessages(): void {
+    let index = 0;
+    if (this.dynamicObject['agente'] =='exteriorconsolidado') {
+        this.loadingMessages = this.loadingMessagesExtCons;
+    } else if (this.dynamicObject['agente'] =='atb'){
+        this.loadingMessages = this.loadingMessagesATBpln;
+    }
+
+    this.currentLoadingMessage = this.loadingMessages[index];
+    this.loadingInterval = setInterval(() => {
+      index = (index + 1) % this.loadingMessages.length;
+      this.currentLoadingMessage = this.loadingMessages[index];
+    }, 3000);
+  }
+
+  replaceNewLines(content: string | null | undefined): string {
+    if (!content) {
+      return '';
+    }
+    return content.replace(/\n/g, '<br>');
+  }
+
+  // Método acionado ao clicar em Curtir ou Não Curtir
+  onFeedback(type: string): void {
+    this.feedbackType = type;
+    this.dialogHeader = type === 'useful' ? 'Por que você gostou?' : 'Por que você não gostou?';
+    this.displayFeedbackDialog = true; // Abre o dialog
+  }
+
+  // Envia o feedback para o backend
+  submitFeedback(): void {
+    // Monta o payload com todas as informações
+    const feedbackData: FeedbackPayload = {
+      texto: this.feedbackText,
+      matricula: this.usuario?.chaveFuncionario || '',
+      trabalho: 0,
+      sessao: this.sessionId,
+      feedback: this.feedbackType,
+      agente: this.dynamicObject['agente'] ,
+      objetoaudt: this.dynamicObject['param2'] 
+    //  data: new Date().toISOString()
+    };
+  
+    // Envia o feedback usando o serviço
+    this.servicoLLM.salvarFeedback(feedbackData).subscribe({
+      next: (response) => {
+        this.showNotification('success', 'Obrigado!', 'Seu feedback foi enviado com sucesso.');
+      },
+      error: (error) => {
+        console.error('Erro ao enviar feedback:', error);
+        this.showNotification('error', 'Erro', 'Não foi possível enviar seu feedback. Tente novamente mais tarde.');
+      },
+      complete: () => {
+        // Fecha o diálogo e limpa o feedback após a conclusão
+        this.closeDialog();
+      }
+    });
+  }
+  
+
+  // Fecha o dialog e limpa o campo de feedback
+  closeDialog(): void {
+    this.displayFeedbackDialog = false;
+    this.feedbackText = '';
+  }
+
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+.main-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh; /* Garante altura mínima da viewport */
+  position: relative;
+}
 
 
+.chat-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  padding: 1rem;
+  margin: 0.5rem auto;
+  background-color: #2c2c2c;
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  overflow: hidden; /* Impede que o conteúdo transborde */
+}
 
-def gpt_pln_trb(df_str):
+/* Ajuste para o footer */
+.footer {
+  flex-shrink: 0;
+  padding: 0.5rem 0; /* Reduz o padding vertical */
+  background-color: #f8f9fa !important;
+  z-index: 1000;
+}
 
-    orientacao = {}
+.footer i {
+  font-size: 0.75rem !important; /* Reduz o tamanho do texto */
+}
 
-    orientacao['assitente'] = '''Você é um especialista em indicador de acordo de trabalho do banco do brasil,  vou iniciar um 
-                                chat que o usuário vai fazer perguntas espeficicamente sobre esse indicador, Planejamento Anual de trabalhos de auditoria – Quantidade
-                                qualquer solcitação fora do escopo da definição do indicador, nota de aprovação, publicação CGU e dados do trabalho, pode desconsiderar
-                                orientando o usuário que que a sua atribuição é fornecer informações sobre o indicador '''
-    
-    orientacao['definicao_indicador'] ='''Nome do Indicador/Componente: Planejamento Anual – Quantidade; Conceito do Indicador: Referencial para mensuração da quantidade de trabalhos de auditoria programada concluídos em relação ao número de trabalhos de auditoria programada previstos para o período, conforme Paint 2025 aprovado pelo CA (NT 135665); 
-                Meta 2025: 1º semestre: conclusão de 97% dos trabalhos de auditoria programada planejados para o semestre. 2º semestre: conclusão de 97% dos trabalhos de auditoria programada planejados para o ano (cumulativo no ano);
-                Composição: Razão entre “X” e “Y”, onde: “X” é a quantidade de trabalhos de auditoria programada concluídos no período. “Y” é a quantidade de trabalhos de auditoria programada planejados para o período. Transformação Digital e Processos
-                '''
-    orientacao['resumo_nt_135665'] ='''Nota Audit nº 135.665, de 29/11/2024 - Planejamento da Auditoria Interna para o triênio 2025 - 2027.
-                Informações:
-                A Auditoria Interna propõe ao Conselho de Administração (CA) a aprovação do Plano Anual de Auditoria Interna (PAINT) 2025 e conhecimento da avaliação dos processos corporativos e das Entidades Ligadas que compõem o Universo Auditável para o ciclo 2025
-                - 2027.
-                O planejamento da Audit orienta-se pelas Instruções Normativas nº 3, de 09.06.2017, e nº 5, de 27.08.2021, da Controladoria-Geral da União (CGU); pela Resolução nº 4879, de
-                23.12.2020, do Conselho Monetário Nacional (CMN); e pela Estrutura Internacional de Práticas Profissionais de Auditoria Interna, emitida pelo The Institute of Internal Auditors
-                (The IIA).
-                O documento contempla os principais riscos aos quais o Conglomerado está exposto e as percepções do Conselho de Administração (CA), Comitê de Auditoria (Coaud), Comitês de Riscos e de Capital (Coris), de Sustentabilidade Empresarial (Cosem), de Tecnologia e
-                Inovação (Cotei), de Pessoas, Remuneração e Elegibilidade (Corem), e dos principais gestores do Banco e das Entidades Ligadas ao Banco do Brasil (ELBB), além de eventuais solicitações de entidades de fiscalização e controle.
-                A Nota consigna (item 6.13) que a implementação da presente proposta é suportada pelo orçamento da Unidade (objeto do Parecer Coaud 2024/80). Para 2025, a Audit planeja
-                utilizar 864.107 horas para as suas atividades, as quais estão detalhadas no documento.
-                A proposta de Paint 2025 é consistente com a estrutura e o orçamento da Unidade e está em conformidade com os normativos aplicáveis'''
 
-    orientacao['resumo_publicacao_CGU'] =''' A Auditoria Interna do Banco do Brasil S.A., em atendimento ao art. 9º da Instrução Normativa nº 5, de 27/08/2021, da Secretaria Federal de Controle Interno, da Controladoria Geral da União (SFC/CGU), dá publicidade ao PAINT 2025, após aprovação, em 13/12/2024, pelo Conselho de Administração da Empresa.
-    O PAINT do Banco do Brasil S.A. também contempla os trabalhos a serem realizados nas entidades ligadas que utilizam a estrutura da Auditoria Interna do Controlador, conforme prevê o art. 14 do Decreto nº 8.945, de 27/12/2016.
-    As informações classificadas como sigilosas foram substituídas pela expressão [Informação Sigilosa], em conformidade com a IN 05 da SFC/CGU.
-    Sumário
-    APRESENTAÇÃO 3
-    A AUDITORIA INTERNA 4
-    METODOLOGIA 5
-    Abordagem quantitativa 5
-    Abordagem qualitativa 6
-    Avaliação Externa de Qualidade 6
-    ATIVIDADES DE AUDITORIA 8
-    AUDITORIAS PROGRAMADAS 8
-    Acompanhamento e Avaliação de Recomendações 9
-    AUDITORIAS ESPECIAIS 9
-    CONSULTORIA 10
-    DEMANDAS EXTERNAS 10
-    OUTRAS DEMANDAS 10
-    DEMANDAS EXTRAORDINÁRIAS 11
-    CAPACITAÇÃO 12
-    GESTÃO DA AUDITORIA 13
-    ANÁLISES AVANÇADAS DE INFORMAÇÃO 14
-    PREMISSAS, RESTRIÇÕES E RISCOS ASSOCIADOS 16
-    APRESENTAÇÃO
-    Apresentamos o Plano Anual de Auditoria Interna (Paint) do Banco do Brasil referente ao exercício de 2025, em conformidade com a Instrução Normativa nº 5, de 27 de agosto de 2021, da Controladoria-Geral da União/Secretaria Federal de Controle Interno.
-    Este Plano descreve as atividades da Unidade Auditoria Interna, detalhando a alocação de recursos e as horas destinadas aos trabalhos de Auditorias Programadas, Auditorias Especiais, Consultorias, Demandas Externas e Outras Demandas de Auditoria. Dimensiona, ainda, o total de horas destinadas para capacitação, atividades administrativas e afastamentos regulamentares.
-    A dinâmica de atuação da Unidade está fundamentada no método de auditoria integrada, baseada em riscos.
-    As ações desenvolvidas pela Auditoria Interna guardam aderência às normas internacionais do The Institute of Internal Auditors (The IIA) e aos demais normativos externos e internos, relacionados à atuação da Unidade.
-    A AUDITORIA INTERNA
-    A Auditoria Interna realiza avaliação dos processos corporativos e empresas ligadas e presta consultoria, de forma independente e objetiva, visando o aprimoramento da governança corporativa e do gerenciamento de riscos e controles, bem como o alcance dos objetivos estratégicos do Banco. 
-    Está inserida no sistema de controles internos da Instituição, no qual atua como terceira linha, buscando interação com as demais linhas, porém, preservando sua autonomia e independência.
-    Para a consecução do seu objetivo, a Auditoria Interna desenvolve suas atividades de maneira integrada e sinérgica, no Conglomerado BB, envolvendo todo o quadro de gerentes, coordenadores de auditoria e auditores, no país e no exterior.
+  
+  .messages {
+    flex: 1;
+    overflow-y: auto; /* Permite rolagem */
+    padding-right: 1rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  /* Mensagens alinhadas à direita (usuário) */
+  .user-message {
+    flex-direction: row-reverse;
+    text-align: right;
+  }
+  
+  /* Mensagens alinhadas à esquerda (assistente) */
+  .assistant-message {
+    flex-direction: row;
+    text-align: left;
+  }
+  
+  .message-card {
+    max-width: 70%;
+    background: #444;
+    color: #fff;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+  }
+  
+  /* Avatar com espaçamento */
+  .p-avatar {
+  flex-shrink: 0;
+  }
+  
+  /* Indicador de carregamento */
+  .loading-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 1rem 0;
+  }
+  
+  /* Barra de entrada e ícones */
+  .input-bar {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem;
+    background-color: #3a3a3a;
+    border-radius: 20px;
+    margin-top: 1rem;
+  }
+  
+  .input-icons {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .input-icons i {
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: #9e9e9e;
+  }
+  
+  .chat-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #fff;
+    padding: 0 0.5rem;
+  }
+  
+  .chat-input::placeholder {
+    color: #9e9e9e;
+  }
+  
+  .input-action i {
+    font-size: 1.5rem;
+    color: #4caf50;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  
+  .input-action i.disabled {
+    color: #9e9e9e;
+    pointer-events: none;
+  }
+  
+  
+  .chat-input-container {
+    display: flex;
+    align-items: center;
+    background-color: #2c2c2c; /* Fundo escuro */
+    border-radius: 20px; /* Bordas arredondadas */
+    padding: 0.5rem 1rem;
+    gap: 0.5rem;
+    color: #fff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Sombra leve */
+  }
+  
+  .input-icons {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .input-icons i {
+    font-size: 1.2rem;
+    color: #9e9e9e; /* Cor dos ícones */
+    cursor: pointer;
+  }
+  
+  
+  .message-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .chat-textarea {
+    flex: 1;
+    resize: none;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #fff;
+    font-size: 1rem;
+    font-family: 'Roboto', sans-serif;
+    padding: 0 0.5rem;
+  }
+  
+  .chat-textarea::placeholder {
+    color: #9e9e9e;
+  }
+  
+  .input-action i {
+    font-size: 1.5rem;
+    color: #4caf50;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  
+  .input-action i.disabled {
+    color: #9e9e9e;
+    pointer-events: none;
+  }
+  
+  .chat-textarea {
+    min-height: 40px;
+    max-height: 200px; /* Limita a expansão */
+    overflow-y: auto; /* Adiciona barra de rolagem se o conteúdo exceder o máximo */
+  }
+  .dropdown-container {
+    margin: 1rem 0;
+  }
+  .warning {
+    margin-bottom: 1rem;
+  }
+  
+  
+  /* Personalizar o estilo do título */
+  .text-title {
+    color: #164d37; /* Azul escuro */
+    font-weight: 600; /* Negrito */
+    font-size: 2.2rem; /* Tamanho ajustado */
+  }
+  
+  .text-link {
+    text-decoration: none;
+    color: #0d6efd;
+    font-weight: bold;
+  }
+  
+  .text-link:hover {
+    text-decoration: underline;
+  }
+  
+  .pi-download {
+    cursor: pointer;
+    transition: color 0.2s ease;
+  }
+  
+  .pi-download:hover {
+    color: #0056b3;
+  }
+  
+  /* Espaçamento entre o dropdown e outros elementos */
+  .dropdown-container {
+    margin-bottom: 0.5rem; /* Adiciona espaço abaixo */
+  }
+  /* Estilo para borda e sombra */
+  .dropdown-container {
+    display: flex; /* Coloca os elementos na mesma linha */
+    align-items: center; /* Centraliza verticalmente */
+    padding: 1rem;
+    border: 1px solid #dee2e6; /* Borda cinza clara */
+    border-radius: 8px; /* Borda arredondada */
+    background-color: #f8f9fa; /* Fundo leve */
+    box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.1); /* Sombra suave */
+    gap: 1rem; /* Espaçamento entre o dropdown e o texto */
+  }
+  
+  /* Estilo adicional para responsividade */
+  @media (max-width: 768px) {
+    .dropdown-container {
+      flex-wrap: wrap; /* Permite quebra em telas pequenas */
+      margin-bottom: 1rem;
+      padding: 0.8rem;
+      gap: 0.5rem; /* Reduz o espaço entre os elementos */
+    }
+  }
+  
+  /* Estilo do texto "Trabalho selecionado" */
+  .selected-work {
+    color: #495057; /* Cinza escuro */
+    font-size: 1rem; /* Tamanho do texto */
+    padding: 0.3rem 0.8rem; /* Ajusta o espaçamento interno */
+    border: 1px solid #dee2e6; /* Borda leve */
+    border-radius: 8px; /* Bordas arredondadas */
+  }
+  
+  .headline-box {
+    border-left: 5px solid #007bff; /* Cor da borda lateral */
+    padding: 10px;
+    margin: 20px 0;
+    background-color: #f8f9fa; /* Cor de fundo */
+  }
+  
+  .headline-box h3 {
+    margin-top: 0;
+    font-size: 1.5rem; /* Tamanho do texto do título */
+  }
+  
+  .headline-box p {
+    margin: 0;
+    font-size: 1rem; /* Tamanho do texto do parágrafo */
+  }
+  
+  
+  /* efeito chat */ 
+  
+  .typing-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  }
+  
+  .dot {
+  width: 10px;
+  height: 10px;
+  margin: 0 5px;
+  background-color: #00aaff;
+  border-radius: 50%;
+  animation: typing 1.5s infinite ease-in-out;
+  }
+  
+  .dot:nth-child(2) {
+  animation-delay: 0.2s;
+  }
+  
+  .dot:nth-child(3) {
+  animation-delay: 0.4s;
+  }
+  
+  @keyframes typing {
+  0%, 80%, 100% {
+    transform: scale(0);
+    opacity: 0.3;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  }
+  
+  .floating-feedback-buttons {
+    position: fixed;
+    top: 100px; /* Distância do topo da tela */
+    right: -100px; /* Começa fora da tela */
+    display: flex;
+    flex-direction: row; /* Coloca os botões lado a lado */
+    gap: 10px; /* Espaçamento entre os botões */
+    z-index: 1000; /* Certifica-se de que está acima de outros elementos */
+    animation: slideIn 1.5s ease-out forwards; /* Animação para deslizar para dentro */
+  }
+  
+  .floating-feedback-buttons button {
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3); /* Saliência 3D */
+    border-radius: 50px;
+    width: 150px;
+    height: 50px;
+    font-weight: bold;
+    transform: scale(0.9); /* Ligeiramente menor */
+    transition: transform 0.3s ease, box-shadow 0.3s ease; /* Transição ao passar o mouse */
+  }
+  
+  .floating-feedback-buttons button:hover {
+    transform: scale(1.05); /* Aumenta ligeiramente no hover */
+    box-shadow: 0px 6px 15px rgba(0, 0, 0, 0.4); /* Aumenta a sombra no hover */
+  }
+  
+  /* Animação de entrada */
+  @keyframes slideIn {
+    0% {
+      right: -150px; /* Fora da tela */
+      opacity: 0; /* Invisível */
+    }
+    100% {
+      right: 50px; /* Posição final */
+      opacity: 1; /* Visível */
+    }
+  }
+  
+  /* Ajuste para telas pequenas (celulares) */
+  @media (max-width: 768px) {
+    .floating-feedback-buttons {
+      right: -80px; /* Começa fora da tela */
+      top: 70px; /* Ajuste para telas pequenas */
+      animation: slideIn 1.5s ease-out forwards;
+    }
+  }
+  
+  /* Ajuste para telas grandes (monitores maiores) */
+  @media (min-width: 1200px) {
+    .floating-feedback-buttons {
+      right: -200px; /* Começa mais longe */
+      top: 120px; /* Ajusta o topo */
+      animation: slideIn 2s ease-out forwards; /* Transição mais longa */
+    }
+  }
+  
 
-    METODOLOGIA
-    A atuação da Auditoria Interna está suportada pela metodologia de auditoria integrada baseada em riscos, considerando, no plano interno, a complexidade intrínseca dos processos da empresa e suas inter-relações e, na perspectiva externa, a interface da Organização com os ambientes regulatórios e com sua posição no ambiente competitivo em que atua.  
-    Busca realizar trabalhos, considerando a cobertura do universo auditável em ciclos de auditoria de até três anos, que reúnam elementos que permeiam diferentes processos corporativos, nos diversos níveis organizacionais onde ocorrem (no Brasil e no Exterior), gerando resultados que agregam valor à governança. 
-    A Audit utiliza visões quantitativas e qualitativas para definir os objetos que serão avaliados no ciclo. Essas visões e as análises conjuntas de seus componentes fornecem os subsídios para a priorização dos objetos e seleção dos temas para avaliação.
-    Abordagem quantitativa
-    Para a abordagem quantitativa, aplica-se a Metodologia de Priorização de Processo (MPP) que fornece pontuação com objetivo de sugerir ordem de avaliação em função do nível de exposição do processo. O modelo possui os seguintes componentes:
-    Impacto relativo dos riscos;
-    Cobertura dos riscos avaliados;
-    Notas dos eventos de riscos;
-    Horizonte temporal das avaliações;
-    Apontamento de entidades de fiscalização e controles;
-    Demandas da alta administração;
-    Impacto de auditorias especiais;
-    Nível do subprocesso; e
-    Criticidade do processo subordinante.
-    Esta metodologia foi implementada em 2023 e está em contínuo aprimoramento. Os elementos que compõem o modelo não são exaustivos e podem ser ajustados para melhor aferição da exposição a medida que o modelo e as avaliações evoluem.
-    A MPP viabiliza a seleção dos objetos baseada em riscos, pois há componentes que guardam relação direta com os riscos relevantes declarados pelo Banco. Esses riscos, e seus eventos descendentes, estão catalogados em um dicionário corporativo (Taxonomia Corporativa de Riscos e Controles) e integrados ao mapeamento de processo da Audit, o que possibilita maior ênfase na avaliação dos riscos corporativos.
-    Abordagem qualitativa
-    Ocorre por ocasião do processo de planejamento anual da Auditoria Interna, que é o processo que orienta as ações da Unidade de forma coordenada para permitir avaliações sistematizadas e integradas do universo auditável, considerando a alocação eficiente dos recursos e o alcance dos objetivos estratégicos da Organização. 
-    A cada ciclo de planejamento é realizada identificação dos maiores riscos aos quais o Conglomerado Banco do Brasil está exposto. Além de eventuais solicitações de entidades de fiscalização e controle, é realizado levantamento de percepções:
-    do Comitê de Administração da Auditoria Interna (ComAud);
-    das Gerências de Auditoria (GA);
-    do Conselho de Administração (CA);
-    do Comitê de Auditoria (Coaud);
-    do Comitê de Riscos e de Capital (Coris);
-    do Comitê de Sustentabilidade Empresarial (Cosem);
-    do Comitê de Tecnologia e Inovação (Cotei);
-    do Comitê de Pessoas, Remuneração e Elegibilidade (Corem);
-    dos principais gestores do Banco e das Entidades Ligadas ao Banco do Brasil (ELBB),
-    Complementarmente, são realizadas dinâmicas para identificação de temas com relevância estratégica para Audit visando: a integração entre os trabalhos (para otimizar a alocação de recursos em busca de ganhos de eficiência), possibilitar uma visão global dos riscos que permeiam os processos e a identificação de eventuais lacunas nas atividades previstas no planejamento.
-    Para 2025, como resultado dessas dinâmicas, foram relacionadas as seguintes avaliações estratégicas:
-    Avaliação Externa de Qualidade
-    Em 2023, o Instituto dos Auditores Internos do Brasil (IIA Brasil) renovou a certificação da Audit na Avaliação Externa de Qualidade (QA - Quality Assessment), conquistada em 2018. A manutenção da certificação reforça o nível de excelência da Unidade, o alinhamento às melhores práticas internacionais de auditoria interna e evidencia a robustez da metodologia de atuação adotada.
-    A consultoria externa especializada em Auditoria Interna, realizada pela empresa KPMG em 2022, também comprovou o elevado nível de maturidade da Audit, com destaque para sua governança, processos operacionais e metodologias. 
-    ATIVIDADES DE AUDITORIA
-    A Unidade distribui suas atividades em cinco categorias: Auditorias Programadas (AP), Auditorias Especiais (AE), Consultorias, Demandas Externas (DE) e Outras Demandas (OD). 
-    AUDITORIAS PROGRAMADAS
-    Contemplam as avaliações independentes nos processos corporativos e nas Entidades Ligadas ao Banco do Brasil, e as Auditorias de Caráter Obrigatório.
-    Processos Corporativos (PC): constituem o grupamento de trabalhos de maior relevância para a Auditoria Interna, uma vez que o seu conjunto representa os elementos constitutivos fundamentais do Banco, cujo desvio ou exposição a determinados níveis de risco pode comprometer a eficácia organizacional ou ameaçar sua perenidade.
-    Entidades Ligadas ao Banco do Brasil (ELBB): grupamento de trabalhos realizados nas empresas controladas, patrocinadas, administrada e na Fundação Banco do Brasil. As ELBB são avaliadas de acordo com a relevância de suas operações para o Conglomerado, sua complexidade e inter-relação com os processos corporativos sob análise. 
-    Como regra geral, as ELBB com auditoria interna própria são avaliadas com enfoque na governança corporativa e no sistema de controles internos. Nas demais empresas do universo auditável, a avaliação abrange também os processos internos.
-    Auditorias de Caráter Obrigatório (ACO): abrangem os trabalhos realizados em atendimento a dispositivos legais ou a contratos e convênios firmados com entidades externas. Os resultados dos trabalhos são utilizados como subsídios para as conclusões de auditoria dos processos corporativos aos quais estão relacionados.
-    [Informação Sigilosa]
-
-    O total das horas na atividade de auditoria programada contempla, além das necessárias para a realização dos trabalhos, as horas para acompanhamento e avaliação de recomendações, para revisão do universo auditável e para análises avançadas de informações. 
-    Acompanhamento e Avaliação de Recomendações
-    Trata-se do acompanhamento e avaliação das ações implementadas para solução dos apontamentos e a mitigação dos riscos vinculados, com vistas à melhoria da governança e do gerenciamento de riscos e controles.
-    A Auditoria Interna reporta mensalmente ao CA, Conselho Fiscal (CF), Coaud e Coris informações acerca das recomendações ainda não implementadas, com destaques para eventuais recomendações vencidas, bem como aquelas que possuem prorrogações recorrentes.
-    [Informação Sigilosa]
-    AUDITORIAS ESPECIAIS
-    São trabalhos conduzidos pela Auditoria Interna, enquanto instância de apuração no processo de Controle Disciplinar, que têm por objetivo identificar as circunstâncias e as consequências de irregularidades, bem como a análise de causas das ocorrências, contribuindo para a melhoria do gerenciamento de riscos e controles na Organização.
-    Nas apurações, busca-se delimitar a participação funcional, imputar responsabilidades, oportunizar o reposicionamento dos empregados e recompor a ordem interna, propiciando a melhoria das atividades e a quantificação de perdas.
-    As informações oriundas desses trabalhos acerca das irregularidades e de suas causas auxiliam a Auditoria Interna na avaliação dos processos corporativos e no encaminhamento de ações para aprimoramento dos produtos, serviços e sistemas do Banco.
-    CONSULTORIA
-    O posicionamento estratégico que a função de auditoria interna tem na organização lhe permite um olhar sistêmico da governança e do gerenciamento de riscos e controles, auxiliando na consecução dos objetivos estratégicos.
-    Com essa finalidade, a Auditoria Interna desenvolve consultorias nas modalidades de aconselhamento estratégico (orientação aos gestores em assuntos relacionados a processos, produtos e serviços; e projetos estratégicos), assessoramento (realização de análises específicas em notas técnicas, documentos, contratos etc.) e capacitação (realização de seminários, workshop, palestras etc.).
-    DEMANDAS EXTERNAS
-    Representa a atividade de relacionamento com as entidades de fiscalização e controle, e com a auditoria externa, cujo objetivo é prestar apoio especializado no fornecimento de informações pelas áreas responsáveis pelos processos do Banco e no atendimento a demandas decorrentes de trabalhos de auditoria e fiscalização, contribuindo para a qualidade e tempestividade das interações. 
-    Contempla o acompanhamento do resultado das fiscalizações e da solução dos apontamentos identificados, gerando insumos para subsidiar avaliações internas sobre os processos corporativos. As constatações, recomendações e as ações propostas para correção dos apontamentos são registradas e acompanhadas pela Auditoria Interna, que verifica a superação das fragilidades apontadas.
-    OUTRAS DEMANDAS
-    Compreendem:
-    atividades de planejamento da Auditoria Interna e desenvolvimento de metodologias, projetos e estudos específicos;
-    ações do Programa de Inovação no desenvolvimento de competências para proposição e implementação de soluções inovadoras;
-    trabalho de avaliação interna da qualidade das atividades da Auditoria Interna, realizado anualmente no âmbito do Programa de Gestão e Melhoria da Qualidade (PGMQ); 
-    assessoria ao ComAud e às GA na condução de assuntos relativos à governança e gerenciamento de riscos e controles; e
-    geração de informações para a Alta Administração do Banco e das ELBB.
-    DEMANDAS EXTRAORDINÁRIAS
-    Para tratamento de demandas extraordinárias envolvendo trabalhos em processos corporativos e nas ELBB são apartadas horas em Reserva Técnica a ser utilizada pelas Gerências de Auditoria no decorrer do exercício.  [Informação Sigilosa]
-    O monitoramento da utilização dessas horas ocorre pela atuação da Gerência de Auditoria Metodologia, Planejamento e Relacionamento com Entidades de Fiscalização (GA Mefis), que coordena o planejamento dos trabalhos da Unidade e acompanha sua execução. 
-    Alterações e cancelamentos dos trabalhos de Auditoria Programada previstos no Paint, bem como a inclusão de novos trabalhos, são acompanhados e analisados pela GA Mefis e submetidos ao ComAud para deliberação, quando necessário.  
-    As alterações significativas são reportadas mensalmente ao CA, CF e comitês de assessoramento ao CA (Coaud, Coris, Cotei, Cosem e Corem), por meio do Sumário Executivo da Auditoria Interna.   
-    CAPACITAÇÃO
-    A Auditoria Interna mantém Programa de Capacitação Profissional (Procap), com objetivo de orientar ações de capacitação continuada para o desenvolvimento e aperfeiçoamento profissional de seus funcionários.
-    Em novembro/2024, houve o lançamento da trilha de auditoria interna na Universidade Corporativa Banco do Brasil (UNIBB), contemplando cursos específicos voltados para a área-fim da Unidade, bem como temas transversais, relacionados aos processos críticos sob avaliação. 
-    Face às possibilidades advindas da entrega acima, a Unidade está revendo as ações para endereçamento do Procap na versão digital, uma vez que a trilha de auditoria na UNIBB pode suprir “gaps” que seriam endereçados exclusivamente no Procap. 
-    Também para 2025, está prevista a 2ª turma de especialização em Gestão de Riscos, Controles e Auditoria, a ser promovido pela Fundação Dom Cabral para auditores do BB, funcionários da Diretoria Controles Internos e da Vice-Presidência de Controles Internos e Gestão de Riscos. A 1ª. Turma desse curso foi avaliada com 85% de aprovação pelos alunos.
-    Além dessas iniciativas, estão previstos no Planejamento Anual de Educação Corporativa (PAEC) cursos e congressos externos, a serem promovidos por entidades de renome nacional, como Federação Brasileira de Bancos (Febraban), Instituto de Auditores Internos do Brasil (IIA), entre outros. 
-    Dentre as iniciativas de caráter permanente, destaca-se o incentivo às certificações profissionais, a exemplo do Certified Internal Auditor (CIA) e do Certified Information Systems Auditor (CISA). Trata-se de certificações reconhecidas internacionalmente no mercado para o exercício profissional na função de auditor. Por isso, todos os anos, os funcionários que são aprovados nessas provas internacionais são ressarcidos em 100% do montante investido. 
-    [Informação Sigilosa]
-
-    GESTÃO DA AUDITORIA
-    O quadro a seguir descreve as horas planejadas para as atividades da Auditoria Interna, cujo percentual pode ser ajustado ao longo do período em razão de eventual alteração na dotação de funcionários da Unidade.
-    Os recursos estão respaldados no Orçamento da Unidade, aprovado pelo CA, reforçando a autonomia e a independência da Auditoria Interna.
-
-    Quadro de Horas - 2025
-    Atividades da Auditoria Interna	Planejado
-    Qtd.%
-    I - Serviços de Auditoria
-    60,12%
-    Auditoria Programada 42,10%
-    Trabalhos 33,56%
-    Mapeamento de Processos e ELBB 0,97%
-    Analytics e Tecnologias Emergentes 7,57%
-    Auditorias Especiais (exceto AIQ) 15,19%
-    Apurações 14,99%
-    Analytics e Tecnologias Emergentes 0,20%
-    Consultoria 0,67%
-    Outras Demandas (exceto AIQ) 2,16%
-    II - Capacitação dos Auditores 5,45%
-    III - Monitoramento de Recomendações 1,75%
-    IV - Gestão e Melhoria da Qualidade
-    V - Gestão Interna da UAIG 14,09%
-    Assessoria Sede (Diger, Infor, Comitê e assistentes) 6,07%
-    Atividades Administrativas 2,70%
-    Gerenciamento (Gerentes de Auditoria) 3,30%
-    Metodologia e Planejamento (GA Mefis) 2,01%
-    VI - Demandas Externas 2,00%
-    VII - Reserva Técnica (Demandas Extraordinárias) 0,87%
-    VIII - Outros (afastamentos) 15,19%
-    Horas Totais 100,00%
-    ¹ O Quadro Técnico compreende Auditores, Coordenadores e Gerentes de Auditoria, no Brasil e no exterior.
-    ² A atividade “Gerenciamento” compreende a gestão realizada por gerentes de auditoria.
-    ANALYTICS E TECNOLOGIAS EMERGENTES
-    Alinhada ao processo de aceleração digital do Banco do Brasil, a Auditoria Interna continuará investindo, em 2025, na alocação de horas para evoluir na utilização de Data&Analytics (D&A), inteligência artificial (IA) e outras tecnologias emergentes, para apoiar a realização de avaliações de auditoria e outras atividades sob responsabilidade da Unidade.
-    [Informação Sigilosa]
-    A implementação e o monitoramento das soluções tecnológicas desenvolvidas visam alcançar o máximo retorno de valor nas avaliações de auditoria, seja por meio do aumento da produtividade ou da eficácia das avaliações. 
-    No próximo ano, uma parcela significativa das horas planejadas para prospecção, desenvolvimento e uso de tecnologias pela Auditoria Interna será dedicada a avanços no uso de IA, em especial IA Generativa, considerando que as iniciativas desenvolvidas em 2024 se mostraram viáveis, com resultados que demonstraram alto potencial de agregação de valor para a Auditoria Interna.
-    Do total de horas planejadas, cerca de 49% serão utilizadas pela Gerência de Auditoria Analytics e Tecnologias Emergentes (GA Antec), que atua como Centro de Excelência em Tecnologias (CoE) e é responsável pela coordenação do uso de D&A, IA e outras tecnologias emergentes na Auditoria Interna.
-    No planejamento e execução das horas dedicadas para projetos de desenvolvimento e uso de D&A, IA e tecnologias emergentes, serão consideradas as seguintes diretrizes, alinhadas à estratégia da Auditoria Interna para o tema: 
-    Incentivo e indução, por parte da Gestão, para a prospecção, desenvolvimento e uso de instrumentos avançados (preditivos e prescritivos), inclusive utilizando Inteligência Artificial/Machine Learning (IA/ML).
-    Internalização, nas próprias gerências responsáveis pela avaliação dos processos corporativos, da execução de tarefas de D&A que envolvam técnicas e ferramentas cujo uso já esteja disseminado na Auditoria Interna.
-    Monitoramento dos instrumentos diagnósticos, preditivos e prescritivos desenvolvidos para apoiar a avaliação dos processos corporativos. 
-    Seguir as diretrizes éticas em inteligência cognitiva e artificial, do BB, no desenvolvimento de soluções de IA para uso pela auditoria interna, em especial o conceito “the human in the loop”.
-    Com relação à cultura e à capacitação em D&A e IA, em 2025 será dada continuidade às ações da Jornada de Capacitação em D&A oferecida aos auditores e no programa de upskilling em fluência de dados para gestores, visando dotar a unidade com um corpo funcional (técnico e gerencial) preparado para alcançar o máximo valor no uso de dados e das tecnologias disponíveis, em favor da atuação da Auditoria Interna.
-    PREMISSAS, RESTRIÇÕES E RISCOS ASSOCIADOS
-    O Paint 2025 foi elaborado considerando a estrutura organizacional da Unidade, a dotação prevista de funcionários nas gerências de auditoria e a quantidade de horas líquidas de auditoria para execução dos trabalhos. 
-    A elaboração do planejamento está sujeita ao risco de alterações no ambiente de negócios que poderão impactar as premissas utilizadas para seleção dos itens dos processos a serem avaliados, bem como para alocação de recursos e atribuição de prazos das avaliações.
-    Ademais, há previsão de alteração da estrutura da Unidade a ser realizada durante o exercício, de forma que a execução do planejamento pode ser impactada tanto pela movimentação de pessoal e revisão/ampliação do universo auditável, como pela promoção de ações de upskilling e reskilling potencialmente necessárias para adequação à nova estrutura.
-    Para mitigação dos riscos, destacam-se as seguintes ações:
-    O acompanhamento e controle do planejamento são acompanhados pela GA Mefis. Alterações e cancelamentos dos trabalhos de Auditoria Programada previstos no Paint, bem como a inclusão de novos trabalhos, são analisados e submetidos ao ComAud para deliberação, quando necessário.  
-    O ambiente de negócios e a estratégia corporativa do Banco são acompanhados pelas gerências de auditoria, bem como pelo ComAud, que participa das reuniões do Conselho Diretor (CD) e CA, o que permite promover ajustes e adequações nos trabalhos planejados. As alterações são reportadas periodicamente ao Coaud, CA e CF. 
-    '''
-    
-    orientacao['descricao_princpais_tabelas_indicador'] ='''
-                   ### Descrição das Colunas da Tabela de Indicadores de Desempenho
-
-                        1. **Número do Trabalho**: Identificação única do trabalho.
-                        2. **Planejado no Paint**: Indica se o trabalho estava na relação do planejamento (paint).
-                        3. **Nome do Trabalho**: Nome do trabalho.
-                        4. **Objetivo do Trabalho**: Objetivo do trabalho.
-                        5. **Status Atual**: Status atual do trabalho.
-                        6. **Ano de Conclusão Atual**: Ano previsto para a conclusão do trabalho no planejamento atual.
-                        7. **Ano de Conclusão Original**: Ano planejado inicialmente no paint. Se nulo, o trabalho não estava no planejamento original. Atenção quando os anos forem distintos.
-                        8. **Data de Conclusão Atual**: Data prevista para o fim do planejamento atual.
-                        9. **Data de Conclusão Original**: Data prevista no paint para a conclusão do planejamento. Se diferente da data de conclusão atual, houve replanejamento.
-                        10. **Data Real de Conclusão**: Data real de conclusão do trabalho.
-
-                        ### Status de Alterações no Planejamento
-
-                        Esta coluna é crucial para explicar o cumprimento do indicador e possui os seguintes status:
-
-                        - **Reprogramado para Ano Posterior**: Trabalhos reprogramados para conclusão em ano posterior ao planejado inicialmente. Compromete o indicador.
-                        - **Aprovados Paint**: Trabalhos que mantêm o ano de previsão de conclusão no exercício do indicador. Espera-se a conclusão no ano previsto.
-                        - **Incluídos no Ano Anterior**: Trabalhos incluídos antes do fechamento do planejamento para o ano de exercício. Não compromete o indicador.
-                        - **Incluídos no Ano Atual**: Trabalhos incluídos após o fechamento do planejamento. Serão contabilizados como realizados se concluídos no ano do exercício do indicador.
-                        - **Cancelado no PTAI Atual**: Trabalhos cancelados que estavam no planejamento. Compromete o indicador.
-                        - **Cancelado Fora do PTAI**: Trabalhos cancelados que não estavam no planejamento. Não compromete o indicador.
-
-                        ### Status de Cancelamentos
-
-                        Esta coluna possui dois status que clarificam o cancelamento:
-
-                        - **Cancelado no PTAI Atual**: Trabalhos cancelados que estavam no planejamento.
-                        - **Cancelado Fora do PTAI**: Trabalhos cancelados que não estavam no planejamento.
-
-                        ### Observações Importantes
-
-                        - Sempre fique atento ao status de alterações no planejamento. Se o status for 'Aprovados Paint', não houve alteração significativa.
-                        - Se o status atual estiver em "Em replanejamento" mas o status de alterações for 'Aprovados Paint', o trabalho está normal, apenas com datas sendo definidas.
-                        - Atenção especial aos status de alterações diferentes de 'Aprovados Paint', pois indicam replanejamento.
-                        - Exemplo crítico: Se a data de conclusão original foi alterada para o ano subsequente, houve replanejamento. Analise o status de alterações para entender o impacto.
-
-                        ### Verificação Cruzada
-
-                        Antes de fornecer uma resposta, verifique cruzando as informações das datas e status para garantir a interpretação correta.
-
-                    '''
-
-    orientacao['base_de_dados'] = df_str
-
-    # Concatenar as informações para role_user
-    role_user = orientacao['assitente'] + " " + orientacao['definicao_indicador']  + " " + orientacao['descricao_princpais_tabelas_indicador'] + " " + orientacao['base_de_dados']
-    role_assistant = '''Você é um assistente e irá atuar como um chat para auxiliar os questionamentos sobre o indicador planejamento de trabalhos de auditoria.
-     A grande maioria das perguntas será sobre quais trabalhos foram reprogramados, cancelados, alterados. Para isso, informe o número do trabalho e, quando couber, 
-     o nome do trabalho. Seja conciso e direto. A necessidade é sempre saber o número e as datas que foram alteradas. Evite falar nomes de colunas da tabela porque o
-     auditor não conhece a tabela. Sempre atente para o status da coluna de alterações no planejamento diferente de 'Aprovados Paint'. Quando está diferente, é que
-     houve alteração significativa entre o planejado no paint e o que está ocorrendo.
-    '''
-    indicador = 'Planejamento de trabalhos de auditoria'
-    #text = ' '.join([f'{key}: {value}' for key, value in orientacao.items()])
-
-    
-   
-    
-    return [{
-        "role_user": role_user,
-        "role_assistant": role_assistant,
-        "indicador": indicador
-    }]
