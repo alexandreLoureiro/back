@@ -1,3 +1,51 @@
+<div 
+  #scrollableContainer 
+  style="max-height: 200px; overflow-y: auto; border: 1px solid red;"
+>
+  <div *ngFor="let line of lines">
+    {{ line }}
+  </div>
+</div>
+
+<button (click)="scrollDown()">Ir Para o Final</button>
+
+
+import { Component, ElementRef, ViewChild, OnInit } from '@angular/core';
+
+@Component({
+  selector: 'app-scroll-test',
+  templateUrl: './scroll-test.component.html'
+})
+export class ScrollTestComponent implements OnInit {
+  @ViewChild('scrollableContainer') scrollableContainer!: ElementRef;
+
+  // Para termos bastante conteúdo, crie 30 linhas
+  lines: string[] = [];
+
+  ngOnInit() {
+    for (let i = 1; i <= 30; i++) {
+      this.lines.push(`Linha ${i} - conteúdo de teste...`);
+    }
+  }
+
+  scrollDown(): void {
+    console.log('scrollDown() foi chamado.');
+
+    if (!this.scrollableContainer) return;
+    const container = this.scrollableContainer.nativeElement;
+
+    // Faz o scroll manualmente para o fim
+    container.scrollTop = container.scrollHeight;
+
+    // Opcional: se quiser animação suave, pode usar:
+    // container.scroll({
+    //   top: container.scrollHeight,
+    //   behavior: 'smooth'
+    // });
+  }
+}
+
+
 <div class="main-container">
   <div class="container">
     <div class="floating-feedback-buttons">
