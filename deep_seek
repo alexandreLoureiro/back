@@ -1,17 +1,1 @@
-import unicodedata
-import re
 
-# Supondo que você tenha um set de stopwords:
-STOPWORDS_PT = {"a", "e", "de", "da", "das", "do", "dos", "com", "para", "por"}
-
-def tokenize_text_pt(text):
-    text = text.lower()
-    # Remove acentos
-    text = unicodedata.normalize('NFD', text).encode('ascii','ignore').decode('utf-8')
-    # Remove pontuação
-    text = re.sub(r'[^\w\s]', '', text)
-    # Split em espaços
-    tokens = text.split()
-    # Filtra stopwords e palavras vazias
-    tokens = [t for t in tokens if t and t not in STOPWORDS_PT]
-    return tokens
