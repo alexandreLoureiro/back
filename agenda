@@ -10,151 +10,15 @@ CREATE TABLE ptai.com_resultado_tx_completo (
     embedding_vector vector(300)
 );
 
-
 CREATE INDEX com_resultado_tx_completo_vec_idx
   ON ptai.com_resultado_tx_completo
   USING ivfflat (embedding_vector vector_cosine_ops)
   WITH (lists = 100);
 
-
 CREATE INDEX com_resultado_tx_completo_vec_idx
   ON ptai.com_resultado_tx_completo
   USING ivfflat (embedding_vector vector_cosine_ops)
   WITH (lists = 100);
-
-
-import psycopg2
-import pandas as pd
-import spacy
-import numpy as np
-
-# Carrega modelo spaCy (Português) - Certifique-se de que está instalado:
-# python -m spacy download pt_core_news_lg
-nlp = spacy.load('pt_core_news_lg', exclude=["tok2vec", "tagger", "parser", "ner", "attribute_ruler"])
-
-# ------------------------------------------------------------------------------
-# Supondo que você já tenha duas conexões com Postgres:
-# connV, engineV = postgresVector()
-# ------------------------------------------------------------------------------
-# Exemplo de conexões (ajuste para o seu caso):
-# connV = psycopg2.connect(host="localhost", port=5433, dbname="sua_base", user="seu_usuario", password="sua_senha")
-
-def update_embeddings(df, connV):
-    """
-    Atualiza a coluna embedding_vector na tabela ptai.com_resultado_tx_completo
-    para cada linha do DataFrame recebido.
-    """
-    try:
-        with connV.cursor() as curV:
-            for index, row in df.iterrows():
-                nr_trabalho = row['nr_trabalho']
-                combined_text = row['combined_text']
-
-                # Gera embedding com spaCy
-                doc = nlp(combined_text)
-                embedding_spacy = doc.vector.tolist()  # converte em lista p/ inserir no Postgres
-
-                # Atualiza a tabela
-                curV.execute("""
-                    UPDATE ptai.com_resultado_tx_completo
-                    SET embedding_vector = %s
-                    WHERE nr_trabalho = %s
-                """, (embedding_spacy, nr_trabalho))
-
-        connV.commit()
-    except Exception as e:
-        print(f"Erro ao atualizar embeddings: {e}")
-        connV.rollback()
-
-def search_similar_texts(query, connV, top_k=5):
-    """
-    Faz uma busca combinando distância vetorial (embedding_vector <-> query_embedding)
-    e trigram similarity (similarity(combined_text, query)).
-    Retorna um DataFrame com as colunas:
-      nr_trabalho, combined_text, vector_distance, trigram_similarity, final_score
-    ordenado por final_score desc.
-    """
-    # Gera o embedding da consulta usando spaCy
-    doc_query = nlp(query)
-    embedding_query = doc_query.vector.tolist()
-
-    # Converte embedding para string no formato "ARRAY[...]"
-    embedding_query_str = f"ARRAY{embedding_query}"
-
-    with connV.cursor() as curV:
-        # Faz SELECT ordenado pela distância vetorial e trigram
-        # (Depois reordenamos em Python pela nossa "final_score")
-        curV.execute(f"""
-            SELECT
-                nr_trabalho,
-                combined_text,
-                embedding_vector <-> {embedding_query_str}::vector AS vector_distance,
-                similarity(combined_text, %s) AS trigram_similarity
-            FROM ptai.com_resultado_tx_completo
-            ORDER BY embedding_vector <-> {embedding_query_str}::vector
-            LIMIT {top_k * 5}  -- buscamos um pouco mais para depois combinar as métricas
-        """, (query,))
-
-        resultados = curV.fetchall()
-
-    # resultados é uma lista de tuplas (nr_trabalho, combined_text, vector_distance, trigram_similarity)
-    resultados_com_score = []
-
-    for row in resultados:
-        nr_trabalho, combined_text, vector_distance, trigram_similarity = row
-
-        # Normaliza a distância vetorial (quanto menor a distância, maior a similaridade)
-        # Exemplo de normalização simples: 1 / (1 + vector_distance)
-        if vector_distance is not None:
-            normalized_vector_dist = 1 / (1 + vector_distance)
-        else:
-            normalized_vector_dist = 0
-
-        # Combina a similaridade vetorial e trigram
-        # Exemplo: média simples
-        final_score = (normalized_vector_dist + (trigram_similarity or 0)) / 2
-
-        resultados_com_score.append((
-            nr_trabalho,
-            combined_text,
-            vector_distance,
-            trigram_similarity,
-            final_score
-        ))
-
-    # Converte a lista em DataFrame
-    df_result = pd.DataFrame(
-        resultados_com_score,
-        columns=['nr_trabalho', 'combined_text', 'vector_distance', 'trigram_similarity', 'final_score']
-    )
-
-    # Ordena pelo final_score em ordem decrescente
-    df_result.sort_values('final_score', ascending=False, inplace=True)
-
-    # Retorna somente os top_k resultados
-    return df_result.head(top_k)
-
-
-# ------------------------------------------------------------------------------
-# EXEMPLO DE USO
-# ------------------------------------------------------------------------------
-if __name__ == "__main__":
-    # Exemplo: Lendo dados de outra conexão e enviando a 'df'
-    # df = pd.read_sql("SELECT nr_trabalho, obj_trab FROM ptai.com_resultado_tx_completo", engineOrigem)
-    
-    # Digamos que já tenha 'df' com as colunas [nr_trabalho, combined_text]
-    # Aí você chama:
-    # update_embeddings(df, connV)
-
-    # Agora faz a busca
-    consulta = "Resolução bacen número: 680/2011, do CODEFAT, fat e rade"
-    df_result = search_similar_texts(consulta, connV, top_k=5)
-
-    print(df_result)
-
-
-
-
 
 # Necessary imports
 import psycopg2
@@ -170,7 +34,11 @@ import re
 import numpy as np
 import os
 import sys
+import unicodedata
+import re
 
+from spacy.lang.pt.stop_words import STOP_WORDS
+from string import punctuation
 
 # Load the Portuguese language model
 nlp = spacy.load('pt_core_news_lg', exclude=["tok2vec", "tagger", "parser", "ner", "attribute_ruler"])
@@ -182,12 +50,6 @@ STOP_WORDS -= set(unwanted_words)
 
 # Caminho para o diretório onde o módulo conexoes.py está localizado
 caminho_para_conexoes = '/dados/notebooksServidor/conexoes'
-
-CREATE INDEX com_resultado_tx_completo_vec_idx
-  ON ptai.com_resultado_tx_completo
-  USING ivfflat (embedding_vector vector_cosine_ops)
-  WITH (lists = 100);
-
 
 # Adicionando o caminho ao sys.path
 if caminho_para_conexoes not in sys.path:
@@ -204,71 +66,162 @@ SELECT nr_trabalho, obj_trab, justif, tx_rel_atvd, tx_constatacao
 """
 df = pd.read_sql(query, engine)
 
+#df['combined_text'] = df.apply(lambda row: f"[trabalho]: {row['nr_trabalho']}, [objetivo trabalho]: {row['obj_trab']}, [justificativa trabalho]: {row['justif']}, [relatorio auditoria]: {row['tx_rel_atvd']}, [principal constatação no relatorio]: {row['tx_constatacao']}", axis=1)
+
 df['combined_text'] = df.apply(lambda row: f"[objetivo trabalho]: {row['obj_trab']}", axis=1)
 
-df.to_sql('com_resultado_tx_completo', engineV, schema='ptai', if_exists='append', index=False)
+#df.to_sql('com_resultado_tx_completo', engineV, schema='ptai', if_exists='append', index=False)
 
-def update_embeddings(df):
-    try:
-        with connV.cursor() as curV:
-            for index, row in df.iterrows():
-                nr_trabalho = row['nr_trabalho']
-                combined_text = row['combined_text']
+def normalize_text(text):
+    # Converte para minúsculas
+    text = text.lower()
 
-                # Gera embedding com spaCy
-                doc = nlp(combined_text)
-                embedding_spacy = doc.vector.tolist()
+    # Remove acentos (unicode -> ASCII)
+    text = unicodedata.normalize('NFD', text)
+    text = text.encode('ascii', 'ignore').decode('utf-8')
 
-                # Atualizar a coluna embedding_vector na tabela
-                curV.execute("""
-                    UPDATE ptai.com_resultado_tx_completo
-                    SET embedding_vector = %s
-                    WHERE nr_trabalho = %s
-                """, (embedding_spacy, nr_trabalho))
+    # Remove pontuação e caracteres especiais (opcional)
+    text = re.sub(r'[^\w\s]', '', text)
 
-        connV.commit()
-    except Exception as e:
-        print(f"Erro ao atualizar embeddings: {e}")
-        connV.rollback()
+    # Remove espaços extras
+    text = text.strip()
 
-def search_similar_texts(query):
-    # Gera embedding para a consulta
+    return text
+
+def tokenize_text_pt(text):
+    text = text.lower()
+    # Remove acentos
+    text = unicodedata.normalize('NFD', text).encode('ascii','ignore').decode('utf-8')
+    # Remove pontuação
+    text = re.sub(r'[^\w\s]', '', text)
+    # Split em espaços
+    tokens = text.split()
+    # Filtra stopwords e palavras vazias
+    tokens = [t for t in tokens if t and t not in STOP_WORDS]
+    return tokens
+
+def update_embeddings(df, connV):
+    """
+    Exemplo: atualiza embedding_vector E tokens
+    """
+    with connV.cursor() as curV:
+        for index, row in df.iterrows():
+            nr_trabalho = row['nr_trabalho']
+            combined_text = row['combined_text']
+
+            # 1) Gera embedding do texto
+            doc = nlp(combined_text)
+            embedding_spacy = doc.vector.tolist()
+
+            # 2) Gera tokens
+            tokens = tokenize_text_pt(combined_text)
+
+            # 3) Faz UPDATE com embedding e tokens
+            curV.execute("""
+                UPDATE ptai.com_resultado_tx_completo
+                SET embedding_vector = %s,
+                    tokens = %s
+                WHERE nr_trabalho = %s
+            """, (embedding_spacy, tokens, nr_trabalho))
+
+    connV.commit()
+
+update_embeddings(df, connV)
+
+def search_similar_texts(query, connV, top_k=5):
+    """
+    Busca semântica + trigram, e também retorna:
+    - palavras_encontradas (array)
+    - qtd_encontradas (int)
+    num DataFrame final.
+    """
+    # 1) Tokeniza a query do usuário
+    query_tokens = tokenize_text_pt(query)
+
+    # 2) Gera embedding da query (para parte vetorial)
     doc_query = nlp(query)
     embedding_query = doc_query.vector.tolist()
-
-    # Converta o embedding_query para o formato de vetor
     embedding_query_str = f"ARRAY{embedding_query}"
 
+    # 3) Puxa do banco: nr_trabalho, combined_text, tokens, distance, trigram
     with connV.cursor() as curV:
         curV.execute(f"""
             SELECT
                 nr_trabalho,
                 combined_text,
+                tokens,
                 embedding_vector <-> {embedding_query_str}::vector AS vector_distance,
                 similarity(combined_text, %s) AS trigram_similarity
             FROM ptai.com_resultado_tx_completo
-            ORDER BY embedding_vector <-> {embedding_query_str}::vector, similarity(combined_text, %s) DESC
-            LIMIT 5
-        """, (query, query))
+            ORDER BY embedding_vector <-> {embedding_query_str}::vector
+            LIMIT {top_k * 5}
+        """, (query,))
 
-        resultados = curV.fetchall()
+        rows = curV.fetchall()
 
-        # Calcular a pontuação de similaridade combinada
-        resultados_com_score = []
-        for resultado in resultados:
-            nr_trabalho, combined_text, vector_distance, trigram_similarity = resultado
-            normalized_vector_distance = 1 / (1 + vector_distance)
-            score_similaridade = (normalized_vector_distance + trigram_similarity) / 2  # Média simples
-            resultados_com_score.append((nr_trabalho, combined_text, vector_distance, trigram_similarity, score_similaridade))
+    # rows = [(nr_trab, text, tokens, dist, trigram_sim), ...]
 
-        # Ordenar os resultados pela pontuação de similaridade em ordem decrescente
-        resultados_com_score.sort(key=lambda x: x[4], reverse=True)
+    # 4) Monta lista + DataFrame
+    resultados_com_score = []
+    for row in rows:
+        nr_trabalho, combined_text, tokens_db, vector_distance, trigram_similarity = row
 
-        return resultados_com_score
+        # Normaliza a distância => similaridade vetorial ~ [0..1]
+        if vector_distance is not None:
+            sim_vector = 1 / (1 + vector_distance)
+        else:
+            sim_vector = 0
+
+        # Combina o valor de trigram (só se não for None)
+        trigram_sim = trigram_similarity if trigram_similarity else 0
+
+        # Score final (exemplo: média)
+        final_score = (sim_vector + trigram_sim) / 2
+
+        # 5) Interseção: quais tokens do query estão em tokens_db?
+        #    tokens_db é list ou None. Verifique:
+        palavras_encontradas = []
+        if tokens_db:
+            set_tokens_db = set(tokens_db)
+            set_query = set(query_tokens)
+            # Interseção
+            found = set_tokens_db.intersection(set_query)
+            palavras_encontradas = list(found)
+        
+        qtd_encontradas = len(palavras_encontradas)
+
+        resultados_com_score.append((
+            nr_trabalho,
+            combined_text,
+            vector_distance,
+            trigram_sim,
+            final_score,
+            palavras_encontradas,
+            qtd_encontradas
+        ))
+
+    # 6) Converter em DataFrame
+    df_result = pd.DataFrame(
+        resultados_com_score,
+        columns=[
+            'nr_trabalho',
+            'combined_text',
+            'vector_distance',
+            'trigram_similarity',
+            'final_score',
+            'palavras_encontradas',
+            'qtd_encontradas'
+        ]
+    )
+
+    # 7) Ordenar desc por final_score
+    df_result.sort_values('final_score', ascending=False, inplace=True)
+
+    # 8) Retornar top_k
+    return df_result.head(top_k)
 
 consulta = '''
-Resolução bacen número: 680/2011, do CODEFAT, fat e rade
+fat rade codefat atos administrativos e demostrações
 '''
 
-for resultado in resultados:
-    print(resultado)
+df_result = search_similar_texts(consulta, connV, top_k=5)
