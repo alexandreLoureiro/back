@@ -1,3 +1,4 @@
+
 stemmer = PorterStemmer()
 
 def remove_accents(text):
