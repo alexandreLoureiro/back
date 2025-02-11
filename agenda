@@ -1,3 +1,136 @@
+import psycopg2
+import pandas as pd
+import spacy
+import numpy as np
+
+# Carrega modelo spaCy (Português) - Certifique-se de que está instalado:
+# python -m spacy download pt_core_news_lg
+nlp = spacy.load('pt_core_news_lg', exclude=["tok2vec", "tagger", "parser", "ner", "attribute_ruler"])
+
+# ------------------------------------------------------------------------------
+# Supondo que você já tenha duas conexões com Postgres:
+# connV, engineV = postgresVector()
+# ------------------------------------------------------------------------------
+# Exemplo de conexões (ajuste para o seu caso):
+# connV = psycopg2.connect(host="localhost", port=5433, dbname="sua_base", user="seu_usuario", password="sua_senha")
+
+def update_embeddings(df, connV):
+    """
+    Atualiza a coluna embedding_vector na tabela ptai.com_resultado_tx_completo
+    para cada linha do DataFrame recebido.
+    """
+    try:
+        with connV.cursor() as curV:
+            for index, row in df.iterrows():
+                nr_trabalho = row['nr_trabalho']
+                combined_text = row['combined_text']
+
+                # Gera embedding com spaCy
+                doc = nlp(combined_text)
+                embedding_spacy = doc.vector.tolist()  # converte em lista p/ inserir no Postgres
+
+                # Atualiza a tabela
+                curV.execute("""
+                    UPDATE ptai.com_resultado_tx_completo
+                    SET embedding_vector = %s
+                    WHERE nr_trabalho = %s
+                """, (embedding_spacy, nr_trabalho))
+
+        connV.commit()
+    except Exception as e:
+        print(f"Erro ao atualizar embeddings: {e}")
+        connV.rollback()
+
+def search_similar_texts(query, connV, top_k=5):
+    """
+    Faz uma busca combinando distância vetorial (embedding_vector <-> query_embedding)
+    e trigram similarity (similarity(combined_text, query)).
+    Retorna um DataFrame com as colunas:
+      nr_trabalho, combined_text, vector_distance, trigram_similarity, final_score
+    ordenado por final_score desc.
+    """
+    # Gera o embedding da consulta usando spaCy
+    doc_query = nlp(query)
+    embedding_query = doc_query.vector.tolist()
+
+    # Converte embedding para string no formato "ARRAY[...]"
+    embedding_query_str = f"ARRAY{embedding_query}"
+
+    with connV.cursor() as curV:
+        # Faz SELECT ordenado pela distância vetorial e trigram
+        # (Depois reordenamos em Python pela nossa "final_score")
+        curV.execute(f"""
+            SELECT
+                nr_trabalho,
+                combined_text,
+                embedding_vector <-> {embedding_query_str}::vector AS vector_distance,
+                similarity(combined_text, %s) AS trigram_similarity
+            FROM ptai.com_resultado_tx_completo
+            ORDER BY embedding_vector <-> {embedding_query_str}::vector
+            LIMIT {top_k * 5}  -- buscamos um pouco mais para depois combinar as métricas
+        """, (query,))
+
+        resultados = curV.fetchall()
+
+    # resultados é uma lista de tuplas (nr_trabalho, combined_text, vector_distance, trigram_similarity)
+    resultados_com_score = []
+
+    for row in resultados:
+        nr_trabalho, combined_text, vector_distance, trigram_similarity = row
+
+        # Normaliza a distância vetorial (quanto menor a distância, maior a similaridade)
+        # Exemplo de normalização simples: 1 / (1 + vector_distance)
+        if vector_distance is not None:
+            normalized_vector_dist = 1 / (1 + vector_distance)
+        else:
+            normalized_vector_dist = 0
+
+        # Combina a similaridade vetorial e trigram
+        # Exemplo: média simples
+        final_score = (normalized_vector_dist + (trigram_similarity or 0)) / 2
+
+        resultados_com_score.append((
+            nr_trabalho,
+            combined_text,
+            vector_distance,
+            trigram_similarity,
+            final_score
+        ))
+
+    # Converte a lista em DataFrame
+    df_result = pd.DataFrame(
+        resultados_com_score,
+        columns=['nr_trabalho', 'combined_text', 'vector_distance', 'trigram_similarity', 'final_score']
+    )
+
+    # Ordena pelo final_score em ordem decrescente
+    df_result.sort_values('final_score', ascending=False, inplace=True)
+
+    # Retorna somente os top_k resultados
+    return df_result.head(top_k)
+
+
+# ------------------------------------------------------------------------------
+# EXEMPLO DE USO
+# ------------------------------------------------------------------------------
+if __name__ == "__main__":
+    # Exemplo: Lendo dados de outra conexão e enviando a 'df'
+    # df = pd.read_sql("SELECT nr_trabalho, obj_trab FROM ptai.com_resultado_tx_completo", engineOrigem)
+    
+    # Digamos que já tenha 'df' com as colunas [nr_trabalho, combined_text]
+    # Aí você chama:
+    # update_embeddings(df, connV)
+
+    # Agora faz a busca
+    consulta = "Resolução bacen número: 680/2011, do CODEFAT, fat e rade"
+    df_result = search_similar_texts(consulta, connV, top_k=5)
+
+    print(df_result)
+
+
+
+
+
 # Necessary imports
 import psycopg2
 from psycopg2.extras import execute_values
