@@ -1,1 +1,110 @@
+# Necessary imports
+import psycopg2
+from psycopg2.extras import execute_values
+import pandas as pd
+import spacy
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity, linear_kernel
+from string import punctuation
+from scipy.sparse import csr_matrix
+import unicodedata
+import re
+import numpy as np
+import os
+import sys
 
+
+# Load the Portuguese language model
+nlp = spacy.load('pt_core_news_lg', exclude=["tok2vec", "tagger", "parser", "ner", "attribute_ruler"])
+
+# Define stop words and unwanted words
+STOP_WORDS = set(nlp.Defaults.stop_words)
+unwanted_words = ['processo', 'cliente', 'estratégia', 'Avaliar', 'Responsabilidades', 'gestor', 'MRLD', 'risco', 'específico', 'tomador', 'Risco']
+STOP_WORDS -= set(unwanted_words)
+
+# Caminho para o diretório onde o módulo conexoes.py está localizado
+caminho_para_conexoes = '/dados/notebooksServidor/conexoes'
+
+# Adicionando o caminho ao sys.path
+if caminho_para_conexoes not in sys.path:
+    sys.path.append(caminho_para_conexoes)
+    
+from conexoes import *
+
+conn, engine = postgres()
+connV, engineV = postgresVector()
+
+query = """
+SELECT nr_trabalho, obj_trab, justif, tx_rel_atvd, tx_constatacao
+       FROM ptai.com_resultado_tx_completo limit 10;
+"""
+df = pd.read_sql(query, engine)
+
+df['combined_text'] = df.apply(lambda row: f"[objetivo trabalho]: {row['obj_trab']}", axis=1)
+
+df.to_sql('com_resultado_tx_completo', engineV, schema='ptai', if_exists='append', index=False)
+
+def update_embeddings(df):
+    try:
+        with connV.cursor() as curV:
+            for index, row in df.iterrows():
+                nr_trabalho = row['nr_trabalho']
+                combined_text = row['combined_text']
+
+                # Gera embedding com spaCy
+                doc = nlp(combined_text)
+                embedding_spacy = doc.vector.tolist()
+
+                # Atualizar a coluna embedding_vector na tabela
+                curV.execute("""
+                    UPDATE ptai.com_resultado_tx_completo
+                    SET embedding_vector = %s
+                    WHERE nr_trabalho = %s
+                """, (embedding_spacy, nr_trabalho))
+
+        connV.commit()
+    except Exception as e:
+        print(f"Erro ao atualizar embeddings: {e}")
+        connV.rollback()
+
+def search_similar_texts(query):
+    # Gera embedding para a consulta
+    doc_query = nlp(query)
+    embedding_query = doc_query.vector.tolist()
+
+    # Converta o embedding_query para o formato de vetor
+    embedding_query_str = f"ARRAY{embedding_query}"
+
+    with connV.cursor() as curV:
+        curV.execute(f"""
+            SELECT
+                nr_trabalho,
+                combined_text,
+                embedding_vector <-> {embedding_query_str}::vector AS vector_distance,
+                similarity(combined_text, %s) AS trigram_similarity
+            FROM ptai.com_resultado_tx_completo
+            ORDER BY embedding_vector <-> {embedding_query_str}::vector, similarity(combined_text, %s) DESC
+            LIMIT 5
+        """, (query, query))
+
+        resultados = curV.fetchall()
+
+        # Calcular a pontuação de similaridade combinada
+        resultados_com_score = []
+        for resultado in resultados:
+            nr_trabalho, combined_text, vector_distance, trigram_similarity = resultado
+            normalized_vector_distance = 1 / (1 + vector_distance)
+            score_similaridade = (normalized_vector_distance + trigram_similarity) / 2  # Média simples
+            resultados_com_score.append((nr_trabalho, combined_text, vector_distance, trigram_similarity, score_similaridade))
+
+        # Ordenar os resultados pela pontuação de similaridade em ordem decrescente
+        resultados_com_score.sort(key=lambda x: x[4], reverse=True)
+
+        return resultados_com_score
+
+consulta = '''
+Resolução bacen número: 680/2011, do CODEFAT, fat e rade
+'''
+
+for resultado in resultados:
+    print(resultado)
