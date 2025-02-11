@@ -25,6 +25,12 @@ STOP_WORDS -= set(unwanted_words)
 # Caminho para o diretório onde o módulo conexoes.py está localizado
 caminho_para_conexoes = '/dados/notebooksServidor/conexoes'
 
+CREATE INDEX com_resultado_tx_completo_vec_idx
+  ON ptai.com_resultado_tx_completo
+  USING ivfflat (embedding_vector vector_cosine_ops)
+  WITH (lists = 100);
+
+
 # Adicionando o caminho ao sys.path
 if caminho_para_conexoes not in sys.path:
     sys.path.append(caminho_para_conexoes)
