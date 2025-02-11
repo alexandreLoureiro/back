@@ -1,3 +1,9 @@
+CREATE INDEX com_resultado_tx_completo_vec_idx
+  ON ptai.com_resultado_tx_completo
+  USING ivfflat (embedding_vector vector_cosine_ops)
+  WITH (lists = 100);
+
+
 import psycopg2
 import pandas as pd
 import spacy
