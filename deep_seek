@@ -1,3 +1,35 @@
+stemmer = PorterStemmer()
+
+def remove_accents(text):
+    text = unicodedata.normalize('NFKD', text)
+    text = ''.join([c for c in text if not unicodedata.combining(c)])
+    return text
+
+def preprocess_text(text):
+    if isinstance(text, str):
+        text = remove_accents(text)  # Remove acentos
+        doc = nlp(text)
+        doc = [token.lemma_.lower() for token in doc if token.text.lower() not in STOP_WORDS and token.text not in punctuation and token.text not in unwanted_words and token.lemma_ != '-PRON-']
+        preprocessed_text = ' '.join([stemmer.stem(word) for word in doc])  # Aplica stemming
+        return preprocessed_text
+    else:
+        return text
+
+def preprocess_query(query):
+    query = remove_accents(query)
+    doc = nlp(query)
+    query = ' '.join([stemmer.stem(token.lemma_.lower()) for token in doc if token.text.lower() not in STOP_WORDS and token.text not in punctuation and token.text not in unwanted_words and token.lemma_ != '-PRON-'])
+    return query
+
+def remove_html_tags(text):
+    if isinstance(text, str):
+        clean_text = re.sub('<.*?>', '', text)
+        return clean_text
+    else:
+        return text
+
+
+
 ALTER TABLE ptai.com_resultado_tx_completo
   ADD COLUMN tokens text[];
 
