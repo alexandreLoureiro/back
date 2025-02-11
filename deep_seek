@@ -1,32 +1,102 @@
+def search_similar_texts(query, connV, top_k=5):
+    """
+    Busca semântica + trigram, e também retorna:
+    - palavras_encontradas (array)
+    - qtd_encontradas (int)
+    num DataFrame final.
+    """
+    # 1) Tokeniza a query do usuário
+    query_tokens = tokenize_text_pt(query)
 
-# ...
-for row in rows:
-    nr_trabalho, combined_text, tokens_db, vector_distance, trigram_similarity = row
+    # 2) Gera embedding da query (para parte vetorial)
+    doc_query = nlp(query)
+    embedding_query = doc_query.vector.tolist()
+    embedding_query_str = f"ARRAY{embedding_query}"
 
-    # Normaliza a distância => similaridade vetorial ~ [0..1]
-    sim_vector = 1 / (1 + vector_distance) if vector_distance is not None else 0
+    # 3) Puxa do banco: nr_trabalho, combined_text, tokens, distance, trigram
+    with connV.cursor() as curV:
+        curV.execute(f"""
+            SELECT
+                nr_trabalho,
+                combined_text,
+                tokens,
+                embedding_vector <-> {embedding_query_str}::vector AS vector_distance,
+                similarity(combined_text, %s) AS trigram_similarity
+            FROM ptai.com_resultado_tx_completo
+            ORDER BY embedding_vector <-> {embedding_query_str}::vector
+            LIMIT {top_k * 5}
+        """, (query,))
 
-    trigram_sim = trigram_similarity if trigram_similarity else 0
+        rows = curV.fetchall()
 
-    # Interseção de tokens
-    palavras_encontradas = []
-    if tokens_db:
-        found = set(tokens_db).intersection(set_query_tokens)
-        palavras_encontradas = list(found)
+    # rows = [(nr_trab, text, tokens, dist, trigram_sim), ...]
 
-    qtd_encontradas = len(palavras_encontradas)
-    ratio_tokens = qtd_encontradas / len(query_tokens) if len(query_tokens) > 0 else 0
+    # 4) Monta lista + DataFrame
+    resultados_com_score = []
+    for row in rows:
+        nr_trabalho, combined_text, tokens_db, vector_distance, trigram_similarity = row
 
-    # Combina as três métricas (sim_vector, trigram_sim e ratio_tokens)
-    final_score = (sim_vector + trigram_sim + ratio_tokens) / 3
+        # Normaliza a distância => similaridade vetorial ~ [0..1]
+        sim_vector = 1 / (1 + vector_distance) if vector_distance is not None else 0
 
-    resultados_com_score.append((
-        nr_trabalho,
-        combined_text,
-        vector_distance,
-        trigram_sim,
-        final_score,
-        palavras_encontradas,
-        qtd_encontradas
-    ))
-# ...
+        # Combina o valor de trigram (só se não for None)
+        trigram_sim = trigram_similarity if trigram_similarity else 0
+
+        # Score final (exemplo: média)
+        final_score = (sim_vector + trigram_sim) / 2
+
+        # 5) Interseção: quais tokens do query estão em tokens_db?
+        # Interseção de tokens
+        palavras_encontradas = []
+        if tokens_db:
+            found = set(tokens_db).intersection(set_query_tokens)
+            palavras_encontradas = list(found)
+        
+        qtd_encontradas = len(palavras_encontradas)
+        
+        ratio_tokens = qtd_encontradas / len(query_tokens) if len(query_tokens) > 0 else 0
+        
+        final_score = (sim_vector + trigram_sim + ratio_tokens) / 3
+
+        resultados_com_score.append((
+            nr_trabalho,
+            combined_text,
+            vector_distance,
+            trigram_sim,
+            final_score,
+            palavras_encontradas,
+            qtd_encontradas
+        ))
+
+    # 6) Converter em DataFrame
+    df_result = pd.DataFrame(
+        resultados_com_score,
+        columns=[
+            'nr_trabalho',
+            'combined_text',
+            'vector_distance',
+            'trigram_similarity',
+            'final_score',
+            'palavras_encontradas',
+            'qtd_encontradas'
+        ]
+    )
+
+    # 7) Ordenar desc por final_score
+    df_result.sort_values('final_score', ascending=False, inplace=True)
+
+    # 8) Retornar top_k
+    return df_result.head(top_k)
+---------------------------------------------------------------------------
+NameError                                 Traceback (most recent call last)
+Input In [27], in <cell line: 1>()
+----> 1 df_result = search_similar_texts(consulta, connV, top_k=50)
+
+Input In [25], in search_similar_texts(query, connV, top_k)
+     50 palavras_encontradas = []
+     51 if tokens_db:
+---> 52     found = set(tokens_db).intersection(set_query_tokens)
+     53     palavras_encontradas = list(found)
+     55 qtd_encontradas = len(palavras_encontradas)
+
+NameError: name 'set_query_tokens' is not defined
