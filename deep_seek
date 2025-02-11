@@ -19,4 +19,58 @@ def normalize_text(text):
     return text
 
 
+def update_embeddings(df, connV):
+    try:
+        with connV.cursor() as curV:
+            for index, row in df.iterrows():
+                nr_trabalho = row['nr_trabalho']
+                combined_text = row['combined_text']
+
+                # Normaliza o texto
+                combined_text_norm = normalize_text(combined_text)
+
+                # Gera embedding com spaCy (texto normalizado)
+                doc = nlp(combined_text_norm)
+                embedding_spacy = doc.vector.tolist()
+
+                # Atualiza a coluna embedding_vector na tabela
+                curV.execute("""
+                    UPDATE ptai.com_resultado_tx_completo
+                    SET embedding_vector = %s
+                    WHERE nr_trabalho = %s
+                """, (embedding_spacy, nr_trabalho))
+
+        connV.commit()
+    except Exception as e:
+        print(f"Erro ao atualizar embeddings: {e}")
+        connV.rollback()
+
+
+def search_similar_texts(query, connV, top_k=5):
+    # Normaliza a query
+    query_norm = normalize_text(query)
+
+    doc_query = nlp(query_norm)
+    embedding_query = doc_query.vector.tolist()
+
+    embedding_query_str = f"ARRAY{embedding_query}"
+
+    with connV.cursor() as curV:
+        curV.execute(f"""
+            SELECT
+                nr_trabalho,
+                combined_text,
+                embedding_vector <-> {embedding_query_str}::vector AS vector_distance,
+                similarity(combined_text, %s) AS trigram_similarity
+            FROM ptai.com_resultado_tx_completo
+            ORDER BY embedding_vector <-> {embedding_query_str}::vector
+            LIMIT {top_k * 5}
+        """, (query_norm,))
+
+        resultados = curV.fetchall()
+
+    # Resto do código (normalização da distância, score etc.)...
+    # ...
+
+
 
