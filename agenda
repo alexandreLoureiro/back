@@ -1,3 +1,22 @@
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+CREATE TABLE ptai.com_resultado_tx_completo (
+    nr_trabalho SERIAL PRIMARY KEY,
+    obj_trab TEXT,
+    justif TEXT,
+    tx_rel_atvd TEXT,
+    tx_constatacao TEXT,
+    combined_text TEXT,
+    embedding_vector vector(300)
+);
+
+
+CREATE INDEX com_resultado_tx_completo_vec_idx
+  ON ptai.com_resultado_tx_completo
+  USING ivfflat (embedding_vector vector_cosine_ops)
+  WITH (lists = 100);
+
+
 CREATE INDEX com_resultado_tx_completo_vec_idx
   ON ptai.com_resultado_tx_completo
   USING ivfflat (embedding_vector vector_cosine_ops)
