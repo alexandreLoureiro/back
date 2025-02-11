@@ -1,1 +1,32 @@
 
+# ...
+for row in rows:
+    nr_trabalho, combined_text, tokens_db, vector_distance, trigram_similarity = row
+
+    # Normaliza a distância => similaridade vetorial ~ [0..1]
+    sim_vector = 1 / (1 + vector_distance) if vector_distance is not None else 0
+
+    trigram_sim = trigram_similarity if trigram_similarity else 0
+
+    # Interseção de tokens
+    palavras_encontradas = []
+    if tokens_db:
+        found = set(tokens_db).intersection(set_query_tokens)
+        palavras_encontradas = list(found)
+
+    qtd_encontradas = len(palavras_encontradas)
+    ratio_tokens = qtd_encontradas / len(query_tokens) if len(query_tokens) > 0 else 0
+
+    # Combina as três métricas (sim_vector, trigram_sim e ratio_tokens)
+    final_score = (sim_vector + trigram_sim + ratio_tokens) / 3
+
+    resultados_com_score.append((
+        nr_trabalho,
+        combined_text,
+        vector_distance,
+        trigram_sim,
+        final_score,
+        palavras_encontradas,
+        qtd_encontradas
+    ))
+# ...
