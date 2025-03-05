@@ -1,1 +1,12 @@
+import ssl
+from kafka import KafkaProducer
 
+ctx = ssl.create_default_context()
+ctx.check_hostname = False
+ctx.verify_mode = ssl.CERT_NONE
+
+producer = KafkaProducer(
+    bootstrap_servers=["broker-kafka-orcoute-bootstrap-...:443"],
+    security_protocol="SSL",
+    ssl_context=ctx
+)
