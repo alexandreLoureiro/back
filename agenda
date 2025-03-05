@@ -33,3 +33,27 @@ producer = KafkaProducer(
     ssl_cafile='kafkadesenv.pem'  # Caminho para o arquivo convertido
 )
 
+import json
+import ssl
+from kafka import KafkaProducer
+
+producer = KafkaProducer(
+    bootstrap_servers='broker-kafka-ocroute-bootstrap-aud-integracao-apps.apps.k8sdesbb111.nuvem.bb.com.br:443',
+    value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+
+    # Ajustes de segurança para SASL_SSL
+    security_protocol='SASL_SSL',
+    sasl_mechanism='SCRAM-SHA-512',
+    sasl_plain_username='kafka-user',       # mesmo usuário do Java
+    sasl_plain_password='ODE1MEF1ZGl0SW5mb3I=',  # mesma senha do Java (ver se é base64 ou não)
+
+    # CA para validar o certificado do broker
+    ssl_cafile='kafkadesenv.pem',
+    # Se precisar desabilitar hostname ou verificação de certificado (não recomendado):
+    # ssl_context=ctx
+)
+
+# Agora envie a mensagem
+producer.send('topico-exemplo-2', value={"chave": "valor"})
+producer.flush()
+
