@@ -246,3 +246,49 @@ Evento real enviado! Offset: 2
 Produtor Kafka fechado com sucesso.
 Conexão com PostgreSQL fechada.
 
+
+- name: kafka.bootstrap.servers
+          value: broker-kafka-ocroute-bootstrap-gde-servicos-kafka-broker.apps.k8sdesbb111.nuvem.bb.com.br:443
+        - name: kafka.security.protocol
+          value: SASL_SSL
+        - name: kafka.sasl.mechanism
+          value: SCRAM-SHA-512
+        - name: kafka.ssl.protocol
+          value: TLSv1.2
+        - name: APP_KAFKA_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: kafka-user-password
+              key: kafka-username
+        - name: APP_KAFKA_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: kafka-user-password
+              key: kafka-password
+        - name: kafka.sasl.jaas.config
+          value: org.apache.kafka.common.security.scram.ScramLoginModule required username="$(APP_KAFKA_USERNAME)" password="$(APP_KAFKA_PASSWORD)";
+        - name: kafka.group.id
+          value: escrituracao-service
+        - name: mp.messaging.outgoing.remessa-nova-escrituracao-out.topic
+          value: remessa-nova-escrituracao
+        - name: mp.messaging.incoming.remessa-nova-escrituracao-in.topic
+          value: remessa-nova-escrituracao
+        - name: mp.messaging.incoming.remessa-nova-escrituracao-in.topic.ssl.truststore.location
+          value: /etc/config-kafkatruststore/truststore.jks
+        - name: mp.messaging.outgoing.remessa-nova-escrituracao-out.topic.ssl.truststore.location
+          value: /etc/config-kafkatruststore/truststore.jks
+        - name: mp.messaging.incoming.remessa-nova-escrituracao-in.topic.ssl.truststore.password
+          value: password
+        - name: mp.messaging.outgoing.remessa-nova-escrituracao-out.topic.ssl.truststore.password
+          value: password
+        - name: mp.messaging.outgoing.remessa-nova-escrituracao-out.topic.ssl.truststore.password
+          value: password
+          volumeMounts: null
+        - name: kafkatruststore
+          mountPath: /etc/config-kafkatruststore
+          readOnly: true
+      volumes:
+        - name: kafkatruststore
+          secret:
+            secretName: kafkatruststore
+
