@@ -10,3 +10,33 @@ producer = KafkaProducer(
     security_protocol="SSL",
     ssl_context=ctx
 )
+
+
+---------------------------------------------------------------------------
+KafkaTimeoutError                         Traceback (most recent call last)
+Input In [7], in <cell line: 2>()
+      1 # Envia o evento para o tópico "meu_topico"
+----> 2 producer.send('topico-exemplo-2', value=evento_processado)
+      3 producer.flush()
+      5 print("Evento enviado para o Kafka com sucesso!")
+
+File ~/anaconda3/lib/python3.9/site-packages/kafka/producer/kafka.py:579, in KafkaProducer.send(self, topic, value, key, headers, partition, timestamp_ms)
+    577 key_bytes = value_bytes = None
+    578 try:
+--> 579     self._wait_on_metadata(topic, self.config['max_block_ms'] / 1000.0)
+    581     key_bytes = self._serialize(
+    582         self.config['key_serializer'],
+    583         topic, key)
+    584     value_bytes = self._serialize(
+    585         self.config['value_serializer'],
+    586         topic, value)
+
+File ~/anaconda3/lib/python3.9/site-packages/kafka/producer/kafka.py:705, in KafkaProducer._wait_on_metadata(self, topic, max_wait)
+    703 elapsed = time.time() - begin
+    704 if not metadata_event.is_set():
+--> 705     raise Errors.KafkaTimeoutError(
+    706         "Failed to update metadata after %.1f secs." % (max_wait,))
+    707 elif topic in self._metadata.unauthorized_topics:
+    708     raise Errors.TopicAuthorizationFailedError(topic)
+
+KafkaTimeoutError: KafkaTimeoutError: Failed to update metadata after 60.0 secs.
