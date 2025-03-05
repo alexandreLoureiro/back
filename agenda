@@ -117,3 +117,114 @@ except Exception as e:
 # Fechar conexão com o PostgreSQL
 conn.close()
 print("Conexão com PostgreSQL fechada.")
+
+import sys
+import pandas as pd
+import json
+import socket
+from kafka import KafkaProducer
+
+# Adiciona o caminho para o módulo de conexões
+caminho_para_conexoes = '/dados/notebooksServidor/conexoes'
+if caminho_para_conexoes not in sys.path:
+    sys.path.append(caminho_para_conexoes)
+
+# Importa a função para criar a conexão com o Postgres
+from conexoes import postgres
+
+# Teste de conectividade primeiro
+broker_url = 'broker-kafka-ocroute-bootstrap-aud-integracao-apps.apps.k8sdesbb111.nuvem.bb.com.br'
+broker_port = 443
+print(f"Testando conectividade com {broker_url}:{broker_port}...")
+try:
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.settimeout(5)
+    s.connect((broker_url, broker_port))
+    s.close()
+    print("Conexão de rede OK!")
+except Exception as e:
+    print(f"Falha na conexão de rede: {e}")
+    print("Isto indica um problema de rede/firewall ou broker Kafka indisponível")
+
+# Cria a conexão com o Postgres
+print("Conectando ao PostgreSQL...")
+conn, engine = postgres()
+print("Conexão ao PostgreSQL estabelecida.")
+
+# Executa a consulta para obter os dados
+query = """
+SELECT nr_trabalho
+FROM ptai.com_resultado_tx_completo 
+LIMIT 1;  -- Limitando a um registro para simplificar
+"""
+print("Executando consulta SQL...")
+df = pd.read_sql(query, engine)
+print(f"Consulta retornou {len(df)} registros.")
+
+# Simula um processamento: pega o primeiro registro e adiciona um campo "processed"
+if not df.empty:
+    evento_processado = df.iloc[0].to_dict()
+    evento_processado["processed"] = True
+    print("Evento para envio preparado")
+else:
+    evento_processado = {"error": "No data found"}
+    print("Nenhum dado encontrado na consulta.")
+
+# Tenta conectar ao Kafka com configurações SASL_SSL e timeout maior
+print("Conectando ao Kafka (SASL_SSL, SCRAM-SHA-512)...")
+try:
+    producer = KafkaProducer(
+        bootstrap_servers=f'{broker_url}:{broker_port}',
+        value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+
+        # Timeouts (ajuste conforme necessário)
+        connections_max_idle_ms=5000,
+        request_timeout_ms=45000,
+        api_version_auto_timeout_ms=60000,
+
+        # Configurações para SASL + SSL
+        security_protocol='SASL_SSL',
+        sasl_mechanism='SCRAM-SHA-512',
+        sasl_plain_username='kafka-user',           # mesmo usuário do Java
+        sasl_plain_password='ODE1MEF1ZGl0SW5mb3I=', # mesma senha do Java
+
+        # CA para validar o certificado do broker Strimzi
+        ssl_cafile='certificados/kafkadesenv.pem',
+
+        # Se houver problema de hostname no certificado, você pode desabilitar:
+        # ssl_check_hostname=False  # (Não recomendado em produção)
+    )
+    
+    print("Conexão com o Kafka estabelecida. Enviando mensagem de teste...")
+    
+    # Mensagem de teste
+    test_message = {"test": "message", "timestamp": str(pd.Timestamp.now())}
+    future = producer.send('topico-exemplo-2', value=test_message)
+    
+    print("Aguardando confirmação do envio (30 segundos)...")
+    record_metadata = future.get(timeout=30)
+    print(f"Mensagem de teste enviada! Tópico: {record_metadata.topic}, Partição: {record_metadata.partition}")
+    
+    # Enviando o evento real
+    print("Enviando o evento real...")
+    real_future = producer.send('topico-exemplo-2', value=evento_processado)
+    real_metadata = real_future.get(timeout=30)
+    print(f"Evento real enviado! Offset: {real_metadata.offset}")
+    
+    # Finaliza o Producer
+    producer.flush()
+    producer.close()
+    print("Produtor Kafka fechado com sucesso.")
+    
+except Exception as e:
+    print(f"Erro ao conectar ou enviar para o Kafka: {e}")
+    print("\nSugestões de resolução:")
+    print("1. Verifique se o endereço e porta estão corretos")
+    print("2. Verifique se não há firewall bloqueando a conexão")
+    print("3. Verifique se o broker Kafka está rodando corretamente")
+    print("4. Se estiver usando Docker, verifique a configuração de rede entre os containers")
+
+# Fecha conexão com o PostgreSQL
+conn.close()
+print("Conexão com PostgreSQL fechada.")
+
