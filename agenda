@@ -8,7 +8,14 @@ ctx.verify_mode = ssl.CERT_NONE
 producer = KafkaProducer(
     bootstrap_servers=["broker-kafka-orcoute-bootstrap-...:443"],
     security_protocol="SSL",
-    ssl_context=ctx
+    ssl_context=from kafka import KafkaProducer
+
+producer = KafkaProducer(
+    bootstrap_servers=["broker-kafka-orcoute-bootstrap-...:443"],
+    security_protocol="SSL",
+    ssl_cafile="caminho/para/ca_strimzi.pem",
+    # se for TLS mútua, inclua ssl_certfile e ssl_keyfile
+    # se houver SASL, inclua as configs de sasl_mechanism, username, password
 )
 
 
