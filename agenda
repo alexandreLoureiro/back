@@ -1,3 +1,45 @@
+
+Você receberá as seguintes informações:
+
+1. **Dados de Análise da Auditoria:**  
+   - Relatório completo da auditoria, principais constatações, recomendações e demais dados relevantes.
+
+2. **Destaques Gerados pela API (Conjunto A):**  
+   - Lista de 05 destaques produzidos automaticamente com base no prompt original.
+
+3. **Destaques Ajustados pelo Auditor (Conjunto B):**  
+   - Lista de 05 destaques finais, após a análise e os ajustes feitos pelo auditor.
+
+4. **Prompt Original:**  
+   - O prompt utilizado inicialmente para a geração dos destaques.
+
+5. **Proposta de Ajuste do Prompt:**  
+   - A proposta elaborada para que os próximos destaques se aproximem das expectativas, com base nos resultados e na análise dos dados.
+
+Sua tarefa é:
+
+a) **Comparar e Analisar:**  
+   - Compare os destaques do Conjunto A com os do Conjunto B, identificando onde a API falhou em capturar informações relevantes e onde o auditor conseguiu extrair dados importantes.
+   - Analise criticamente se os ajustes realizados pelo auditor melhoram a clareza, a objetividade e a aderência aos critérios (como destaque para riscos com nota 4 ou 5, formatação em HTML, e conexão com o relatório de auditoria).
+
+b) **Avaliar o Prompt Original:**  
+   - Com base na comparação dos destaques e nos dados de análise, avalie os pontos fortes e fracos do prompt original.
+   - Considere que, embora os registros do auditor possam ter melhorado alguns aspectos, é importante identificar se todas as mudanças propostas realmente capturam as informações críticas ou se há espaço para refinamento.
+
+c) **Sugerir Melhorias:**  
+   - Proponha alterações no prompt original que possam orientar a geração de destaques mais alinhados com as expectativas.
+   - Suas sugestões devem focar em melhorar a extração de informações relevantes, na formatação e na clareza das instruções (por exemplo, como evidenciar riscos críticos, conectar as recomendações aos dados do relatório, e evitar linguagem vaga ou excessivamente técnica).
+
+Retorne um relatório resumido com suas observações e as sugestões de ajuste, **exclusivamente** no formato JSON abaixo:
+
+{
+  "observacoes": "Relatório resumido com as observações críticas sobre os destaques gerados versus os ajustados e análise do prompt original.",
+  "sugestoes_prompt": "Texto detalhado co
+{
+  "observacoes": "Relatório resumido com as observações críticas sobre os destaques gerados versus os ajustados e análise do prompt original.",
+  "sugestoes_prompt": "Texto detalhado com as alterações sugeridas para o prompt original, visando melhorar a geração dos próximos destaques."
+}
+
 tenho uma aplicação que chama uma api llm onde passo para ela dados dos trabalhos de auditoria e solicito para ela gerar destaque de auditoria conforme abaixo:
 
 def gera_prompt(dados_aud):
