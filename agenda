@@ -1,50 +1,13 @@
+rodei todos os destaques gerados segue a analise que api forneceu sobre pontos que podem ser melhorados
 
-Você receberá as seguintes informações:
+segue as observações: Ao comparar os destaques do Conjunto A com os do Conjunto B, foi possível identificar que a API falhou em capturar algumas informações críticas e em conectar adequadamente as recomendações aos dados do relatório. O auditor conseguiu extrair dados importantes que foram omitidos ou mal interpretados pela API, melhorando a clareza e a objetividade dos destaques. O auditor também fez um melhor trabalho ao destacar os pontos positivos e a necessidade de melhorias de forma mais específica e alinhada com o relatório de auditoria. No entanto, algumas mudanças propostas pelo auditor poderiam ser mais concisas e diretas.
 
-1. **Dados de Análise da Auditoria:**  
-   - Relatório completo da auditoria, principais constatações, recomendações e demais dados relevantes.
+sugestoes_prompt 1. **Conclusão Alinhada ao Objetivo:** Incluir uma instrução clara para que o destaque sempre contenha uma conclusão sobre se o objetivo da auditoria foi atingido ou não, conforme descrito em [objetivo trabalho]. 2. **Maior Risco Identificado:** Instruir a API a explicar na parte 'pontos a aprimorar' como o maior risco identificado se relaciona diretamente ao objetivo do trabalho. 3. **Titulação Mais Precisa:** Evitar expressões fortes como 'exige melhorias' ou 'situação crítica' se não estiverem textualmente sustentadas no relatório. Preferir termos como 'carece de aprimoramentos' ou 'necessita ajustes'. 4. **Foco em Conclusões e Objetividade:** Excluir números ou descrições que não apoiem diretamente a conclusão. Remover frases genéricas ou de efeito sem conteúdo conclusivo. 5. **Uso de Adjetivos e Advérbios de Intensidade:** Utilizar termos como 'significativo', 'expressivo', 'relevante', 'crítico', etc., apenas se essas expressões constarem efetivamente nos dados fornecidos. 6. **Exemplificar com Fatos Reais do Relatório:** Ser específico ao mencionar tecnologias, soluções ou referências existentes no texto fornecido. 7. **Evitar Generalidades na Matéria:** A matéria deve ter até 3 parágrafos, focando no escopo real da auditoria, seus achados e na conclusão sobre o objetivo. 8. **Visão Clara de Sucessos e Melhorias Necessárias:** Os 'pontos_positivo' e 'pontos_aprimorar' devem estar conectados tanto ao que foi verificado de aderência ou conformidade no trabalho, quanto às melhorias pendentes segundo o relatório. 9. **Estilização de Destaques (Risco 4 e 5):** Se houver evento de risco 4 ou 5, destacá-lo na manchete e no texto em Arial 12, cor vermelha, negrito. Em 'alerta_evt_risco' (HTML Arial 20, vermelho, negrito), explicar como o evento de risco alto impacta o trabalho, relacionando-o à recomendação de criticidade A (se houver). 10. **Revisão de Critérios para Identificação de Relevância:** Priorizar eventos de risco com notas 4 e 5 e recomendações com criticidade 'A' e 'B', destacando-os de forma especial na manchete e na matéria.
 
-2. **Destaques Gerados pela API (Conjunto A):**  
-   - Lista de 05 destaques produzidos automaticamente com base no prompt original.
 
-3. **Destaques Ajustados pelo Auditor (Conjunto B):**  
-   - Lista de 05 destaques finais, após a análise e os ajustes feitos pelo auditor.
+forneca o ajuste aqui:
 
-4. **Prompt Original:**  
-   - O prompt utilizado inicialmente para a geração dos destaques.
-
-5. **Proposta de Ajuste do Prompt:**  
-   - A proposta elaborada para que os próximos destaques se aproximem das expectativas, com base nos resultados e na análise dos dados.
-
-Sua tarefa é:
-
-a) **Comparar e Analisar:**  
-   - Compare os destaques do Conjunto A com os do Conjunto B, identificando onde a API falhou em capturar informações relevantes e onde o auditor conseguiu extrair dados importantes.
-   - Analise criticamente se os ajustes realizados pelo auditor melhoram a clareza, a objetividade e a aderência aos critérios (como destaque para riscos com nota 4 ou 5, formatação em HTML, e conexão com o relatório de auditoria).
-
-b) **Avaliar o Prompt Original:**  
-   - Com base na comparação dos destaques e nos dados de análise, avalie os pontos fortes e fracos do prompt original.
-   - Considere que, embora os registros do auditor possam ter melhorado alguns aspectos, é importante identificar se todas as mudanças propostas realmente capturam as informações críticas ou se há espaço para refinamento.
-
-c) **Sugerir Melhorias:**  
-   - Proponha alterações no prompt original que possam orientar a geração de destaques mais alinhados com as expectativas.
-   - Suas sugestões devem focar em melhorar a extração de informações relevantes, na formatação e na clareza das instruções (por exemplo, como evidenciar riscos críticos, conectar as recomendações aos dados do relatório, e evitar linguagem vaga ou excessivamente técnica).
-
-Retorne um relatório resumido com suas observações e as sugestões de ajuste, **exclusivamente** no formato JSON abaixo:
-
-{
-  "observacoes": "Relatório resumido com as observações críticas sobre os destaques gerados versus os ajustados e análise do prompt original.",
-  "sugestoes_prompt": "Texto detalhado co
-{
-  "observacoes": "Relatório resumido com as observações críticas sobre os destaques gerados versus os ajustados e análise do prompt original.",
-  "sugestoes_prompt": "Texto detalhado com as alterações sugeridas para o prompt original, visando melhorar a geração dos próximos destaques."
-}
-
-tenho uma aplicação que chama uma api llm onde passo para ela dados dos trabalhos de auditoria e solicito para ela gerar destaque de auditoria conforme abaixo:
-
-def gera_prompt(dados_aud):
-    prompt = f"""
-    Você é um assistente especializado em auditoria interna. Sua tarefa é analisar as informações fornecidas sobre um
+Você é um assistente especializado em auditoria interna. Sua tarefa é analisar as informações fornecidas sobre um
     trabalho de auditoria e gerar um **Destaque de Auditoria** seguindo as diretrizes estabelecidas.
 
     **Definição de Destaque de Auditoria:**
@@ -157,17 +120,3 @@ def gera_prompt(dados_aud):
     - Se **não** houver evento de risco com nota 4 ou 5, **não** inclua o campo `alerta_evt_risco`.
     - Evite texto “genérico” que não conste da documentação original.
     - O JSON não deve ultrapassar 3.500 tokens no total.
-    """ 
-    return prompt
-
-for index, row in tqdm(df.iterrows(), total=df.shape[0], desc="Processando linhas"):
-        dict_row = row.to_dict()
-        dados_aud = limpar_texto(row['combined_text'])
-        prompt = limit_tokensLLM(gera_prompt(dados_aud))
-
-o que eu quero é passar uma lista de 05 destaques gerados e 05 destaques que o auditor após analisar o resultado da ferramenta fez o registro final com os devidos ajustes eu quero
-orientar minha llm para analisar as diferenças, verificar os casos pertinentes e proporo uma melhora do prompt
-essa llm tem como objetivo auxiliar no refinamento do prompt que estou passando.
-
-
-
