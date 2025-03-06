@@ -1,294 +1,124 @@
-ok, assim deu certo:
-producer = KafkaProducer(
-    bootstrap_servers='broker-kafka-ocroute-bootstrap-aud-integracao-apps.apps.k8sdesbb111.nuvem.bb.com.br:443',
-    value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+tenho uma aplicação que chama uma api llm onde passo para ela dados dos trabalhos de auditoria e solicito para ela gerar destaque de auditoria conforme abaixo:
 
-    # Ajustes de segurança para SASL_SSL
-    security_protocol='SASL_SSL',
-    sasl_mechanism='SCRAM-SHA-512',
-    sasl_plain_username='kafka-user',      
-    sasl_plain_password='ODE1MEF1ZGl0SW5mb3I=',  
+def gera_prompt(dados_aud):
+    prompt = f"""
+    Você é um assistente especializado em auditoria interna. Sua tarefa é analisar as informações fornecidas sobre um
+    trabalho de auditoria e gerar um **Destaque de Auditoria** seguindo as diretrizes estabelecidas.
 
-    # CA para validar o certificado do broker
-    ssl_cafile='certificados/kafkadesenv.pem',   
-)
+    **Definição de Destaque de Auditoria:**
+    Um Destaque de Auditoria são informações de valor agregado, relevantes e úteis, descritas sob a forma de pequenas
+    manchetes. Eles podem se referir à identificação e mitigação de constatações significativas ou a melhorias de
+    processos implementadas pelos gestores. Destinam-se ao Conselho de Administração (CA), Conselho Fiscal (CF),
+    Coadutoria (Coaud) e Conselho de Diretoria (CD). Deve apresentar uma visão sistêmica, linguagem jornalística,
+    ordem direta, sem tecnicismos, coerência com os eventos de risco avaliados, e alinhamento com a materialidade
+    e criticidade das recomendações.
 
-faça a adaptação abaixo com as novas configurações acima:
+    **Exemplos de Destaques de Auditoria:**
 
-import sys
-import pandas as pd
-import json
-import socket
-from kafka import KafkaProducer
+    {{
+        "titulo": "Gestão de negócios com cartões avança, mas há pontos de melhoria",
+        "pontos_positivo": "1) Ações para expansão da carteira de cartões, 2) Diagnóstico de desempenho do cartão",
+        "pontos_aprimorar": "1) O DAA não tem sido aplicado a todos os clientes que cumpriram os critérios divulgados, 2) Evidenciação das informações que subsidiaram a análise de ocorrências, 3) Ajuste no processo de identificação e análise de transações autorizadas",
+        "materialidade": "O cartão de crédito ocupa posição de destaque na estratégia de fidelização e conquista de clientes do Banco do Brasil, sendo o segundo produto mais relevante no NPS. O resultado líquido de negócios com cartões foi de R$ 574 mi no 3T24.",
+        "pontos_positivo_html": "<div>Ações para expansão da carteira de cartões, como redução de IOF para compras internacionais, Pix com débito no cartão de crédito, incremento de acesso a salas VIP e Desconto Automático de Anuidade (DAA).<br>Diagnóstico de desempenho do cartão, que visa direcionar as ações para crescimento da carteira.</div>",
+        "pontos_aprimorar_html": "<div>O DAA não tem sido aplicado a todos os clientes que cumpriram os critérios divulgados para gastos mensais ou saldo em investimentos.<br>Evidenciação das informações que subsidiaram a análise de ocorrências de contestação de transações seguras de cartão de crédito por suspeita de fraude.<br>Ajuste no processo de identificação e análise de transações autorizadas acima da margem do limite do cartão de crédito.</div>",
+        "materialidade_html": "<div>O cartão de crédito ocupa posição de destaque na estratégia de fidelização e conquista de clientes do Banco do Brasil. O resultado líquido de negócios com cartões foi de R$ 574 mi no 3T24.</div>"
+    }}
 
-# Adiciona o caminho para o módulo de conexões
-caminho_para_conexoes = '/dados/notebooksServidor/conexoes'
-if caminho_para_conexoes not in sys.path:
-    sys.path.append(caminho_para_conexoes)
+    {{
+        "titulo": "Avaliação dos Riscos Social, Ambiental e Climático (RSAC) em operações de crédito rural carece de aprimoramentos",
+        "pontos_positivo": "1) Ferramenta automatizada para verificação de restrições ambientais, 2) Análise segregada de documentação apresentada pelo cliente",
+        "pontos_aprimorar": "1) Ajustar o processo de análise documental das operações, 2) Aprimorar o monitoramento da carteira de crédito rural quanto aos RSAC",
+        "materialidade": "A Carteira de Negócios Sustentáveis de Agronegócios representa cerca de 47,5% do total da carteira classificada agro, que foi de R$ 347,11 bi, conforme Análise de Desempenho 3T24.",
+        "pontos_positivo_html": "<div>Ferramenta automatizada para verificação de restrições ambientais no imóvel.<br>Análise segregada de documentação apresentada pelo cliente.</div>",
+        "pontos_aprimorar_html": "<div>Ajustar o processo de análise documental das operações com impedimentos ambientais relacionados aos RSAC.<br>Aprimorar o monitoramento da carteira de crédito rural quanto aos RSAC.</div>",
+        "materialidade_html": "<div>A Carteira de Negócios Sustentáveis de Agronegócios representa cerca de 47,5% do total da carteira classificada agro, que foi de R$ 347,11 bi, conforme Análise de Desempenho 3T24.</div>"
+    }}
 
-# Importa a função para criar a conexão com o Postgres
-from conexoes import postgres
+    **Estrutura dos Dados da Auditoria:**
+    Os dados fornecidos para análise estão estruturados da seguinte forma:
+    - **[trabalho]:** Número do trabalho.
+    - **[objetivo trabalho]:** Objetivo do trabalho.
+    - **[justificativa trabalho]:** Justificativa do trabalho.
+    - **[eventos de riscos avaliados]:** Eventos de riscos avaliados.
+    - **[relatorio auditoria]:** Relatório de auditoria.
+    - **[principal constatação no relatorio]:** Principal constatação do relatório.
+    - **[ocorrência e evidencia de achados de auditoria]:** Ocorrências e evidências de achados de auditoria.
+    - **[recomendações]:** Recomendações.
 
-# Teste de conectividade primeiro
-broker_url = 'broker-kafka-ocroute-bootstrap-aud-integracao-apps.apps.k8sdesbb111.nuvem.bb.com.br'
-broker_port = 443
-print(f"Testando conectividade com {broker_url}:{broker_port}...")
-try:
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.settimeout(5)
-    s.connect((broker_url, broker_port))
-    s.close()
-    print("Conexão de rede OK!")
-except Exception as e:
-    print(f"Falha na conexão de rede: {e}")
-    print("Isto indica um problema de rede/firewall ou broker Kafka indisponível")
+    **Critérios para Identificar Relevância:**
+    - **Eventos de Risco Críticos:** Priorizar eventos avaliados com notas 4 e 5 em [eventos de riscos avaliados].
+      - Caso exista um evento de risco com nota 4 ou 5, enfatize-o de forma especial na manchete e na matéria, usando HTML (Arial 12, cor vermelha, negrito) para destacar a relevância do risco.
+      - Além disso, gere um campo adicional **`alerta_evt_risco`** contendo HTML (Arial 20, cor vermelha, negrito) com uma breve explicação de como esse risco (nota 4 ou 5) impacta o trabalho de auditoria.
+      - Se houver recomendação de criticidade A associada a esse risco, destaque-a junto com o evento no mesmo `alerta_evt_risco`.
+    - **Recomendações Relevantes:** Priorizar recomendações com criticidade "A" e "B" em [recomendações].
+    - **Ocorrências e Evidências Significativas:** Identificar as evidências e ocorrências mais relevantes em [ocorrência e evidencia de achados de auditoria].
 
-# Cria a conexão com o Postgres
-print("Conectando ao PostgreSQL...")
-conn, engine = postgres()
-print("Conexão ao PostgreSQL estabelecida.")
+    **Observações e Orientações Complementares (a partir dos feedbacks):**
+    1. **Conclusão Alinhada ao Objetivo:**  
+       - O destaque deve incluir uma **conclusão clara** sobre como o trabalho atendeu (ou não) ao objetivo da auditoria, conforme descrito em **[objetivo trabalho]**.  
+       - Evite informações meramente descritivas ou sem fechamento conclusivo, buscando responder: “O objetivo foi atingido ou não? Qual foi a constatação principal sobre isso?”
 
-# Executa a consulta para obter os dados
-query = """
-SELECT nr_trabalho
-FROM ptai.com_resultado_tx_completo 
-LIMIT 1;  -- Limitando a um registro para simplificar
-"""
-print("Executando consulta SQL...")
-df = pd.read_sql(query, engine)  # Usando engine em vez de conn para evitar o aviso
-print(f"Consulta retornou {len(df)} registros.")
+    2. **Maior Risco Identificado:**  
+       - Caso exista um risco mais relevante (por exemplo, descumprimento de lei, risco fiscal, etc.), **explique na parte “pontos a aprimorar”** como esse risco se relaciona diretamente ao objetivo do trabalho.  
+       - Evite linguagem vaga ou genérica. Traga a informação mais relevante do relatório e como esse risco deve ser mitigado.
 
-# Simula um processamento: pega o primeiro registro e adiciona um campo "processed"
-if not df.empty:
-    evento_processado = df.iloc[0].to_dict()
-    evento_processado["processed"] = True
-    print(f"Evento para envio preparado")
-else:
-    evento_processado = {"error": "No data found"}
-    print("Nenhum dado encontrado na consulta.")
+    3. **Titulação Mais Precisa e Menos Drástica:**  
+       - Evitar expressões fortes como “exige melhorias” ou “situação crítica” se não estiverem textualmente sustentadas no relatório.  
+       - Prefira termos como “carece de aprimoramentos”, “necessita ajustes” ou sinônimos equivalentes, **somente** se o relatório indicar tal necessidade.
 
-# Tenta conectar ao Kafka com configurações mais básicas e timeout maior
-print("Conectando ao Kafka (configuração simplificada)...")
-try:
-    # Configuração mais simples
-    producer = KafkaProducer(
-        bootstrap_servers=f'{broker_url}:{broker_port}',
-        value_serializer=lambda v: json.dumps(v).encode('utf-8'),
-        connections_max_idle_ms=5000,  # Menos tempo de inatividade
-        request_timeout_ms=45000,     # Timeout maior (45 segundos)
-        api_version_auto_timeout_ms=60000,  # Timeout maior para detecção de versão
-        security_protocol='SSL',
-        ssl_cafile='kafkadesenv.pem',  # Caminho para o arquivo convertido
-        ssl_check_hostname=False  # Desabilitar a verificação do nome do host
-    )
-    
-    print("Conexão com o Kafka estabelecida. Enviando mensagem...")
-    
-    # Mensagem de teste mais simples
-    test_message = {"test": "message", "timestamp": str(pd.Timestamp.now())}
-    
-    # Envia a mensagem de teste
-    future = producer.send('topico-exemplo-2', value=test_message)
-    
-    # Tenta obter o resultado com timeout maior
-    print("Aguardando confirmação do envio (30 segundos)...")
-    record_metadata = future.get(timeout=30)
-    print(f"Mensagem de teste enviada! Tópico: {record_metadata.topic}, Partição: {record_metadata.partition}")
-    
-    # Se a mensagem de teste funcionar, tenta enviar o evento real
-    print("Enviando o evento real...")
-    real_future = producer.send('topico-exemplo-2', value=evento_processado)
-    real_metadata = real_future.get(timeout=30)
-    print(f"Evento real enviado! Offset: {real_metadata.offset}")
-    
-    # Flush e fechar
-    producer.flush()
-    producer.close()
-    print("Produtor Kafka fechado com sucesso.")
-    
-except Exception as e:
-    print(f"Erro ao conectar ou enviar para o Kafka: {e}")
-    print("\nSugestões de resolução:")
-    print("1. Verifique se o endereço IP e porta estão corretos")
-    print("2. Verifique se não há firewall bloqueando a conexão")
-    print("3. Verifique se o broker Kafka está rodando corretamente")
-    print("4. Se estiver usando Docker, verifique a configuração de rede entre os containers")
+    4. **Foco em Conclusões e Objetividade:**  
+       - Excluir números ou descrições que não apoiem diretamente a conclusão (p. ex.: quantidade de contratos, caso não seja relevante para a conclusão).  
+       - Remover frases genéricas ou de efeito, sem conteúdo conclusivo (p. ex.: “essas melhorias são essenciais para...”, sem explicar por que são essenciais ou o que foi concluído).  
+       - **Evitar chavões** como “foram identificadas vulnerabilidades que necessitam de melhorias”. Ao invés disso, aponte especificamente as áreas de vulnerabilidade, conforme o relatório.
 
-# Fechar conexão com o PostgreSQL
-conn.close()
-print("Conexão com PostgreSQL fechada.")
+    5. **Uso de Adjetivos e Advérbios de Intensidade:**  
+       - Só utilizar termos como “significativo”, “expressivo”, “relevante”, “crítico”, etc. se essas expressões constarem efetivamente nos dados fornecidos.  
+       - Se não houver menção literal no relatório ou nos dados, **não use** adjetivos de intensidade ou superlativos.
 
-import sys
-import pandas as pd
-import json
-import socket
-from kafka import KafkaProducer
+    6. **Exemplificar com Fatos Reais do Relatório:**  
+       - Se o relatório mencionar, por exemplo, “algoritmo de criptografia obsoleto no sistema de autenticação”, seja específico.  
+       - Não inclua tecnologias, soluções ou referências inexistentes no texto fornecido (p. ex.: “implementação de IA” quando isso não consta do relatório).
 
-# Adiciona o caminho para o módulo de conexões
-caminho_para_conexoes = '/dados/notebooksServidor/conexoes'
-if caminho_para_conexoes not in sys.path:
-    sys.path.append(caminho_para_conexoes)
+    7. **Evitar Generalidades na Matéria:**  
+       - A matéria (`materia_html`) deve ter até 3 parágrafos, com foco no **escopo real** da auditoria, seus achados e na conclusão sobre o objetivo.  
+       - Descarte últimas frases meramente genéricas ou previsíveis se não estiverem no texto original.
 
-# Importa a função para criar a conexão com o Postgres
-from conexoes import postgres
+    8. **Visão Clara de Sucessos e Melhorias Necessárias:**  
+       - Os “pontos_positivo” e “pontos_aprimorar” devem estar conectados tanto ao que foi verificado de aderência ou conformidade no trabalho, quanto às melhorias pendentes segundo o relatório.
 
-# Teste de conectividade primeiro
-broker_url = 'broker-kafka-ocroute-bootstrap-aud-integracao-apps.apps.k8sdesbb111.nuvem.bb.com.br'
-broker_port = 443
-print(f"Testando conectividade com {broker_url}:{broker_port}...")
-try:
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.settimeout(5)
-    s.connect((broker_url, broker_port))
-    s.close()
-    print("Conexão de rede OK!")
-except Exception as e:
-    print(f"Falha na conexão de rede: {e}")
-    print("Isto indica um problema de rede/firewall ou broker Kafka indisponível")
+    9. **Estilização de Destaques (Risco 4 e 5):**  
+       - Se houver evento de risco 4 ou 5, destaque-o na manchete e no texto em **Arial 12, cor vermelha, negrito**.  
+       - Em “alerta_evt_risco” (HTML Arial 20, vermelho, negrito), explique como o evento de risco alto impacta o trabalho, relacionando-o à recomendação de criticidade A (se houver).
 
-# Cria a conexão com o Postgres
-print("Conectando ao PostgreSQL...")
-conn, engine = postgres()
-print("Conexão ao PostgreSQL estabelecida.")
+    **Dados da Auditoria:**
+    {dados_aud}
 
-# Executa a consulta para obter os dados
-query = """
-SELECT nr_trabalho
-FROM ptai.com_resultado_tx_completo 
-LIMIT 1;  -- Limitando a um registro para simplificar
-"""
-print("Executando consulta SQL...")
-df = pd.read_sql(query, engine)
-print(f"Consulta retornou {len(df)} registros.")
+    **Formato de Saída Desejado:**
+    Retorne **exclusivamente** um JSON no formato abaixo, sem qualquer texto adicional antes ou depois (sem marcações de Markdown ou trechos literais de código):
 
-# Simula um processamento: pega o primeiro registro e adiciona um campo "processed"
-if not df.empty:
-    evento_processado = df.iloc[0].to_dict()
-    evento_processado["processed"] = True
-    print("Evento para envio preparado")
-else:
-    evento_processado = {"error": "No data found"}
-    print("Nenhum dado encontrado na consulta.")
+    {{
+        "titulo": "<Título destaque>",
+        "pontos_positivo": "1) Descrição do ponto positivo, 2) Descrição do ponto positivo 2, 3) ...",
+        "pontos_aprimorar": "1) Descrição do ponto a aprimorar, 2) Descrição do ponto a aprimorar 2, 3) ...",
+        "materialidade": "Descrição da materialidade relacionada ao destaque.",
+        "pontos_positivo_html": "<div>Descrição do ponto positivo 1.<br>Descrição do ponto positivo 2.<br>...</div>",
+        "pontos_aprimorar_html": "<div>Descrição do ponto a aprimorar 1.<br>Descrição do ponto a aprimorar 2.<br>...</div>",
+        "materialidade_html": "<div>Descrição da materialidade relacionada ao destaque.</div>",
+        "manchete_html": "<div style='font-family: Arial; font-size:26px; text-align:...'><b>Manchete aqui</b></div>",
+        "materia_html": "<div style='font-family: Arial; font-size:20px; text-align:justify;'>Até 3 parágrafos, cada um focado nos pontos da matéria...</div>",
+        "alerta_evt_risco": "<div style='font-family: Arial; font-size:20px; color:red; font-weight:bold;'>Explicação do risco com nota 4 ou 5 ...</div>"
+    }}
 
-# Tenta conectar ao Kafka com configurações SASL_SSL e timeout maior
-print("Conectando ao Kafka (SASL_SSL, SCRAM-SHA-512)...")
-try:
-    producer = KafkaProducer(
-        bootstrap_servers=f'{broker_url}:{broker_port}',
-        value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+    **Regras Finais Importantes:**
+    - Não inclua quebras de linha literais nas strings `pontos_positivo` e `pontos_aprimorar`; use apenas a formatação enumerada conforme indicado (1), (2), (3) etc.
+    - Se **não** houver evento de risco com nota 4 ou 5, **não** inclua o campo `alerta_evt_risco`.
+    - Evite texto “genérico” que não conste da documentação original.
+    - O JSON não deve ultrapassar 3.500 tokens no total.
+    """ 
+    return prompt
 
-        # Timeouts (ajuste conforme necessário)
-        connections_max_idle_ms=5000,
-        request_timeout_ms=45000,
-        api_version_auto_timeout_ms=60000,
-
-        # Configurações para SASL + SSL
-        security_protocol='SASL_SSL',
-        sasl_mechanism='SCRAM-SHA-512',
-        sasl_plain_username='kafka-user',           # mesmo usuário do Java
-        sasl_plain_password='ODE1MEF1ZGl0SW5mb3I=', # mesma senha do Java
-
-        # CA para validar o certificado do broker Strimzi
-        ssl_cafile='certificados/kafkadesenv.pem',
-
-        # Se houver problema de hostname no certificado, você pode desabilitar:
-        # ssl_check_hostname=False  # (Não recomendado em produção)
-    )
-    
-    print("Conexão com o Kafka estabelecida. Enviando mensagem de teste...")
-    
-    # Mensagem de teste
-    test_message = {"test": "message", "timestamp": str(pd.Timestamp.now())}
-    future = producer.send('topico-exemplo-2', value=test_message)
-    
-    print("Aguardando confirmação do envio (30 segundos)...")
-    record_metadata = future.get(timeout=30)
-    print(f"Mensagem de teste enviada! Tópico: {record_metadata.topic}, Partição: {record_metadata.partition}")
-    
-    # Enviando o evento real
-    print("Enviando o evento real...")
-    real_future = producer.send('topico-exemplo-2', value=evento_processado)
-    real_metadata = real_future.get(timeout=30)
-    print(f"Evento real enviado! Offset: {real_metadata.offset}")
-    
-    # Finaliza o Producer
-    producer.flush()
-    producer.close()
-    print("Produtor Kafka fechado com sucesso.")
-    
-except Exception as e:
-    print(f"Erro ao conectar ou enviar para o Kafka: {e}")
-    print("\nSugestões de resolução:")
-    print("1. Verifique se o endereço e porta estão corretos")
-    print("2. Verifique se não há firewall bloqueando a conexão")
-    print("3. Verifique se o broker Kafka está rodando corretamente")
-    print("4. Se estiver usando Docker, verifique a configuração de rede entre os containers")
-
-# Fecha conexão com o PostgreSQL
-conn.close()
-print("Conexão com PostgreSQL fechada.")
-
-
-Testando conectividade com broker-kafka-ocroute-bootstrap-aud-integracao-apps.apps.k8sdesbb111.nuvem.bb.com.br:443...
-Falha na conexão de rede: name 'socket' is not defined
-Isto indica um problema de rede/firewall ou broker Kafka indisponível
-Conectando ao PostgreSQL...
-Conexão ao PostgreSQL estabelecida.
-Executando consulta SQL...
-Consulta retornou 1 registros.
-Evento para envio preparado
-Conectando ao Kafka (SASL_SSL, SCRAM-SHA-512)...
-Conexão com o Kafka estabelecida. Enviando mensagem de teste...
-Aguardando confirmação do envio (30 segundos)...
-Mensagem de teste enviada! Tópico: topico-exemplo-2, Partição: 3
-Enviando o evento real...
-Evento real enviado! Offset: 2
-Produtor Kafka fechado com sucesso.
-Conexão com PostgreSQL fechada.
-
-
-- name: kafka.bootstrap.servers
-          value: broker-kafka-ocroute-bootstrap-gde-servicos-kafka-broker.apps.k8sdesbb111.nuvem.bb.com.br:443
-        - name: kafka.security.protocol
-          value: SASL_SSL
-        - name: kafka.sasl.mechanism
-          value: SCRAM-SHA-512
-        - name: kafka.ssl.protocol
-          value: TLSv1.2
-        - name: APP_KAFKA_USERNAME
-          valueFrom:
-            secretKeyRef:
-              name: kafka-user-password
-              key: kafka-username
-        - name: APP_KAFKA_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: kafka-user-password
-              key: kafka-password
-        - name: kafka.sasl.jaas.config
-          value: org.apache.kafka.common.security.scram.ScramLoginModule required username="$(APP_KAFKA_USERNAME)" password="$(APP_KAFKA_PASSWORD)";
-        - name: kafka.group.id
-          value: escrituracao-service
-        - name: mp.messaging.outgoing.remessa-nova-escrituracao-out.topic
-          value: remessa-nova-escrituracao
-        - name: mp.messaging.incoming.remessa-nova-escrituracao-in.topic
-          value: remessa-nova-escrituracao
-        - name: mp.messaging.incoming.remessa-nova-escrituracao-in.topic.ssl.truststore.location
-          value: /etc/config-kafkatruststore/truststore.jks
-        - name: mp.messaging.outgoing.remessa-nova-escrituracao-out.topic.ssl.truststore.location
-          value: /etc/config-kafkatruststore/truststore.jks
-        - name: mp.messaging.incoming.remessa-nova-escrituracao-in.topic.ssl.truststore.password
-          value: password
-        - name: mp.messaging.outgoing.remessa-nova-escrituracao-out.topic.ssl.truststore.password
-          value: password
-        - name: mp.messaging.outgoing.remessa-nova-escrituracao-out.topic.ssl.truststore.password
-          value: password
-          volumeMounts: null
-        - name: kafkatruststore
-          mountPath: /etc/config-kafkatruststore
-          readOnly: true
-      volumes:
-        - name: kafkatruststore
-          secret:
-            secretName: kafkatruststore
-
+for index, row in tqdm(df.iterrows(), total=df.shape[0], desc="Processando linhas"):
+        dict_row = row.to_dict()
+        dados_aud = limpar_texto(row['combined_text'])
+        prompt = limit_tokensLLM(gera_prompt(dados_aud))
