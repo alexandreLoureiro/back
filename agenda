@@ -122,3 +122,10 @@ for index, row in tqdm(df.iterrows(), total=df.shape[0], desc="Processando linha
         dict_row = row.to_dict()
         dados_aud = limpar_texto(row['combined_text'])
         prompt = limit_tokensLLM(gera_prompt(dados_aud))
+
+o que eu quero é passar uma lista de 05 destaques gerados e 05 destaques que o auditor após analisar o resultado da ferramenta fez o registro final com os devidos ajustes eu quero
+orientar minha llm para analisar as diferenças, verificar os casos pertinentes e proporo uma melhora do prompt
+essa llm tem como objetivo auxiliar no refinamento do prompt que estou passando.
+
+
+
