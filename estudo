@@ -1,3 +1,30 @@
+quando fui inserir os dados no meu banco de dados postgres latin1 deu o erro
+
+código:
+df_resultados.to_sql(
+            name=table_name,
+            con=engine,
+            schema=schema_name,
+            if_exists='append',  # ou 'append'
+            index=False
+        )
+        logging.info(f"Processamento concluído. {len(resultados)} registros inseridos no banco de dados.")
+    except Exception as e:
+        logging.error(f"Erro ao inserir dados no PostgreSQL: {e}")
+
+erro:
+
+Processando linhas: 100%|██████████| 1/1 [00:08<00:00,  8.79s/it]
+ERROR:root:Erro ao inserir dados no PostgreSQL: (psycopg2.errors.DatatypeMismatch) column "pontos_positivo" is of type jsonb but expression is of type text[]
+LINE 5: ...o do Brasil requer aprimoramentos estruturantes', ARRAY['Ini...
+                                                             ^
+HINT:  You will need to rewrite or cast the expression.
+
+[SQL: INSERT INTO destaques.gpt_destaques2 (nr_trabalho, ano, nm_trab, obj_trab, justif, processo_avaliado, hierarquia_processo, evento_rsco_avaliado, hierarquia_evento_risco, tx_rel_atvd, tx_constatacao, rel_hash, ocorrencia_concat, rcm_concat, combined_text, titulo, pont
+
+
+
+
 ALTER TABLE ptai.com_resultado_tx_completo 
 ALTER COLUMN pontos_positivo TYPE JSONB USING 
   (SELECT array_to_json(array_agg(trim(regexp_replace(item, '^\d+\)\s*', ''))))
@@ -41,27 +68,5 @@ print(f"Tipo de pontos_positivo: {type(evento_processado.get('pontos_positivo'))
 print(f"Valor de pontos_positivo: {evento_processado.get('pontos_positivo')}")
 print(f"Tipo de pontos_aprimorar: {type(evento_processado.get('pontos_aprimorar'))}")
 print(f"Valor de pontos_aprimorar: {evento_processado.get('pontos_aprimorar')}")
-
-
----------------------------------------------------------------------------
-TypeError                                 Traceback (most recent call last)
-Cell In[20], line 8
-      6     # Regex para extrair os pontos numerados
-      7     import re
-----> 8     pontos_positivo_list = [item.strip() for item in re.split(r'\d+\)\s*', pontos_positivo_str) if item.strip()]
-      9     df.at[idx, 'pontosPositivo'] = pontos_positivo_list
-     11 # Converte pontos_aprimorar de string para lista
-
-File /usr/local/lib/python3.9/re.py:231, in split(pattern, string, maxsplit, flags)
-    223 def split(pattern, string, maxsplit=0, flags=0):
-    224     """Split the source string by the occurrences of the pattern,
-    225     returning a list containing the resulting substrings.  If
-    226     capturing parentheses are used in pattern, then the text of all
-   (...)
-    229     and the remainder of the string is returned as the final element
-    230     of the list."""
---> 231     return _compile(pattern, flags).split(string, maxsplit)
-
-TypeError: expected string or bytes-like object
 
 
