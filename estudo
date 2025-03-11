@@ -43,3 +43,25 @@ print(f"Tipo de pontos_aprimorar: {type(evento_processado.get('pontos_aprimorar'
 print(f"Valor de pontos_aprimorar: {evento_processado.get('pontos_aprimorar')}")
 
 
+---------------------------------------------------------------------------
+TypeError                                 Traceback (most recent call last)
+Cell In[20], line 8
+      6     # Regex para extrair os pontos numerados
+      7     import re
+----> 8     pontos_positivo_list = [item.strip() for item in re.split(r'\d+\)\s*', pontos_positivo_str) if item.strip()]
+      9     df.at[idx, 'pontosPositivo'] = pontos_positivo_list
+     11 # Converte pontos_aprimorar de string para lista
+
+File /usr/local/lib/python3.9/re.py:231, in split(pattern, string, maxsplit, flags)
+    223 def split(pattern, string, maxsplit=0, flags=0):
+    224     """Split the source string by the occurrences of the pattern,
+    225     returning a list containing the resulting substrings.  If
+    226     capturing parentheses are used in pattern, then the text of all
+   (...)
+    229     and the remainder of the string is returned as the final element
+    230     of the list."""
+--> 231     return _compile(pattern, flags).split(string, maxsplit)
+
+TypeError: expected string or bytes-like object
+
+
