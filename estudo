@@ -24,3 +24,22 @@ for idx, row in df.iterrows():
         pontos_aprimorar_list = [item.strip() for item in re.split(r'\d+\)\s*', pontos_aprimorar_str) if item.strip()]
         df.at[idx, 'pontos_aprimorar'] = pontos_aprimorar_list
 
+
+# Diagnóstico
+print("Estrutura do evento a ser enviado:")
+print(json.dumps(evento_processado, indent=2, ensure_ascii=False))
+
+# Verificar se há problemas de serialização
+try:
+    json_test = json.dumps(evento_processado)
+    print("Serialização JSON bem-sucedida")
+except Exception as e:
+    print(f"Erro ao serializar para JSON: {e}")
+    
+# Verificar conteúdo específico dos campos problemáticos
+print(f"Tipo de pontos_positivo: {type(evento_processado.get('pontos_positivo'))}")
+print(f"Valor de pontos_positivo: {evento_processado.get('pontos_positivo')}")
+print(f"Tipo de pontos_aprimorar: {type(evento_processado.get('pontos_aprimorar'))}")
+print(f"Valor de pontos_aprimorar: {evento_processado.get('pontos_aprimorar')}")
+
+
