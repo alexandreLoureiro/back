@@ -1,3 +1,8 @@
+e assim? 
+df_resultados['pontos_positivo'] = df_resultados['pontos_positivo'].apply(lambda x: json.dumps(x, ensure_ascii=False))
+df_resultados['pontos_aprimorar'] = df_resultados['pontos_aprimorar'].apply(lambda x: json.dumps(x, ensure_ascii=False))
+        
+
 
 deu erro ao inserir os dados no meu postgres configurado como latin1
 
