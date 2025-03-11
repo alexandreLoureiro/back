@@ -1,91 +1,26 @@
-A aplicação de métodos ágeis em auditoria oferece uma série de benefícios claros, mas também enfrenta resistências que são comuns em processos de mudança
+ALTER TABLE ptai.com_resultado_tx_completo 
+ALTER COLUMN pontos_positivo TYPE JSONB USING 
+  (SELECT array_to_json(array_agg(trim(regexp_replace(item, '^\d+\)\s*', ''))))
+   FROM regexp_split_to_table(pontos_positivo, ',') AS item);
 
+ALTER TABLE ptai.com_resultado_tx_completo 
+ALTER COLUMN pontos_aprimorar TYPE JSONB USING
+  (SELECT array_to_json(array_agg(trim(regexp_replace(item, '^\d+\)\s*', ''))))
+   FROM regexp_split_to_table(pontos_aprimorar, ',') AS item);
 
+# Após obter o DataFrame do PostgreSQL
+for idx, row in df.iterrows():
+    # Converte pontos_positivo de string para lista
+    if pd.notna(row['pontos_positivo']):
+        pontos_positivo_str = row['pontos_positivo']
+        # Regex para extrair os pontos numerados
+        import re
+        pontos_positivo_list = [item.strip() for item in re.split(r'\d+\)\s*', pontos_positivo_str) if item.strip()]
+        df.at[idx, 'pontos_positivo'] = pontos_positivo_list
+    
+    # Converte pontos_aprimorar de string para lista
+    if pd.notna(row['pontos_aprimorar']):
+        pontos_aprimorar_str = row['pontos_aprimorar']
+        pontos_aprimorar_list = [item.strip() for item in re.split(r'\d+\)\s*', pontos_aprimorar_str) if item.strip()]
+        df.at[idx, 'pontos_aprimorar'] = pontos_aprimorar_list
 
-Benefícios do Uso de Métodos Ágeis em Auditoria (ideal para trabalhos complexos e que envolve integração entre as GA)
-
-                •             Flexibilidade e adaptação: O método ágil permite ajustes no escopo ou nos objetivos do trabalho de auditoria em tempo real, de acordo com descobertas ou prioridades emergentes.
-
-
-
-                •             Entregas incrementais: Em vez de esperar meses por um relatório final, o método ágil possibilita entregar insights mais rápidos e parciais, que podem ser usados imediatamente pela organização.
-
-                •             Colaboração e comunicação: O trabalho em ciclos curtos promove maior interação entre as partes interessadas (auditores, auditados e gestão), reduzindo ruídos e aumentando o entendimento das expectativas.
-
-                •             Foco no valor agregado: As auditorias ágeis tendem a priorizar áreas e processos de maior risco e impacto, alinhando-se aos objetivos estratégicos do banco.
-
-
-
-                •             Eficiência e produtividade: Ciclos menores e bem definidos ajudam a manter o foco da equipe, eliminando esforços redundantes ou pouco relevantes.
-
-
-
-Alinhamento Estratégico: objetivos do ECBB (Estrutura de Controles Corporativos do BB) e às tendências de transformação digital:
-
-
-
-                •             A agilidade é essencial em um cenário bancário dinâmico, com mudanças constantes no mercado e regulações.
-
-
-
-                •             Ágil permite atender com mais eficiência às demandas regulatórias e mitigar riscos emergentes, como cibersegurança e compliance.
-
-
-
-
-
-Avaliação proporcional trabalhos com uso de métodos ágeis e convencional (trabalho com ao menos uma recomendação emitida)
-
-
-
-1. Notas Executivas Maiores e Mais Destaques
-
-O fato de os trabalhos conduzidos com método ágil terem, proporcionalmente, notas mais altas do executivo e mais destaques é um forte indicativo de valor percebido. Isso sugere que as entregas são mais relevantes, bem comunicadas e úteis para a alta gestão. 
-
-                •             Melhores avaliações refletem maior satisfação do cliente interno.
-
-
-
-                •             Um ambiente regulado e competitivo, qualidade e relevância da auditoria aumentam a segurança e a confiança na tomada de decisão da alta administração.
-
-
-
-2. Menor Quantidade de Recomendações, porém Mais Qualificadas
-
-Ao constatar que, no método ágil, a quantidade de recomendações emitidas é levemente menor, isso pode indicar que as recomendações são mais apuradas, relevantes e direcionadas. Em vez de gerar um grande volume de pontos a serem corrigidos, o ágil conduz a uma seleção mais criteriosa e assertiva, resultando em menor retrabalho e recomendações mais significativas e de maior impacto.
-
-                •             Trata de “menos auditoria” e sim de “melhor auditoria”.
-
-
-
-                •             Destacar que o foco está na qualidade e não na quantidade, evitando “enchimento” desnecessário de relatórios.
-
-
-
-3. Maior Tempo até a Emissão das Recomendações: Interação e Alinhamento
-
-O fato de levar mais tempo entre o início do trabalho e a emissão da recomendação pode inicialmente parecer uma desvantagem. Entretanto, esta demora é resultado de maior interação entre as áreas envolvidas e maior rigor na elaboração das recomendações. Isso reduz a probabilidade de recomendações não acatadas, contestadas ou descontextualizadas.
-
-                •             Tempo investido na interação antes de emitir uma recomendação leva a mais alinhamento, compreensão mútua e
-
-aceitação por parte da área auditada.
-
-
-
-                •             Evitar “surpresas de última hora” — o auditado já está ciente, preparado e, muitas vezes, já começa a implementar
-
-melhorias antes mesmo da emissão formal da recomendação.
-
-
-
-4. Ausência de Recomendações Surpresa 
-
-A ausência de recomendações “surpresa” é um sinal de maturidade no processo ágil. Isso indica que o diálogo contínuo mitiga riscos de choque ao final e promove um clima de confiança. Quando a recomendação chega, ela não é um “balde de água fria”, mas sim um passo natural em um processo já consolidado de comunicação e melhoria.
-
-                •             Aumenta a taxa de aceitação e a eficácia da implementação das recomendações, contribuindo para que as melhorias
-
-sejam efetivamente adotadas pela organização.
-
-
-
-                •             Destaque que a ausência de surpresas tende a reduzir a resistência, diminuir custos de remediação e reforçar o relacionamento entre auditoria e áreas auditadas.
