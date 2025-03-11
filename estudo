@@ -1,3 +1,20 @@
+import json
+
+# Antes de fazer o to_sql, converta os arrays em strings JSON
+for col in ['pontos_positivo', 'pontos_aprimorar']:
+    if col in df_resultados.columns:
+        df_resultados[col] = df_resultados[col].apply(lambda x: json.dumps(x) if isinstance(x, list) else x)
+
+# Agora faça a inserção
+df_resultados.to_sql(
+    name=table_name,
+    con=engine,
+    schema=schema_name,
+    if_exists='append',
+    index=False
+)
+
+
 quando fui inserir os dados no meu banco de dados postgres latin1 deu o erro
 
 código:
