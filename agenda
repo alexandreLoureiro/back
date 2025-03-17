@@ -1,3 +1,143 @@
+A seguir, um exemplo de documentação de uso da API para que a equipe (que utilizará Vue no front e Java no backend) possa integrar a funcionalidade de auditoria e chat. Essa documentação foca nos endpoints e nos exemplos de payloads e respostas, sem abordar detalhes internos ou técnicos de implementação.
+
+⸻
+
+Visão Geral
+
+A API permite:
+	•	Recuperar os dados do trabalho de auditoria e o destaque gerado: Inclui informações iniciais de contexto (mensagens de role_user e role_assistant) que servem como base para a interação do auditor.
+	•	Criar uma nova sessão de chat: Gera um identificador único (sessionId) para armazenar o histórico da conversa.
+	•	Realizar interações via chat: Recebe mensagens do usuário, agrega o histórico da sessão e retorna respostas geradas pela LLM.
+
+Esta API foi originalmente implementada com backend em FastAPI e frontend em Angular, mas pode ser consumida por qualquer cliente que consiga enviar requisições HTTP com payloads em JSON.
+
+⸻
+
+Endpoints
+
+1. Obter Dados do Trabalho e Destaque Gerado
+	•	URL:
+POST https://mefis.bb.com.br/apiptai/chat_trabalho/
+	•	Descrição:
+Retorna os dados referentes a um trabalho de auditoria, incluindo o destaque gerado e o contexto inicial para o chat.
+	•	Request:
+Payload JSON:
+
+{
+  "nr_trabalho": 12345
+}
+
+	•	nr_trabalho: Número do trabalho de auditoria que deseja consultar.
+
+	•	Response:
+Um JSON contendo os atributos do trabalho, dentre os quais se destacam:
+	•	role_user: Texto com a contextualização inicial (instruções e dados do trabalho) para o auditor.
+	•	role_assistant: Texto com a análise inicial gerada pela LLM.
+Exemplo simplificado:
+
+{
+  "nr_trabalho": 12345,
+  "titulo": "Auditoria do Processo X",
+  "role_user": "Você é um assistente especializado em auditoria interna. Sua tarefa é analisar as informações fornecidas...",
+  "role_assistant": "Segue minha análise: pontos_positivo: ... pontos_aprimorar: ... materialidade: ..."
+  // ... outros campos retornados pela query
+}
+
+
+	•	Notas:
+Esse endpoint deve ser utilizado para obter os dados completos do trabalho, os quais servirão de base para o destaque de auditoria e para o contexto do chat.
+
+⸻
+
+2. Criar Sessão de Chat
+	•	URL:
+POST https://mefis.bb.com.br/apiptai/create_session
+	•	Descrição:
+Gera um sessionId único e inicializa a sessão no servidor para armazenar o histórico da conversa.
+	•	Request:
+Não requer parâmetros no corpo da requisição.
+	•	Response:
+Um JSON contendo:
+
+{
+  "sessionId": "uuid-gerado"
+}
+
+
+	•	Notas:
+O sessionId retornado deve ser persistido pelo cliente e enviado nas requisições subsequentes para manter o histórico do chat.
+
+⸻
+
+3. Interação via Chat
+	•	URL:
+POST https://mefis.bb.com.br/apiptai/chat
+	•	Descrição:
+Recebe a mensagem do usuário, agrega o histórico da sessão (incluindo, se for o primeiro acesso, o contexto inicial) e retorna a resposta da LLM.
+Observação: Nos primeiros envios, recomenda-se enviar também os atributos roleUser e roleAssistant para inicializar o contexto do chat. Em chamadas subsequentes, esses campos podem ser omitidos, pois o contexto já estará armazenado na sessão.
+	•	Request:
+Payload JSON:
+
+{
+  "sessionId": "uuid-gerado",
+  "userMessage": "Minha dúvida sobre a recomendação X.",
+  "roleUser": "Texto do role_user obtido anteriormente (opcional, apenas na primeira chamada)",
+  "roleAssistant": "Texto do role_assistant obtido anteriormente (opcional, apenas na primeira chamada)"
+}
+
+	•	sessionId: Identificador da sessão gerado no endpoint de criação de sessão.
+	•	userMessage: Mensagem do usuário para enviar ao chat.
+	•	roleUser e roleAssistant: Contexto inicial, obrigatórios apenas se for a primeira mensagem da sessão.
+
+	•	Response:
+Um JSON contendo a resposta gerada pela LLM:
+
+{
+  "answer": "Texto gerado pelo assistente com até ~800 caracteres em até dois parágrafos."
+}
+
+
+	•	Notas:
+	•	Histórico: Cada mensagem (do usuário e do assistente) é armazenada no histórico da sessão para que o contexto seja mantido entre as interações.
+	•	Limite de caracteres: As respostas devem ter no máximo ~800 caracteres e estarem divididas em até dois parágrafos.
+	•	Restrições: Se a mensagem ultrapassar o escopo dos dados do trabalho ou não tiver relação com auditoria, o sistema pode recusar a resposta ou informar que não pode ajudar no tema.
+
+⸻
+
+Fluxo de Uso
+	1.	Obter Dados do Trabalho:
+A aplicação consome o endpoint /apiptai/chat_trabalho/ para recuperar os dados do trabalho de auditoria e o destaque gerado.
+Utilize o campo nr_trabalho para especificar o trabalho desejado.
+	2.	Criar Sessão de Chat:
+Ao iniciar a interação, a aplicação chama /apiptai/create_session para obter um sessionId.
+	3.	Iniciar Chat:
+Na primeira mensagem do chat, envie o sessionId junto com o userMessage e os campos roleUser e roleAssistant (obtidos na etapa 1) para estabelecer o contexto inicial.
+	4.	Interagir via Chat:
+Para cada nova mensagem do auditor, envie apenas o sessionId e o userMessage (o histórico já está armazenado no servidor), e a API retornará a resposta gerada.
+
+⸻
+
+Considerações Finais
+	•	Formato:
+Todas as requisições devem ser enviadas com o cabeçalho Content-Type: application/json.
+	•	Tratamento de Erros:
+Em caso de erro, a API retornará um JSON no formato:
+
+{
+  "error": "Mensagem de erro detalhada"
+}
+
+
+	•	Persistência do Histórico:
+A API gerencia o histórico do chat por sessão, garantindo que o contexto das conversas seja mantido durante toda a interação.
+
+Esta documentação visa facilitar a integração da API com a nova aplicação, fornecendo um guia claro sobre os endpoints disponíveis, seus parâmetros e fluxos de interação. Se surgirem dúvidas adicionais sobre o consumo da API, recomenda-se entrar em contato com a equipe responsável pelo backend.
+
+⸻
+
+Esta é uma proposta de documentação de uso da API que pode ser expandida ou ajustada conforme necessário.
+
+
 # Documentação da API de Destaques de Auditoria
 
 ## Visão Geral
