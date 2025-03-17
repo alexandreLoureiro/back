@@ -1,4 +1,142 @@
+# Documentação da API de Destaques de Auditoria
 
+## Visão Geral
+
+Esta API permite a integração com o sistema de destaques de auditoria e assistente de IA, fornecendo funcionalidades para:
+1. Obter informações de trabalhos de auditoria
+2. Iniciar sessões de chat
+3. Enviar mensagens para o assistente de IA
+4. Salvar histórico de conversas
+
+## Endpoints
+
+### 1. Obter Informações do Trabalho de Auditoria
+
+Recupera os dados de um trabalho de auditoria específico, incluindo o destaque gerado pela IA.
+
+**URL:** `https://mefis.bb.com.br/apiptai/chat_trabalho/`
+
+**Método:** `POST`
+
+**Body:**
+```json
+{
+    "nr_trabalho": 123456
+}
+```
+
+**Resposta:**
+```json
+{
+    "nr_trabalho": 123456,
+    "titulo": "Título do Trabalho",
+    "ano": 2025,
+    "nm_trab": "Nome do Trabalho",
+    "obj_trab": "Objetivo do trabalho de auditoria...",
+    "manchete_html": "<p>Manchete do destaque</p>",
+    "materia_html": "<p>Conteúdo do destaque</p>",
+    "rel_hash": "hash_identificador",
+    "pontos_positivo_html": "<p>Pontos positivos identificados</p>",
+    "pontos_aprimorar_html": "<p>Pontos a aprimorar</p>",
+    "materialidade_html": "<p>Materialidade do trabalho</p>",
+    "dt_movimento": "2025-03-17T14:30:00",
+    "role_user": "Contexto inicial para o chat...",
+    "role_assistant": "Análise inicial do assistente..."
+}
+```
+
+### 2. Criar Sessão de Chat
+
+Cria uma nova sessão de chat com identificador único.
+
+**URL:** `https://mefis.bb.com.br/apiptai/create_session`
+
+**Método:** `POST`
+
+**Resposta:**
+```json
+{
+    "sessionId": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+### 3. Enviar Mensagem ao Chat
+
+Envia uma mensagem para o assistente de IA e recebe a resposta.
+
+**URL:** `https://mefis.bb.com.br/apiptai/chat`
+
+**Método:** `POST`
+
+**Body:**
+```json
+{
+    "sessionId": "550e8400-e29b-41d4-a716-446655440000",
+    "userMessage": "Poderia explicar melhor as recomendações deste trabalho?",
+    "roleUser": "Contexto inicial obtido do endpoint chat_trabalho...",
+    "roleAssistant": "Análise inicial obtida do endpoint chat_trabalho..."
+}
+```
+
+**Observações:**
+- Os campos `roleUser` e `roleAssistant` são opcionais e devem ser enviados apenas na primeira mensagem da sessão
+- Estes valores são obtidos da resposta do endpoint `/chat_trabalho/`
+
+**Resposta:**
+```json
+{
+    "answer": "As recomendações deste trabalho de auditoria focam principalmente em..."
+}
+```
+
+### 4. Salvar Mensagem
+
+Salva as mensagens trocadas no banco de dados.
+
+**URL:** `https://mefis.bb.com.br/apiptai/salvar_mensagem` (URL inferida, confirmar o endpoint correto)
+
+**Método:** `POST`
+
+**Body:**
+```json
+{
+    "numero_trabalho": 123456,
+    "matricula": "F12345",
+    "sessao": "550e8400-e29b-41d4-a716-446655440000",
+    "remetente": "usuario", // ou "assistente"
+    "conteudo": "Texto da mensagem enviada"
+}
+```
+
+**Resposta:**
+```json
+{
+    "success": true,
+    "id": 7890
+}
+```
+
+## Fluxo de Uso Recomendado
+
+1. **Inicialização**:
+   - Chamar o endpoint `/chat_trabalho/` para obter os dados do trabalho e o destaque de auditoria
+   - Chamar o endpoint `/create_session` para obter um ID de sessão único
+
+2. **Primeira mensagem**:
+   - Enviar a primeira mensagem para `/chat` incluindo os campos `roleUser` e `roleAssistant` obtidos de `/chat_trabalho/`
+   - Salvar a mensagem do usuário e a resposta do assistente usando o endpoint de salvar mensagem
+
+3. **Mensagens subsequentes**:
+   - Enviar mensagens subsequentes para `/chat` usando apenas o `sessionId` e `userMessage`
+   - Salvar cada interação usando o endpoint de salvar mensagem
+
+## Notas Importantes
+
+- O assistente de IA é especializado em auditoria interna e responde com base nos dados fornecidos do trabalho
+- As respostas são limitadas a aproximadamente 800 caracteres e até dois parágrafos
+- O assistente se recusará a responder perguntas fora do escopo da auditoria ou do trabalho específico
+- O histórico de conversas é mantido durante a sessão para garantir contexto nas respostas
+- Recomenda-se salvar todas as mensagens (usuário e assistente) para manter o histórico completo
 
 Tenho uma aplicação que usa uma chamada api de uma llm que passo em um script que roda em batch dos trabalhos de auditoria, relatório, principais contatações,
 evidencias e recomendação, com base nessa informação solicito que gere um destaque de auditoria
