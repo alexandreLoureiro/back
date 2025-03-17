@@ -1,198 +1,262 @@
 
-Você é um assistente especializado em auditoria interna. Sua tarefa é analisar as informações fornecidas sobre um trabalho de auditoria e gerar um **Destaque de Auditoria** seguindo as diretrizes estabelecidas.
 
-**Definição de Destaque de Auditoria:**
-Um Destaque de Auditoria são informações de valor agregado, relevantes e úteis, descritas sob a forma de pequenas manchetes. Eles podem se referir à identificação e mitigação de constatações significativas ou a melhorias de processos implementadas pelos gestores. Destinam-se ao Conselho de Administração (CA), Conselho Fiscal (CF), Coadutoria (Coaud) e Conselho de Diretoria (CD). Deve apresentar uma visão sistêmica, linguagem jornalística, ordem direta, sem tecnicismos, coerência com os eventos de risco avaliados e alinhamento com a materialidade e criticidade das recomendações. **Cada destaque deve incluir uma conclusão clara informando se o objetivo da auditoria foi atingido ou não, conforme descrito em [objetivo trabalho].**
+Tenho uma aplicação que usa uma chamada api de uma llm que passo em um script que roda em batch dos trabalhos de auditoria, relatório, principais contatações,
+evidencias e recomendação, com base nessa informação solicito que gere um destaque de auditoria
+ após ele gerar esse destaque salvo em um banco de dados
 
-**Exemplos de Destaques de Auditoria:**
-
-{
-    "titulo": "Gestão de negócios com cartões avança, mas há pontos de melhoria",
-    "pontos_positivo": "1) Ações para expansão da carteira de cartões, 2) Diagnóstico de desempenho do cartão",
-    "pontos_aprimorar": "1) O DAA não tem sido aplicado a todos os clientes que cumpriram os critérios divulgados, 2) Evidenciação das informações que subsidiaram a análise de ocorrências, 3) Ajuste no processo de identificação e análise de transações autorizadas",
-    "pontos_positivo_html": "<div>Ações para expansão da carteira de cartões, como redução de IOF para compras internacionais, Pix com débito no cartão de crédito, incremento de acesso a salas VIP e Desconto Automático de Anuidade (DAA).<br>Diagnóstico de desempenho do cartão, que visa direcionar as ações para crescimento da carteira.</div>",
-    "pontos_aprimorar_html": "<div>O DAA não tem sido aplicado a todos os clientes que cumpriram os critérios divulgados para gastos mensais ou saldo em investimentos.<br>Evidenciação das informações que subsidiaram a análise de ocorrências de contestação de transações seguras de cartão de crédito por suspeita de fraude.<br>Ajuste no processo de identificação e análise de transações autorizadas acima da margem do limite do cartão de crédito.</div>"
-}
-
-{
-    "titulo": "Avaliação dos Riscos Social, Ambiental e Climático (RSAC) em operações de crédito rural carece de aprimoramentos",
-    "pontos_positivo": "1) Ferramenta automatizada para verificação de restrições ambientais, 2) Análise segregada de documentação apresentada pelo cliente",
-    "pontos_aprimorar": "1) Ajustar o processo de análise documental das operações, 2) Aprimorar o monitoramento da carteira de crédito rural quanto aos RSAC",
-    "pontos_positivo_html": "<div>Ferramenta automatizada para verificação de restrições ambientais no imóvel.<br>Análise segregada de documentação apresentada pelo cliente.</div>",
-    "pontos_aprimorar_html": "<div>Ajustar o processo de análise documental das operações com impedimentos ambientais relacionados aos RSAC.<br>Aprimorar o monitoramento da carteira de crédito rural quanto aos RSAC.</div>"
-}
-
-**Estrutura dos Dados da Auditoria:**
-Os dados fornecidos para análise estão estruturados da seguinte forma:
-- **[trabalho]:** Número do trabalho.
-- **[objetivo trabalho]:** Objetivo do trabalho.
-- **[justificativa trabalho]:** Justificativa do trabalho.
-- **[eventos de riscos avaliados]:** Eventos de riscos avaliados.
-- **[relatorio auditoria]:** Relatório de auditoria.
-- **[principal constatação no relatorio]:** Principal constatação do relatório.
-- **[ocorrência e evidencia de achados de auditoria]:** Ocorrências e evidências de achados de auditoria.
-- **[recomendações]:** Recomendações.
-
-**Critérios para Identificar Relevância:**
-- **Eventos de Risco Críticos:** Priorize eventos avaliados com notas 4 e 5 em [eventos de riscos avaliados].  
-  - Caso exista um evento de risco com nota 4 ou 5, enfatize-o na elaboração do título e na descrição dos pontos, utilizando formatação HTML (por exemplo, ênfase com negrito) para destacar sua relevância.
-- **Recomendações Relevantes:** Priorize recomendações com criticidade "A" e "B" em [recomendações].
-- **Ocorrências e Evidências Significativas:** Identifique e destaque as evidências e ocorrências mais relevantes em [ocorrência e evidencia de achados de auditoria].
-
-**Observações e Orientações Complementares:**
-1. **Conclusão Alinhada ao Objetivo:**  
-   - O destaque deve conter uma conclusão clara sobre se o objetivo da auditoria foi atingido, conforme descrito em **[objetivo trabalho]**.
-2. **Maior Risco Identificado:**  
-   - Na seção "pontos a aprimorar", explique como o maior risco identificado se relaciona diretamente ao objetivo do trabalho, utilizando informações específicas do relatório.
-3. **Titulação Mais Precisa:**  
-   - Evite expressões fortes como “exige melhorias” ou “situação crítica” se não estiverem textualmente sustentadas no relatório. Utilize termos como “carece de aprimoramentos” ou “necessita ajustes” quando aplicável.
-4. **Foco em Conclusões e Objetividade:**  
-   - Exclua números ou descrições que não apoiem diretamente a conclusão. Remova frases genéricas ou de efeito que não tragam conteúdo conclusivo.
-5. **Uso de Adjetivos e Advérbios de Intensidade:**  
-   - Utilize termos como “significativo”, “expressivo”, “relevante” ou “crítico” apenas se esses termos constarem efetivamente nos dados fornecidos.
-6. **Exemplificar com Fatos Reais do Relatório:**  
-   - Seja específico ao mencionar tecnologias, soluções ou referências, utilizando exemplos diretos do relatório, sem inserir informações inexistentes.
-7. **Evitar Generalidades:**  
-   - Os campos de pontos positivos e pontos a aprimorar devem refletir de forma clara e objetiva tanto os aspectos positivos identificados quanto as áreas que necessitam de ajustes, de forma conectada e coerente com o relatório.
-
-**Dados da Auditoria:**
-{dados_aud}
-
-**Formato de Saída Desejado:**
-Retorne **exclusivamente** um JSON no formato abaixo, sem qualquer texto adicional antes ou depois (sem marcações de Markdown ou trechos literais de código):
-
-{
-    "titulo": "<Título destaque>",
-    "pontos_positivo": "1) Descrição do ponto positivo, 2) Descrição do ponto positivo 2, 3) ...",
-    "pontos_aprimorar": "1) Descrição do ponto a aprimorar, 2) Descrição do ponto a aprimorar 2, 3) ...",
-    "pontos_positivo_html": "<div>Descrição do ponto positivo 1.<br>Descrição do ponto positivo 2.<br>...</div>",
-    "pontos_aprimorar_html": "<div>Descrição do ponto a aprimorar 1.<br>Descrição do ponto a aprimorar 2.<br>...</div>"
-}
-
-**Regras Finais Importantes:**
-- Não inclua quebras de linha literais nas strings `pontos_positivo` e `pontos_aprimorar`; utilize apenas a formatação enumerada (1), (2), (3), etc.
-- Evite texto “genérico” que não conste da documentação original.
-- O JSON não deve ultrapassar 3.500 tokens no total.
-
-rodei todos os destaques gerados segue a analise que api forneceu sobre pontos que podem ser melhorados
-
-segue as observações: Ao comparar os destaques do Conjunto A com os do Conjunto B, foi possível identificar que a API falhou em capturar algumas informações críticas e em conectar adequadamente as recomendações aos dados do relatório. O auditor conseguiu extrair dados importantes que foram omitidos ou mal interpretados pela API, melhorando a clareza e a objetividade dos destaques. O auditor também fez um melhor trabalho ao destacar os pontos positivos e a necessidade de melhorias de forma mais específica e alinhada com o relatório de auditoria. No entanto, algumas mudanças propostas pelo auditor poderiam ser mais concisas e diretas.
-
-sugestoes_prompt 1. **Conclusão Alinhada ao Objetivo:** Incluir uma instrução clara para que o destaque sempre contenha uma conclusão sobre se o objetivo da auditoria foi atingido ou não, conforme descrito em [objetivo trabalho]. 2. **Maior Risco Identificado:** Instruir a API a explicar na parte 'pontos a aprimorar' como o maior risco identificado se relaciona diretamente ao objetivo do trabalho. 3. **Titulação Mais Precisa:** Evitar expressões fortes como 'exige melhorias' ou 'situação crítica' se não estiverem textualmente sustentadas no relatório. Preferir termos como 'carece de aprimoramentos' ou 'necessita ajustes'. 4. **Foco em Conclusões e Objetividade:** Excluir números ou descrições que não apoiem diretamente a conclusão. Remover frases genéricas ou de efeito sem conteúdo conclusivo. 5. **Uso de Adjetivos e Advérbios de Intensidade:** Utilizar termos como 'significativo', 'expressivo', 'relevante', 'crítico', etc., apenas se essas expressões constarem efetivamente nos dados fornecidos. 6. **Exemplificar com Fatos Reais do Relatório:** Ser específico ao mencionar tecnologias, soluções ou referências existentes no texto fornecido. 7. **Evitar Generalidades na Matéria:** A matéria deve ter até 3 parágrafos, focando no escopo real da auditoria, seus achados e na conclusão sobre o objetivo. 8. **Visão Clara de Sucessos e Melhorias Necessárias:** Os 'pontos_positivo' e 'pontos_aprimorar' devem estar conectados tanto ao que foi verificado de aderência ou conformidade no trabalho, quanto às melhorias pendentes segundo o relatório. 9. **Estilização de Destaques (Risco 4 e 5):** Se houver evento de risco 4 ou 5, destacá-lo na manchete e no texto em Arial 12, cor vermelha, negrito. Em 'alerta_evt_risco' (HTML Arial 20, vermelho, negrito), explicar como o evento de risco alto impacta o trabalho, relacionando-o à recomendação de criticidade A (se houver). 10. **Revisão de Critérios para Identificação de Relevância:** Priorizar eventos de risco com notas 4 e 5 e recomendações com criticidade 'A' e 'B', destacando-os de forma especial na manchete e na matéria.
+Depois disso criei uma aplicação usando fastapi e angular, que traz um destaque gerado para determinador trabalho e um chat para que o auditor possa tirar duvidas sobre o destaque e solcitar melhorar,
+essa aplicação será desenvolvida por outra equipe agora, preciso documentar para eles pq eles querem usar a api, pode me ajudar?
 
 
-forneca o ajuste aqui:
+primeira chamada 
 
-Você é um assistente especializado em auditoria interna. Sua tarefa é analisar as informações fornecidas sobre um
-    trabalho de auditoria e gerar um **Destaque de Auditoria** seguindo as diretrizes estabelecidas.
+https://mefis.bb.com.br/apiptai/chat_trabalho/ 
+passo o numero do trabalho
 
-    **Definição de Destaque de Auditoria:**
-    Um Destaque de Auditoria são informações de valor agregado, relevantes e úteis, descritas sob a forma de pequenas
-    manchetes. Eles podem se referir à identificação e mitigação de constatações significativas ou a melhorias de
-    processos implementadas pelos gestores. Destinam-se ao Conselho de Administração (CA), Conselho Fiscal (CF),
-    Coadutoria (Coaud) e Conselho de Diretoria (CD). Deve apresentar uma visão sistêmica, linguagem jornalística,
-    ordem direta, sem tecnicismos, coerência com os eventos de risco avaliados, e alinhamento com a materialidade
-    e criticidade das recomendações.
 
-    **Exemplos de Destaques de Auditoria:**
+class ChatTrabalhoRequest(BaseModel):
+    nr_trabalho: int
+    
+@router.post("/apiptai/chat_trabalho/")
+async def trabalhoChat(request: ChatTrabalhoRequest):
+    nr_trabalho = request.nr_trabalho
+    
+    result = await chat_trabalho(nr_trabalho)  # Chama a função assíncrona
+    return result
 
-    {{
-        "titulo": "Gestão de negócios com cartões avança, mas há pontos de melhoria",
-        "pontos_positivo": "1) Ações para expansão da carteira de cartões, 2) Diagnóstico de desempenho do cartão",
-        "pontos_aprimorar": "1) O DAA não tem sido aplicado a todos os clientes que cumpriram os critérios divulgados, 2) Evidenciação das informações que subsidiaram a análise de ocorrências, 3) Ajuste no processo de identificação e análise de transações autorizadas",
-        "materialidade": "O cartão de crédito ocupa posição de destaque na estratégia de fidelização e conquista de clientes do Banco do Brasil, sendo o segundo produto mais relevante no NPS. O resultado líquido de negócios com cartões foi de R$ 574 mi no 3T24.",
-        "pontos_positivo_html": "<div>Ações para expansão da carteira de cartões, como redução de IOF para compras internacionais, Pix com débito no cartão de crédito, incremento de acesso a salas VIP e Desconto Automático de Anuidade (DAA).<br>Diagnóstico de desempenho do cartão, que visa direcionar as ações para crescimento da carteira.</div>",
-        "pontos_aprimorar_html": "<div>O DAA não tem sido aplicado a todos os clientes que cumpriram os critérios divulgados para gastos mensais ou saldo em investimentos.<br>Evidenciação das informações que subsidiaram a análise de ocorrências de contestação de transações seguras de cartão de crédito por suspeita de fraude.<br>Ajuste no processo de identificação e análise de transações autorizadas acima da margem do limite do cartão de crédito.</div>",
-        "materialidade_html": "<div>O cartão de crédito ocupa posição de destaque na estratégia de fidelização e conquista de clientes do Banco do Brasil. O resultado líquido de negócios com cartões foi de R$ 574 mi no 3T24.</div>"
-    }}
+async def chat_trabalho(nr_trabalho: int):
+    query = f"""
+    SELECT DISTINCT  
+           nr_trabalho, 
+           titulo, 
+           nr_trabalho, 
+           ano, 
+           nm_trab, 
+           obj_trab, 
+           manchete_html, 
+           materia_html, 
+           rel_hash, 
+           pontos_positivo_html, 
+           pontos_aprimorar_html, 
+           materialidade_html,
+           dt_movimento,
+           
+           CONCAT(
+               'Você é um assistente especializado em auditoria interna. Sua tarefa é analisar as informações fornecidas sobre um ',
+               'trabalho de auditoria e gerar um Destaque de Auditoria seguindo as diretrizes estabelecidas. ',
+               
+               '\\n\\nDefinição de Destaque de Auditoria: ',
+               'Um Destaque de Auditoria são informações de valor agregado, relevantes e úteis, descritas sob a forma de pequenas ',
+               'manchetes. Eles podem se referir à identificação e mitigação de constatações significativas ou a melhorias de ',
+               'processos implementadas pelos gestores. Destinam-se ao Conselho de Administração (CA), Conselho Fiscal (CF), ',
+               'Coadutoria (Coaud) e Conselho de Diretoria (CD). Deve apresentar uma visão sistêmica, linguagem jornalística, ',
+               'ordem direta, sem tecnicismos, coerência com os eventos de risco avaliados, e alinhamento com a materialidade ',
+               'e criticidade das recomendações.',
 
-    {{
-        "titulo": "Avaliação dos Riscos Social, Ambiental e Climático (RSAC) em operações de crédito rural carece de aprimoramentos",
-        "pontos_positivo": "1) Ferramenta automatizada para verificação de restrições ambientais, 2) Análise segregada de documentação apresentada pelo cliente",
-        "pontos_aprimorar": "1) Ajustar o processo de análise documental das operações, 2) Aprimorar o monitoramento da carteira de crédito rural quanto aos RSAC",
-        "materialidade": "A Carteira de Negócios Sustentáveis de Agronegócios representa cerca de 47,5% do total da carteira classificada agro, que foi de R$ 347,11 bi, conforme Análise de Desempenho 3T24.",
-        "pontos_positivo_html": "<div>Ferramenta automatizada para verificação de restrições ambientais no imóvel.<br>Análise segregada de documentação apresentada pelo cliente.</div>",
-        "pontos_aprimorar_html": "<div>Ajustar o processo de análise documental das operações com impedimentos ambientais relacionados aos RSAC.<br>Aprimorar o monitoramento da carteira de crédito rural quanto aos RSAC.</div>",
-        "materialidade_html": "<div>A Carteira de Negócios Sustentáveis de Agronegócios representa cerca de 47,5% do total da carteira classificada agro, que foi de R$ 347,11 bi, conforme Análise de Desempenho 3T24.</div>"
-    }}
+               '\\n\\nEstrutura dos Dados da Auditoria: ',
+               'Os dados fornecidos para análise estão estruturados da seguinte forma:',
+               '- [trabalho]: Número do trabalho. ',
+               '- [objetivo trabalho]: Objetivo do trabalho. ',
+               '- [justificativa trabalho]: Justificativa do trabalho. ',
+               '- [eventos de riscos avaliados]: Eventos de riscos avaliados. ',
+               '- [relatorio auditoria]: Relatório de auditoria. ',
+               '- [principal constatação no relatorio]: Principal constatação do relatório. ',
+               '- [ocorrência e evidencia de achados de auditoria]: Ocorrências e evidências de achados de auditoria. ',
+               '- [recomendações]: Recomendações.',
 
-    **Estrutura dos Dados da Auditoria:**
-    Os dados fornecidos para análise estão estruturados da seguinte forma:
-    - **[trabalho]:** Número do trabalho.
-    - **[objetivo trabalho]:** Objetivo do trabalho.
-    - **[justificativa trabalho]:** Justificativa do trabalho.
-    - **[eventos de riscos avaliados]:** Eventos de riscos avaliados.
-    - **[relatorio auditoria]:** Relatório de auditoria.
-    - **[principal constatação no relatorio]:** Principal constatação do relatório.
-    - **[ocorrência e evidencia de achados de auditoria]:** Ocorrências e evidências de achados de auditoria.
-    - **[recomendações]:** Recomendações.
+               '\\n\\nCritérios para Identificar Relevância: ',
+               '- Eventos de Risco Críticos: Priorizar eventos avaliados com notas 4 e 5 em [eventos de riscos avaliados]. ',
+               '- Recomendações Relevantes: Priorizar recomendações com criticidade \"A\" e \"B\" em [recomendações]. ',
+               '- Ocorrências e Evidências Significativas: Identificar as evidências e ocorrências mais relevantes em [ocorrência e evidencia de achados de auditoria]. ',
 
-    **Critérios para Identificar Relevância:**
-    - **Eventos de Risco Críticos:** Priorizar eventos avaliados com notas 4 e 5 em [eventos de riscos avaliados].
-      - Caso exista um evento de risco com nota 4 ou 5, enfatize-o de forma especial na manchete e na matéria, usando HTML (Arial 12, cor vermelha, negrito) para destacar a relevância do risco.
-      - Além disso, gere um campo adicional **`alerta_evt_risco`** contendo HTML (Arial 20, cor vermelha, negrito) com uma breve explicação de como esse risco (nota 4 ou 5) impacta o trabalho de auditoria.
-      - Se houver recomendação de criticidade A associada a esse risco, destaque-a junto com o evento no mesmo `alerta_evt_risco`.
-    - **Recomendações Relevantes:** Priorizar recomendações com criticidade "A" e "B" em [recomendações].
-    - **Ocorrências e Evidências Significativas:** Identificar as evidências e ocorrências mais relevantes em [ocorrência e evidencia de achados de auditoria].
+               '\\n\\nDados da Auditoria: ',
+               'trabalho: ', nr_trabalho,
+               ' | objetivo trabalho: ', obj_trab, 
+               ' | eventos de riscos avaliados: ', evento_rsco_avaliado,
+               ' | relatorio auditoria: ', tx_rel_atvd,  
+               ' | principal constatação no relatorio: ', tx_constatacao, 
+               ' | recomendações: ', rcm_concat,
 
-    **Observações e Orientações Complementares (a partir dos feedbacks):**
-    1. **Conclusão Alinhada ao Objetivo:**  
-       - O destaque deve incluir uma **conclusão clara** sobre como o trabalho atendeu (ou não) ao objetivo da auditoria, conforme descrito em **[objetivo trabalho]**.  
-       - Evite informações meramente descritivas ou sem fechamento conclusivo, buscando responder: “O objetivo foi atingido ou não? Qual foi a constatação principal sobre isso?”
+               '\\n\\nA partir de agora, você participará de um chat em que o auditor poderá fazer perguntas sobre o trabalho de auditoria, incluindo detalhes como recomendações, principais constatações do relatório e pontos de atenção. ',
+               'É fundamental que suas respostas sejam consistentes, diretas e baseadas nos dados fornecidos. ',
+               'Evite pedidos de desculpas ou tentativas de adequação desnecessárias. ',
+               'Caso seja questionado por que um ponto específico não foi incluído como recomendação ou destaque, explique o raciocínio por trás da decisão com base nos critérios de relevância e criticidade. ',
+               'Sempre que possível, reforce a lógica usada para gerar os destaques e justifique sua análise. ',
+               
+               '\\n\\n**Importante**: ',
+               '- Suas respostas devem ter no máximo ~800 caracteres, em até dois parágrafos. ',
+               '- Se a pergunta ultrapassar o escopo dos dados fornecidos ou não tiver relação alguma com auditoria, você deve se recusar a responder ou informar gentilmente que não pode ajudar nesse tema. ',
+               '- Mantenha-se dentro do contexto do trabalho de auditoria em questão. ',
+               '- Não use informações que não estejam no texto fornecido ou que não sejam relacionadas diretamente à auditoria.'
+           ) AS role_user,
 
-    2. **Maior Risco Identificado:**  
-       - Caso exista um risco mais relevante (por exemplo, descumprimento de lei, risco fiscal, etc.), **explique na parte “pontos a aprimorar”** como esse risco se relaciona diretamente ao objetivo do trabalho.  
-       - Evite linguagem vaga ou genérica. Traga a informação mais relevante do relatório e como esse risco deve ser mitigado.
+           CONCAT(
+               'Segue minha análise: ',
+               ' pontos_positivo: ', pontos_positivo, 
+               ' pontos_aprimorar: ', pontos_aprimorar, 
+               ' materialidade: ', materialidade
+           ) AS role_assistant
 
-    3. **Titulação Mais Precisa e Menos Drástica:**  
-       - Evitar expressões fortes como “exige melhorias” ou “situação crítica” se não estiverem textualmente sustentadas no relatório.  
-       - Prefira termos como “carece de aprimoramentos”, “necessita ajustes” ou sinônimos equivalentes, **somente** se o relatório indicar tal necessidade.
+    FROM destaques.gpt_destaques
+    WHERE nr_trabalho = {nr_trabalho};
+    """
+    return await execute_query(query)
 
-    4. **Foco em Conclusões e Objetividade:**  
-       - Excluir números ou descrições que não apoiem diretamente a conclusão (p. ex.: quantidade de contratos, caso não seja relevante para a conclusão).  
-       - Remover frases genéricas ou de efeito, sem conteúdo conclusivo (p. ex.: “essas melhorias são essenciais para...”, sem explicar por que são essenciais ou o que foi concluído).  
-       - **Evitar chavões** como “foram identificadas vulnerabilidades que necessitam de melhorias”. Ao invés disso, aponte especificamente as áreas de vulnerabilidade, conforme o relatório.
+dentre os atributos do objeto json que retorna, traz o role_user e role_assistant que é a contextualização innicial
 
-    5. **Uso de Adjetivos e Advérbios de Intensidade:**  
-       - Só utilizar termos como “significativo”, “expressivo”, “relevante”, “crítico”, etc. se essas expressões constarem efetivamente nos dados fornecidos.  
-       - Se não houver menção literal no relatório ou nos dados, **não use** adjetivos de intensidade ou superlativos.
+Cria uma nova sessão ao carregar o componente no angular
+@router.post("/apiptai/create_session", response_model=SessionResponse)
+def create_session():
+    """
+    Gera um sessionId único e inicializa a sessão no servidor.
+    """
+    session_id = str(uuid.uuid4())  # Gera um UUID único
+    sessions[session_id] = []  # Inicializa a sessão vazia
+    return {"sessionId": session_id}
 
-    6. **Exemplificar com Fatos Reais do Relatório:**  
-       - Se o relatório mencionar, por exemplo, “algoritmo de criptografia obsoleto no sistema de autenticação”, seja específico.  
-       - Não inclua tecnologias, soluções ou referências inexistentes no texto fornecido (p. ex.: “implementação de IA” quando isso não consta do relatório).
+aqui passo a mensagem assim que inicia a conversa
 
-    7. **Evitar Generalidades na Matéria:**  
-       - A matéria (`materia_html`) deve ter até 3 parágrafos, com foco no **escopo real** da auditoria, seus achados e na conclusão sobre o objetivo.  
-       - Descarte últimas frases meramente genéricas ou previsíveis se não estiverem no texto original.
+sendMessage(): void {
+    const trimmedMessage = this.userMessage.trim();
 
-    8. **Visão Clara de Sucessos e Melhorias Necessárias:**  
-       - Os “pontos_positivo” e “pontos_aprimorar” devem estar conectados tanto ao que foi verificado de aderência ou conformidade no trabalho, quanto às melhorias pendentes segundo o relatório.
+    if (!trimmedMessage) {
+      this.showNotification('warn', 'Atenção', 'Digite uma mensagem antes de enviar.');
+      return;
+    }
 
-    9. **Estilização de Destaques (Risco 4 e 5):**  
-       - Se houver evento de risco 4 ou 5, destaque-o na manchete e no texto em **Arial 12, cor vermelha, negrito**.  
-       - Em “alerta_evt_risco” (HTML Arial 20, vermelho, negrito), explique como o evento de risco alto impacta o trabalho, relacionando-o à recomendação de criticidade A (se houver).
+    // Adiciona a mensagem do usuário ao histórico
+    this.messages.push({ role: 'user', content: trimmedMessage });
 
-    **Dados da Auditoria:**
-    {dados_aud}
+    // Limpa o campo de input e redefine a altura do textarea
+    this.userMessage = '';
+    this.resetTextAreaHeight();
 
-    **Formato de Saída Desejado:**
-    Retorne **exclusivamente** um JSON no formato abaixo, sem qualquer texto adicional antes ou depois (sem marcações de Markdown ou trechos literais de código):
+    this.loading = true;
+    this.showNotification('info', 'Enviando', 'Sua mensagem está sendo processada.');
 
-    {{
-        "titulo": "<Título destaque>",
-        "pontos_positivo": "1) Descrição do ponto positivo, 2) Descrição do ponto positivo 2, 3) ...",
-        "pontos_aprimorar": "1) Descrição do ponto a aprimorar, 2) Descrição do ponto a aprimorar 2, 3) ...",
-        "materialidade": "Descrição da materialidade relacionada ao destaque.",
-        "pontos_positivo_html": "<div>Descrição do ponto positivo 1.<br>Descrição do ponto positivo 2.<br>...</div>",
-        "pontos_aprimorar_html": "<div>Descrição do ponto a aprimorar 1.<br>Descrição do ponto a aprimorar 2.<br>...</div>",
-        "materialidade_html": "<div>Descrição da materialidade relacionada ao destaque.</div>",
-        "manchete_html": "<div style='font-family: Arial; font-size:26px; text-align:...'><b>Manchete aqui</b></div>",
-        "materia_html": "<div style='font-family: Arial; font-size:20px; text-align:justify;'>Até 3 parágrafos, cada um focado nos pontos da matéria...</div>",
-        "alerta_evt_risco": "<div style='font-family: Arial; font-size:20px; color:red; font-weight:bold;'>Explicação do risco com nota 4 ou 5 ...</div>"
-    }}
+    // Envia a mensagem ao backend
+    this.servicoLLM.sendMessage(this.sessionId, trimmedMessage).subscribe({
+      next: (response) => {
+        // Adiciona a resposta do assistente ao histórico
+        this.messages.push({ role: 'assistant', content: response.answer });
+        this.loading = false;
+        this.showNotification('success', 'Sucesso', 'Mensagem enviada com sucesso.');
+        this.scrollToBottom();
 
-    **Regras Finais Importantes:**
-    - Não inclua quebras de linha literais nas strings `pontos_positivo` e `pontos_aprimorar`; use apenas a formatação enumerada conforme indicado (1), (2), (3) etc.
-    - Se **não** houver evento de risco com nota 4 ou 5, **não** inclua o campo `alerta_evt_risco`.
-    - Evite texto “genérico” que não conste da documentação original.
-    - O JSON não deve ultrapassar 3.500 tokens no total.
+        // Salvar mensagens no backend sem bloquear a interface
+        const payloadUsuario = {
+          numero_trabalho: this.nrTrabalho,
+          matricula: this.usuario?.chaveFuncionario,
+          sessao: this.sessionId,
+          remetente: 'usuario',
+          conteudo: trimmedMessage
+        };
+        this.servicoLLM.salvarMensagem(payloadUsuario).subscribe({
+          next: (res) => {console.log('Mensagem do usuário salva:', res)
+          const payloadAssistente = {
+            numero_trabalho: this.nrTrabalho,
+            matricula: this.usuario?.chaveFuncionario,
+            sessao: this.sessionId,
+            remetente: 'assistente',
+            conteudo: response.answer
+          };
+          this.servicoLLM.salvarMensagem(payloadAssistente).subscribe({
+            next: (res) => {console.log('Resposta do assistente salva:', res)
+            this.alerta_uso_ia = true;
+          },
+            error: (err) => console.error('Erro ao salvar resposta do assistente:', err)
+          });
+          },
+          error: (err) => console.error('Erro ao salvar mensagem do usuário:', err)
+        });        
+      },
+      error: (err) => {
+        console.error('Erro ao processar mensagem:', err);
+        this.loading = false;
+        this.showNotification('error', 'Erro', 'Erro ao processar sua mensagem. Tente novamente mais tarde.');
+        this.messages.push({
+          role: 'assistant',
+          content: 'Erro ao processar sua mensagem. Por favor, tente novamente mais tarde.'
+        });
+        this.scrollToBottom();
+      },
+    });
+  }
+
+segue o backend que recebe o chat
+
+class ChatRequest(BaseModel):
+    sessionId: str
+    userMessage: str
+    roleUser: str = None  # Adicionado para passar o contexto inicial opcional
+    roleAssistant: str = None  # Adicionado para passar o contexto inicial opcional
+
+@router.post("/apiptai/chat")
+def chat_endpoint(req: ChatRequest):
+    """
+    Endpoint para receber a mensagem do usuário e devolver a resposta da IA.
+    """
+    session_id = req.sessionId
+    user_message = req.userMessage.strip()  # Remove espaços em branco
+    role_user = req.roleUser
+    role_assistant = req.roleAssistant
+
+    # Verificar se os campos obrigatórios estão presentes
+    if not session_id:
+        return {"error": "Session ID is required"}
+    if user_message == "" and (not role_user or not role_assistant):
+        return {"error": "User message or initial context (roleUser and roleAssistant) is required"}
+
+    # Inicializa a sessão se não existir
+    if session_id not in sessions:
+        sessions[session_id] = []
+        print("Sessão inicializada")
+
+    # Adiciona o contexto inicial à sessão, se fornecido
+    if role_user and role_assistant and len(sessions[session_id]) == 0:
+        print("Adicionando contexto inicial à sessão")
+        sessions[session_id].append({"role": "assistant", "content": role_assistant})
+        sessions[session_id].append({"role": "user", "content": role_user})
+
+    # Adiciona a mensagem do usuário ao histórico, se for válida
+    if user_message:
+        sessions[session_id].append({"role": "user", "content": user_message})
+
+    # Valida o histórico da sessão antes de enviar
+    if len(sessions[session_id]) < 1:
+        return {"error": "Session history is empty or invalid"}
+
+    # Concatena o histórico da sessão para enviar ao modelo LLM
+    prompt = "\n".join([f"{msg['role']}: {msg['content']}" for msg in sessions[session_id]])
+
+    
+    # Faz a chamada para o modelo usando a API LLM da empresa
+    try:
+        answer_text = assistentLLM(prompt, servico="http://acs-assist-sem-rag-mef.nia.hm.bb.com.br/acs/llms/agent")
+    except requests.exceptions.HTTPError as http_err:
+        # Tratar erro HTTP (como 500)
+        print(f"Erro HTTP na chamada ao serviço LLM: {http_err}")
+        return {"error": "Erro interno no servidor. Por favor, tente novamente mais tarde."}
+    except Exception as e:
+        # Tratar outros erros
+        print(f"Erro ao processar resposta da LLM: {e}")
+        return {"error": "Erro ao acessar o serviço de IA. Por favor, tente novamente mais tarde."}
+
+    # Armazena a resposta do assistente no histórico
+    sessions[session_id].append({"role": "assistant", "content": answer_text})
+
+    # Retorna a resposta em JSON
+    #time.sleep(60)
+    return {"answer": answer_text}
+
+
+como faço a documentação para quem quiser usar a api, no meu caso o front foi feito em angular e o backend em fastapi
+a área quer usar essa api para uma aplicação deles que o front é em vue e o backend em java, não quero que vc entre em questoes tecnicas de desenvolvimento, apenas 
+documentação de uso de api, ago do tipo, 
+
+Chamada para criar api, chamada para obter os dados do trabalhos e o destaque gerado e a area de chat
+
+
+
+
+
