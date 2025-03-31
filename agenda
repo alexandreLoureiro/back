@@ -1,5 +1,6 @@
-Descrição da Realização do Destaque (597 caracteres):
-Desenvolvimento de assistente de IA para auditoria interna, alinhado à metodologia Audit, utilizando dados do trabalho, como relatórios, constatações e recomendações para gerar destaques claros e objetivos. A solução considera os públicos estratégicos (CA, CF, Coaud e CD) e oferece ao auditor interação por meio de chat especializado, permitindo análises aprofundadas sobre objetivos, riscos e evidências específicas do trabalho auditado.
+main
 
-Resultado da Realização do Destaque (597 caracteres):
-O assistente identificou rapidamente informações relevantes, priorizando eventos de risco com notas mais elevadas, recomendações com maior criticidade e abrangência, e evidências significativas. Os destaques gerados demonstram conexão direta entre os objetivos da auditoria e os riscos identificados, evitando generalidades e focando pontos específicos dos relatórios. O chat especializado possibilitou análises detalhadas e rápidas pelos auditores, proporcionando ganho expressivo de tempo na elaboração de conclusões alinhadas aos objetivos.
+import asyncio
+from app.infra.sqlalchemy.dao.listen_to_db_notifications import listen_to_db_notifications  # ajuste o caminho conforme necessário
+
+
