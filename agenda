@@ -3,4 +3,11 @@ main
 import asyncio
 from app.infra.sqlalchemy.dao.listen_to_db_notifications import listen_to_db_notifications  # ajuste o caminho conforme necessário
 
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(listen_to_db_notifications())
 
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=80, reload=True)
