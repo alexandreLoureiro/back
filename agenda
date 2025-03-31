@@ -1,3 +1,6 @@
+pip install websockets
+
+
 main
 
 import asyncio
