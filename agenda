@@ -11,3 +11,72 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(app, host="0.0.0.0", port=80, reload=True)
+
+
+listen_to_db_notifications.py
+
+import asyncio
+import asyncpg
+import json
+import logging
+from app.infra.sqlalchemy.config.database_pool import get_connection, DATABASE_URL
+from app.routers.rotas_geral import manager  # Certifique-se de que o manager está importado corretamente
+
+logger = logging.getLogger(__name__)
+
+async def listen_to_db_notifications():
+    while True:
+        try:
+            conn = await get_connection()
+            logger.info("Conectado ao PostgreSQL para escutar notificações.")
+            
+            def notification_handler(connection, pid, channel, payload):
+                logger.info(f"Notificação recebida no canal {channel}: {payload}")
+                try:
+                    data = json.loads(payload)
+                    nr_trabalho = data.get("nr_trabalho")
+                    alerta_evt_risco = data.get("alerta_evt_risco")
+                    if nr_trabalho is not None and alerta_evt_risco:
+                        message = f"Produto {nr_trabalho} alterado. Alerta: {alerta_evt_risco}"
+                        asyncio.create_task(manager.broadcast(message))
+                except Exception as e:
+                    logger.error("Erro ao processar payload: %s", e)
+            
+            await conn.add_listener('row_changed', notification_handler)
+            logger.info("Listener registrado para o canal 'row_changed'.")
+            
+            # Loop de keep-alive: executa uma query simples a cada segundo
+            while True:
+                await asyncio.sleep(1)
+                try:
+                    await conn.execute("SELECT 1")
+                except Exception as e:
+                    logger.error("Erro no keep-alive da conexão: %s", e)
+                    break  # Sai do loop interno para reconectar
+        except Exception as e:
+            logger.error(f"Erro na conexão de notificações: {e}")
+        logger.info("Tentando reconectar em 5 segundos...")
+        await asyncio.sleep(5)
+
+# CREATE OR REPLACE FUNCTION notify_alerta_evt_risco() 
+# RETURNS trigger AS $$
+# DECLARE
+#     payload JSON;
+# BEGIN
+#     -- Se o valor de alerta_evt_risco mudou, envia a notificação
+#     IF NEW.alerta_evt_risco IS DISTINCT FROM OLD.alerta_evt_risco THEN
+#         payload := json_build_object(
+#             'nr_trabalho', NEW.nr_trabalho,
+#             'alerta_evt_risco', NEW.alerta_evt_risco
+#         );
+#         PERFORM pg_notify('row_changed', payload::text);
+#     END IF;
+#     RETURN NEW;
+# END;
+# $$ LANGUAGE plpgsql;
+
+# CREATE TRIGGER trg_notify_alerta_evt_risco
+# AFTER UPDATE ON destaques.gpt_destaques_teste
+# FOR EACH ROW
+# WHEN (OLD.alerta_evt_risco IS DISTINCT FROM NEW.alerta_evt_risco)
+# EXECUTE FUNCTION notify_alerta_evt_risco();
