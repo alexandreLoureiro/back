@@ -80,3 +80,121 @@ async def listen_to_db_notifications():
 # FOR EACH ROW
 # WHEN (OLD.alerta_evt_risco IS DISTINCT FROM NEW.alerta_evt_risco)
 # EXECUTE FUNCTION notify_alerta_evt_risco();
+
+
+web-socket.service.ts
+
+
+import { Injectable } from '@angular/core';
+import { Observable, Subject } from 'rxjs';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class WebSocketService {
+  private socket: WebSocket | undefined;
+  private messageSubject: Subject<string> = new Subject<string>();
+
+  constructor() {
+    console.log('WebSocketService iniciado.');
+    this.connect();
+  }
+
+  private connect(): void {
+    this.socket = new WebSocket('ws://192.168.2.80:5002/apiptai/ws');
+
+
+    this.socket.onopen = (event) => {
+      console.log('WebSocket connection opened', event);
+    };
+
+    this.socket.onmessage = (event) => {
+      console.log('Message from server:', event.data);
+      this.messageSubject.next(event.data);
+    };
+
+    this.socket.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+
+    this.socket.onclose = (event) => {
+      console.log('WebSocket connection closed', event);
+    };
+  }
+
+  public sendMessage(message: string): void {
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      this.socket.send(message);
+    } else {
+      console.error('WebSocket is not open. Current state:', this.socket ? this.socket.readyState : 'undefined');
+    }
+  }
+
+  public closeConnection(): void {
+    if (this.socket) {
+      this.socket.close();
+    }
+  }
+
+  public getMessages(): Observable<string> {
+    return this.messageSubject.asObservable();
+  }
+}
+
+
+
+chat.ts
+
+// Propriedade para armazenar as mensagens recebidas via WebSocket para teste
+  socketTestMessages: string[] = [];
+
+  // Subscription para o WebSocket
+  private wsSubscription: Subscription | undefined;
+
+  constructor(
+    private servicoLLM: ServicoLLMService,
+    private messageService: MessageService,
+    private wsService: WebSocketService  // Injeção do serviço WebSocket
+  ) { }
+
+  ngOnInit(): void {
+    this.servicoLLM.user$.subscribe((user) => {
+      this.usuario = user;
+    });
+
+    // Carrega trabalhos ao iniciar a aplicação
+    const defaultRequest = {
+      nome: 'teste',
+      ano: 2025
+    };
+    this.loadTrabalhos(defaultRequest);
+
+    // Cria uma nova sessão ao carregar o componente
+    this.servicoLLM.createSession().subscribe({
+      next: (response) => {
+        this.sessionId = response.sessionId;
+      },
+      error: (err) => {
+        console.error('Erro ao criar sessão:', err);
+      },
+    });
+
+    // Inscreve-se para receber mensagens via WebSocket
+    this.wsSubscription = this.wsService.getMessages().subscribe((message: string) => {
+      console.log('Mensagem recebida via WebSocket:', message);
+      // Armazena somente nas mensagens de teste, para serem exibidas no "socket-test"
+      this.socketTestMessages.push(message);
+      // Não adicione a "messages" para que o chat principal permaneça inalterado.
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this.wsSubscription) {
+      this.wsSubscription.unsubscribe();
+    }
+  }
+
+  loadTrabalhos(request: { nome: string; ano: number }): void {
+    this.servicoLLM.getTrabalhos(request).subscribe({
+      ....
+
