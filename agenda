@@ -194,6 +194,15 @@ chat.ts
     }
   }
 
+chat.html
+
+<div class="socket-test" style="position: fixed; top: 10px; right: 10px; background: #f1f1f1; padding: 10px; border: 1px solid #ccc; max-height: 200px; overflow-y: auto; z-index: 1000;">
+    <h4>Socket Test</h4>
+    <ul style="list-style-type: none; padding: 0; margin: 0;">
+      <li *ngFor="let msg of socketTestMessages" style="margin-bottom: 5px;">{{ msg }}</li>
+    </ul>
+  </div>
+
   loadTrabalhos(request: { nome: string; ano: number }): void {
     this.servicoLLM.getTrabalhos(request).subscribe({
       ....
