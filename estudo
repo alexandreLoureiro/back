@@ -1,3 +1,174 @@
+from fastapi import APIRouter, File, UploadFile, HTTPException, Form
+import pandas as pd
+import os
+
+router = APIRouter()
+
+@router.post("/apiptai/upload-rcm-excel-pdf")
+async def upload_rcm_excel_pdf(
+    file_pdf: UploadFile = File(...),
+    file_excel: UploadFile = File(...),
+):
+    # 1) Validar extensão do PDF
+    if not file_pdf.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="O arquivo PDF não possui extensão .pdf")
+
+    # 2) Ler o arquivo Excel em memória
+    if not (file_excel.filename.lower().endswith(".xlsx") or file_excel.filename.lower().endswith(".xls")):
+        raise HTTPException(status_code=400, detail="O arquivo de Excel deve ser .xlsx ou .xls")
+
+    # Lê o Excel para dataframe
+    contents_excel = await file_excel.read()
+    df = pd.read_excel(contents_excel)
+
+    # 3) Validar colunas obrigatórias (exemplo)
+    colunas_obrigatorias = [
+        "RELATORIO", "DATA_EMISSAO", "CONSTATACAO", "EVIDENCIAS", "RECOMENDACAO",
+        "INSTITUICAO_RESPONSAVEL", "PREFIXO_RESPONSAVEL", "INSTITUICAO_ASSUNTO_ELBB",
+        "PREVISAO_IMPLEMENTACAO", "MATRICULA_DO_GESTOR_RESPONSAVEL"
+    ]
+    for col in colunas_obrigatorias:
+        if col not in df.columns:
+            raise HTTPException(status_code=400, detail=f"Coluna obrigatória '{col}' não encontrada no Excel.")
+
+    # 4) Verificar os valores da coluna RELATORIO
+    valores_relatorio = df["RELATORIO"].unique()  # array de valores únicos
+    if len(valores_relatorio) == 0:
+        raise HTTPException(status_code=400, detail="A planilha não possui valores na coluna RELATORIO.")
+
+    # Regra de ter APENAS UM valor de RELATORIO distinto
+    if len(valores_relatorio) > 1:
+        # Dependendo da sua regra, pode permitir ou rejeitar
+        raise HTTPException(
+            status_code=400,
+            detail=f"Existem {len(valores_relatorio)} valores de RELATORIO distintos. Envie planilhas separadas."
+        )
+
+    # 5) Comparar com o nome do PDF (sem extensão)
+    relatorio_excel = valores_relatorio[0]  # ex.: "CCI BB – 30/06/2024"
+    pdf_name_no_ext = file_pdf.filename.replace(".pdf", "")  # ex.: "CCI BB – 30/06/2024"
+
+    if relatorio_excel.strip() != pdf_name_no_ext.strip():
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"O valor de RELATORIO ('{relatorio_excel}') não coincide com o nome do PDF ('{pdf_name_no_ext}')."
+            )
+        )
+
+    # 6) Se chegou até aqui, está tudo validado. Podemos salvar ambos os arquivos, se quiser.
+    # Por exemplo, salvando em /code/app/uploads:
+    upload_dir = "/code/app/uploads"
+    if not os.path.exists(upload_dir):
+        os.makedirs(upload_dir)
+
+    # Salvar PDF
+    pdf_path = os.path.join(upload_dir, file_pdf.filename)
+    with open(pdf_path, "wb") as f:
+        contents_pdf = await file_pdf.read()
+        f.write(contents_pdf)
+
+    # Salvar Excel
+    excel_path = os.path.join(upload_dir, file_excel.filename)
+    with open(excel_path, "wb") as f:
+        f.write(contents_excel)
+
+    # 7) Você pode processar as linhas do df e salvar no banco
+    #    ou devolver um "preview" do que foi importado, etc.
+
+    return {
+        "status": "ok",
+        "mensagem": "Upload realizado com sucesso!",
+        "relatorio": relatorio_excel,
+        "nome_pdf": pdf_name_no_ext,
+        "total_linhas_excel": len(df)
+    }
+
+<div style="max-width: 600px; margin: auto;">
+  <h2>Upload RCM: Excel + PDF</h2>
+  <!-- Upload do Excel -->
+  <p-fileUpload
+    #excelUploader
+    name="excelFile"
+    accept=".xls,.xlsx"
+    customUpload="true"
+    chooseLabel="Selecionar Excel"
+    (uploadHandler)="onUploadExcel($event)">
+  </p-fileUpload>
+
+  <!-- Upload do PDF -->
+  <p-fileUpload
+    #pdfUploader
+    name="pdfFile"
+    accept=".pdf"
+    customUpload="true"
+    chooseLabel="Selecionar PDF"
+    (uploadHandler)="onUploadPDF($event)">
+  </p-fileUpload>
+
+  <!-- Botão Enviar para mandar ambos juntos -->
+  <button pButton label="Enviar Tudo" (click)="enviarArquivos()"></button>
+</div>
+
+import { Component } from '@angular/core';
+import { FileUploadModule } from 'primeng/fileupload';
+import { HttpClient } from '@angular/common/http';
+
+@Component({
+  selector: 'app-rcm-upload',
+  standalone: true,
+  imports: [FileUploadModule],
+  templateUrl: './rcm-upload.component.html'
+})
+export class RcmUploadComponent {
+  selectedExcelFile: File | null = null;
+  selectedPdfFile: File | null = null;
+
+  constructor(private http: HttpClient) {}
+
+  onUploadExcel(event: any) {
+    // O PrimeNG fileUpload manda "event.files" com o(s) arquivo(s)
+    const file = event.files ? event.files[0] : null;
+    if (file) {
+      this.selectedExcelFile = file;
+    }
+  }
+
+  onUploadPDF(event: any) {
+    const file = event.files ? event.files[0] : null;
+    if (file) {
+      this.selectedPdfFile = file;
+    }
+  }
+
+  enviarArquivos() {
+    if (!this.selectedExcelFile || !this.selectedPdfFile) {
+      alert('Selecione ambos os arquivos (Excel e PDF) antes de enviar.');
+      return;
+    }
+    
+    const formData = new FormData();
+    formData.append('file_excel', this.selectedExcelFile);
+    formData.append('file_pdf', this.selectedPdfFile);
+
+    // Ajuste a URL para seu endpoint FastAPI
+    this.http.post('http://localhost:8000/apiptai/upload-rcm-excel-pdf', formData)
+      .subscribe({
+        next: (res) => {
+          console.log('Retorno do servidor:', res);
+          alert('Upload realizado com sucesso!');
+        },
+        error: (err) => {
+          console.error('Erro no upload:', err);
+          alert('Falha ao enviar arquivos: ' + (err.error?.detail || err.message));
+        }
+      });
+  }
+}
+
+
+
+
 agora mudou, além do upload tem subir um arquivo excel que tem esses cabelalhos por exemplo
 
  RELATORIO 	 DATA_EMISSAO 	 CONSTATACAO 	 EVIDENCIAS 	 RECOMENDACAO 	 INSTITUICAO_RESPONSAVEL 	 PREFIXO_RESPONSAVEL 	 INSTITUICAO_ASSUNTO_ELBB 	 PREVISAO_IMPLEMENTACAO 	 MATRICULA_DO_GESTOR_RESPONSAVEL 
