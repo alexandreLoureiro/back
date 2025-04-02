@@ -1,3 +1,6 @@
+
+rotas_upload
+
 from fastapi import APIRouter, File, UploadFile, responses, HTTPException, Form
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -104,3 +107,503 @@ async def get_relatorio_rcm(relatorio_id: int):
     #     io.BytesIO(pdf_bytes),
     #     media_type="application/pdf"
     # )
+
+queries_geral.py
+
+import json
+from typing import List, Dict
+from app.infra.sqlalchemy.config.database_pool import pool, execute_query, execute_query2, execute_query3  # Importe o pool de database.py
+from app.infra.sqlalchemy.repositorios.aux_txt_rcm import obter_textos
+from app.infra.sqlalchemy.dao.apigpt import processar_texto_gpt_rcm_ae
+import logging
+logger = logging.getLogger(__name__)
+import asyncio
+from pydantic import BaseModel
+from typing import List
+from datetime import datetime
+from typing import Optional
+
+async def inserir_relatorio_rcm(
+    nome: str,
+    data_str: str,  # Recebe como 'DD-MM-YYYY'
+    constatacoes: str,
+    recomendacoes: str,
+    pdf_blob: bytes
+):
+    """
+    Insere um relatório RCM no schema rcm, armazenando também o PDF como blob (bytea).
+    
+    Args:
+        nome (str): Nome do relatório.
+        data_str (str): Data no formato 'DD-MM-YYYY'.
+        constatacoes (str): Texto das constatações.
+        recomendacoes (str): Texto das recomendações.
+        pdf_blob (bytes): Conteúdo binário do PDF (bytes).
+    
+    Returns:
+        (int|None): O ID do registro inserido, ou None se falhar.
+    """
+    # Aqui usamos TO_DATE($2, 'DD-MM-YYYY') para o PostgreSQL converter a data_str adequadamente
+    query = """
+    INSERT INTO rcm.rcm_relatorios (nome, data, constatacoes, recomendacoes, pdf_file)
+    VALUES ($1, TO_DATE($2, 'DD-MM-YYYY'), $3, $4, $5)
+    RETURNING id;
+    """
+
+    # Fazemos a inserção usando o helper de queries (execute_query)
+    result = await execute_query(
+        query,
+        nome,
+        data_str,          # '01-06-2025', por exemplo
+        constatacoes,
+        recomendacoes,
+        pdf_blob,
+        return_one=True
+    )
+
+    if result:
+        return result.get('id')
+    return None
+
+class Mensagem(BaseModel):
+    numero_trabalho: int
+    sessao: str
+    remetente: str  # "usuario" ou "assistente"
+    conteudo: str
+    
+async def salvar_mensagem(mensagem: Mensagem):
+    """
+    Insere uma mensagem no banco de dados no formato fornecido.
+    
+    Args:
+        mensagem (Mensagem): Dados da mensagem.
+    """
+    query = f"""
+        INSERT INTO destaques.chat_destaques (
+            numero_trabalho, sessao, remetente, conteudo
+        ) VALUES (
+            '{mensagem.numero_trabalho}', '{mensagem.sessao}', 
+            '{mensagem.remetente}', '{mensagem.conteudo}'
+        );
+    """
+    try:
+        await execute_query(query)
+        logger.info("Mensagem salva com sucesso.")
+        return "Inserido"
+    except Exception as e:
+        logger.error(f"Erro ao salvar mensagem: {e}")
+        return "Erro"
+
+class Feedback(BaseModel):
+    texto: str
+    matricula: str
+    trabalho: int
+    sessao: str
+    feedback: str
+    data: Optional[datetime] = None
+      
+async def salvar_feedback(feedback: Feedback):
+    """
+    Insere um feedback no banco de dados.
+    """
+    # Caso a data não seja fornecida, usa a data atual
+    data_feedback = feedback.data.isoformat() if feedback.data else 'CURRENT_TIMESTAMP'
+
+    query = f"""
+        INSERT INTO destaques.feedback_destaques (
+            texto, matricula, trabalho, sessao, feedback, data
+        ) VALUES (
+            '{feedback.texto}', 
+            '{feedback.matricula}', 
+            {feedback.trabalho}, 
+            '{feedback.sessao}', 
+            '{feedback.feedback}', 
+            {data_feedback}
+        );
+    """
+    try:
+        await execute_query(query)
+        logger.info("Feedback salvo com sucesso.")
+        return "Inserido"
+    except Exception as e:
+        logger.error(f"Erro ao salvar feedback: {e}")
+        raise e
+
+
+
+
+async def chat_trabalhos(ano: int):
+    """
+    Executa a consulta SQL usando o parâmetro ano_fim_real.
+    """
+    query = """
+    SELECT DISTINCT nr_trabalho, nm_trab
+    FROM destaques.gpt_destaques_teste
+    WHERE ano = $1;
+    """
+
+    # Valor do parâmetro como um inteiro (não uma lista ou tupla)
+    values = (ano,)  # Certifique-se de passar como tupla
+
+    # Log para depuração
+  
+    # Executa a consulta usando o método ajustado
+    return await execute_query3(query, values)
+
+async def chat_trabalho(nr_trabalho: int):
+    query = """
+    SELECT DISTINCT  nr_trabalho, titulo, nr_trabalho, ano, nm_trab, obj_trab, rel_hash, pontos_positivo_html, pontos_aprimorar_html,
+    materialidade_html, manchete_html, materia_html,
+concat('Você é um assistente especializado em auditoria interna. Sua tarefa é analisar as informações fornecidas sobre um
+    trabalho de auditoria e gerar um Destaque de Auditoria seguindo as diretrizes estabelecidas.
+
+    Definição de Destaque de Auditoria:
+    Um Destaque de Auditoria são informações de valor agregado, relevantes e úteis, descritas sob a forma de pequenas
+    manchetes. Eles podem se referir à identificação e mitigação de constatações significativas ou a melhorias de
+    processos implementadas pelos gestores. Destinam-se ao Conselho de Administração (CA), Conselho Fiscal (CF),
+    Coadutoria (Coaud) e Conselho de Diretoria (CD). Deve apresentar uma visão sistêmica, linguagem jornalística, ordem direta,
+    sem tecnicismos, coerência com os eventos de risco avaliados, e alinhamento com a materialidade e criticidade das recomendações.
+
+    Estrutura dos Dados da Auditoria:
+    Os dados fornecidos para análise estão estruturados da seguinte forma:
+    - [trabalho]: Número do trabalho.
+    - [objetivo trabalho]: Objetivo do trabalho.
+    - [justificativa trabalho]: Justificativa do trabalho.
+    - [eventos de riscos avaliados]: Eventos de riscos avaliados.
+    - [relatorio auditoria]: Relatório de auditoria.
+    - [principal constatação no relatorio]: Principal constatação do relatório.
+    - [ocorrência e evidencia de achados de auditoria]: Ocorrências e evidências de achados de auditoria.
+    - **[recomendações]:** Recomendações.
+
+    Critérios para Identificar Relevância:
+    - **Eventos de Risco Críticos:** Priorizar eventos avaliados com notas 4 e 5 em [eventos de riscos avaliados].
+    - **Recomendações Relevantes:** Priorizar recomendações com criticidade "A" e "B", disponíveis em [recomendações].
+    - **Ocorrências e Evidências Significativas:** Identificar as evidências e ocorrências mais relevantes em [ocorrência e evidência de achados de auditoria].
+
+    Dados da Auditoria: ', 'trabalho: ', nr_trabalho, ' objetivo trabalho: ', obj_trab, ' eventos de riscos avaliados: ', evento_rsco_avaliado,
+    ' relatorio auditoria: ', tx_rel_atvd,  ' principal constatação no relatorio', tx_constatacao, 
+     ' recomendações: ', rcm_concat, 
+     'A partir de agora, você participará de um chat em que o auditor poderá fazer perguntas sobre o trabalho de auditoria, incluindo detalhes como recomendações, principais constatações do relatório e pontos de atenção. É fundamental que suas respostas sejam consistentes, diretas e baseadas nos dados fornecidos. Evite pedidos de desculpas ou tentativas de adequação desnecessárias. Caso seja questionado por que um ponto específico não foi incluído como recomendação ou destaque, explique o raciocínio por trás da decisão com base nos critérios de relevância e criticidade. Sempre que possível, reforce a lógica usada para gerar os destaques e justifique sua análise. Seu objetivo é fornecer informações claras, objetivas procurar responder em até dois paragrafos e baseadas nos dados disponíveis, mantendo a confiança e a assertividade em suas respostas. importante: procure não ultrapasse em 800 caracteres as respostas '
+     ) as role_user,
+           concat('segue minha análise', 
+           ' pontos_positivo: ',  pontos_positivo, ' pontos_aprimorar: ', pontos_aprimorar, ' materialidade: ', materialidade) AS role_assistant
+    FROM destaques.gpt_destaques_teste
+    WHERE nr_trabalho  = $1;
+    """
+    values = (nr_trabalho,)  # Certifique-se de passar como tupla
+    
+    
+    return await execute_query3(query, values)
+
+
+
+
+
+async def get_opcoes_rcm(servico):
+    json_results = {}
+    
+    # Utilizando a função execute_query para realizar as consultas ao banco de dados
+    ctgr_dmd_query_result = await execute_query("SELECT DISTINCT cd_ctgr_dmd_ocr, tx_ctgr_dmd FROM riscometro.rcm_status_atual;")
+    json_results['ctgr_dmd'] = [{'code': int(code), 'name': name} for code, name in ctgr_dmd_query_result.items()]
+
+    est_rcm_query_result = await execute_query("SELECT DISTINCT cd_tip_est_rcm, situacao_rcm FROM riscometro.rcm_status_atual;", return_one=False)
+    json_results['est_rcm'] = [{'code': int(code), 'name': name} for code, name in est_rcm_query_result.items()]
+
+    # Obter a data máxima
+    dt_ems_rcm_max_query_result = await execute_query("SELECT MAX(dt_ems_rcm) AS dt_ems_rcm_max FROM riscometro.rcm_status_atual;", return_one=True)
+    json_results['dt_ems_rcm_max'] = dt_ems_rcm_max_query_result.get('dt_ems_rcm_max', None)
+
+    # Obter a data mínima
+    dt_ems_rcm_min_query_result = await execute_query("SELECT MIN(dt_ems_rcm) AS dt_ems_rcm_min FROM riscometro.rcm_status_atual;", return_one=True)
+    json_results['dt_ems_rcm_min'] = dt_ems_rcm_min_query_result.get('dt_ems_rcm_min', None)
+
+    ano_ems_rcm_query_result = await execute_query("SELECT DISTINCT CAST(ano_ems_rcm AS INTEGER) AS code, CAST(ano_ems_rcm AS VARCHAR) AS name FROM riscometro.rcm_status_atual ORDER BY code DESC;", return_one=False)
+    ano_ems_rcm_formatted = [{"code": int(code), "name": name} for code, name in ano_ems_rcm_query_result.items()]
+    json_results['ano_ems_rcm'] = ano_ems_rcm_formatted
+
+    json_results['ga_coord'] = await execute_query("SELECT distinct  cd_ga_coord as code, nm_ga_coord as name FROM ptai.ptai_trabalhos;")
+    #json_results['ga_coord'] = [{'code': int(code), 'name': name} for code, name in ctgr_dmd_query_result.items()]
+
+
+
+
+    json_results['gpt_offline'] = obter_textos()
+    
+    return json_results
+
+
+def converter_para_latin1(input_str): 
+    # Codifica a string como LATIN1, substituindo caracteres que não têm equivalente por '?' 
+    return input_str.encode('latin1', 'replace').decode('latin1')
+
+def substituir_aspas_por_espaco(texto):
+    """
+    Substitui as aspas simples por espaços no texto.
+    """
+    return texto.replace("'", " ")
+
+async def tcu_upate_insert(informacoes):
+    informacoes = {k: substituir_aspas_por_espaco(v) if isinstance(v, str) else v for k, v in informacoes.items()} # 
+    
+    informacoes_latin1 = {k: converter_para_latin1(v) if isinstance(v, str) else v for k, v in informacoes.items()} # 
+ 
+    #informacoes['oficio'] = informacoes['oficio'].strip()
+    query = f"SELECT distinct * FROM tcu.oficio_tcu WHERE oficio = '{informacoes['oficio']}'"
+    
+    record = await  execute_query2(query)
+    status = ""
+    if record: 
+        print('>>>>>>>>>>>>>>>>>>')
+        query = f"""
+                UPDATE tcu.oficio_tcu
+                SET processo = '{informacoes['processo']}' ,
+                data = '{informacoes['data']}',
+                tipo_processo = '{informacoes['tipo_processo']}',
+                assunto = '{informacoes['assunto']}',
+                solicitacao = '{informacoes_latin1['solicitacao']}',
+                texto_oficio = '{informacoes_latin1['texto_oficio']}',
+                acordao = '{informacoes_latin1['acordao']}',
+                despacho= '{informacoes_latin1['despacho']}',
+                informacoes_adicionais = '{informacoes_latin1['informacoes_adicionais']}',
+                proposta_encaminhamento = '{informacoes_latin1['proposta_encaminhamento']}',
+                conclusao = '{informacoes_latin1['conclusao']}',
+                introducao = '{informacoes_latin1['introducao']}',
+                admissibilidade = '{informacoes_latin1['admissibilidade']}',
+                exame_tecnico = '{informacoes_latin1['exame_tecnico']}'
+
+                WHERE oficio =  '{informacoes['oficio']}';
+                """
+        status = "Atualizado"
+        await execute_query(query)
+    else:
+        query = f"""
+                INSERT INTO tcu.oficio_tcu
+                (oficio, processo, "data", tipo_processo, 
+                assunto, solicitacao, texto_oficio, 
+                conclusao, informacoes_adicionais, proposta_encaminhamento, 
+                acordao, despacho, introducao, admissibilidade, exame_tecnico)
+                VALUES('{informacoes['oficio']}', '{informacoes['processo']}', '{informacoes['data']}', '{informacoes['tipo_processo']}', 
+                       '{informacoes['assunto']}', '{informacoes_latin1['solicitacao']}', '{informacoes_latin1['texto_oficio']}',
+                       '{informacoes_latin1['conclusao']}', '{informacoes_latin1['informacoes_adicionais']}', 
+                       '{informacoes_latin1['proposta_encaminhamento']}', '{informacoes_latin1['acordao']}', '{informacoes_latin1['despacho']}', 
+                       '{informacoes_latin1['introducao']}', '{informacoes_latin1['admissibilidade']}', '{informacoes_latin1['exame_tecnico']}');
+                """
+        status = "Inserido"
+        await execute_query(query)
+    return status
+
+
+# modelos de buscas
+async def buscar_oficios_tcu():
+    query = """
+    SELECT * FROM tcu.oficio_tcu;
+    """
+    return await execute_query2(query)
+    
+
+
+async def fetch_all(query, params=None):
+    return await execute_query2(query)
+    
+# Função rcm_ae_update (assumindo que é uma função assíncrona)
+async def rcm_ae_update(cd_rcm):
+    # Implemente a lógica de atualização aqui
+    
+    #txt_gpt = apicainfgpt('Novo resumo atualizado')
+    #resumo_text, classificacao_dict, json_obj = processar_texto_gpt_rcm_ae(txt_gpt)
+    
+    resumo_gpt = '''
+    O texto aborda um relatório de Auditoria Externa da Deloitte, especificamente relacionado à área Digov do Fundo de Parcerias Público-Privadas (FPPP). O documento, datado de 31/12/2022, discute a necessidade de aprimoramento e implementação de controles internos. O objetivo é assegurar que os prazos normatizados para o pagamento de honras de avais sejam devidamente cumpridos, indicando uma preocupação com a eficiência e conformidade dos processos internos. 
+    '''
+    
+    txt_gpt = '''[{'tipo': 'Auditoria de Tecnologia da Informação', 'resposta': 'NÃO', 'justificativa': 'O texto não menciona qualquer termo ou contexto relacionado à Auditoria de Tecnologia da Informação.'}, {'tipo': 'Impostos', 'resposta': 'NÃO', 'justificativa': 'O texto não menciona qualquer termo ou contexto relacionado a Impostos.'}, {'tipo': 'Previdência', 'resposta': 'NÃO', 'justificativa': 'O texto não menciona qualquer termo ou contexto relacionado a Previdência.'}, {'tipo': 'Consórcio', 'resposta': 'NÃO', 'justificativa': 'O texto não menciona qualquer termo ou contexto relacionado a Consórcio.'}]
+    '''
+    
+    update_query = f"""
+    UPDATE riscometro.rcm_status_atual
+    SET  txt_gpt = '{txt_gpt}''
+    WHERE cd_rcm = '{cd_rcm}';
+    """
+    await execute_query2(update_query)
+    
+async def acoes_gerais_dao(servico):
+    if servico['acao'] == 'remover_oficio':
+        query_delecao = f"""
+        DELETE FROM tcu.oficio_tcu
+        WHERE oficio = '{servico['variavel']}';
+        """
+        await execute_query2(query_delecao)
+
+        # Após a remoção, buscar a lista atualizada
+        query_lista_atualizada = "SELECT * FROM tcu.oficio_tcu;"
+        results = await fetch_all(query_lista_atualizada)
+        return results
+    
+    if servico['acao'] == 'rcm_ae_gpt':
+        query_lista_atualizada = f"""
+        SELECT cd_rcm, tx_gpt, resumo_gpt, classificacao_dict, resumo_gpt, txt_gpt
+        FROM rcm.rcm_ae
+        WHERE cd_rcm = '{servico['cd_rcm']}';
+        """
+        print(query_lista_atualizada)
+        results = await fetch_all(query_lista_atualizada)
+        
+        # # Verificar se o resumo é nulo e chamar a função rcm_ae_update se necessário
+        if results and results[0]['txt_gpt'] is None:
+            await rcm_ae_update(servico['cd_rcm'])
+        #     # Buscar os resultados atualizados após a atualização
+            results = await fetch_all(query_lista_atualizada)
+        
+        # return results
+        
+        #json_obj = processar_texto_gpt_rcm_ae('txt_gpt')
+        #return json_obj
+        return results
+    
+async def update_item_in_directory(key: str, data: dict):
+    fields = []
+    values = [key]
+
+    for i, (field, value) in enumerate(data.items(), start=2):
+        fields.append(f"{field} = ${i}")
+        values.append(value)
+
+    if not fields:
+        return False
+
+    update_query = f"""
+    UPDATE processos.directory_items
+    SET {', '.join(fields)}
+    WHERE key = $1
+    RETURNING id;
+    """
+    print('update_query ', )
+
+    result = await execute_query(update_query, *values, return_one=True)
+    return result is not None
+
+
+async def get_last_root_key():
+    query = """
+    SELECT key 
+    FROM processos.directory_items 
+    WHERE parent_key IS NULL
+    ORDER BY CAST(key AS INTEGER) DESC
+    LIMIT 1;
+    """
+    result = await execute_query(query, return_one=True)
+    return int(result['key']) if result else 0  # type: ignore # Se não houver raízes, retorna 0 como base
+
+async def get_last_subitem_key(parent_key: str):
+    query = """
+    SELECT key 
+    FROM processos.directory_items
+    WHERE parent_key = $1
+    ORDER BY CAST(SUBSTRING(key FROM '[0-9]+$') AS INTEGER) DESC
+    LIMIT 1;
+    """
+    result = await execute_query(query, parent_key, return_one=True)
+    
+    if result is None:
+        return f"{parent_key}-0"  # Se não houver subitens, retorna o primeiro subitem
+    
+    base_key = result['key'].rsplit('-', 1)[0] # type: ignore
+    last_number = int(result['key'].split('-')[-1]) # type: ignore
+    
+    return f"{base_key}-{last_number + 1}"
+
+async def insert_directory_item(label, data, icon, parent_key=None, is_folder=True, url_painel=None, tx_painel=None):
+    # Verifica se um item com as mesmas propriedades já existe (sem verificar url_painel e tx_painel)
+    check_duplicate_query = """
+    SELECT id, key 
+    FROM processos.directory_items 
+    WHERE label = $1 
+    AND parent_key IS NOT DISTINCT FROM $2
+    AND icon = $3
+    AND COALESCE(data, '') = COALESCE($4, '')
+    AND is_folder = $5
+    LIMIT 1;
+    """
+
+    existing_item = await execute_query(check_duplicate_query, label.strip(), parent_key, icon.strip(), data.strip() if data else None, is_folder, return_one=True)
+    
+    if existing_item:
+        logger.info(f"Item com label '{label}' já existe no diretório com id {existing_item['id']}, inserção ignorada.")
+        return existing_item['id'], existing_item['key']  # Retorna o ID e a key existente para evitar inserção
+    
+    # Gerar um novo 'key' se não foi passado
+    if parent_key is None:
+        last_root_key = await get_last_root_key()
+        key = str(last_root_key + 1)
+    else:
+        key = await get_last_subitem_key(parent_key)
+
+    # Inserir o novo item
+    insert_query = """
+    INSERT INTO processos.directory_items (key, parent_key, label, data, icon, is_folder, url_painel, tx_painel)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    RETURNING id, key;
+    """
+    
+    result = await execute_query(insert_query, key, parent_key, label.strip(), data.strip() if data else None, icon.strip(), is_folder, url_painel, tx_painel, return_one=True)
+    new_id = result['id'] # type: ignore
+    new_key = result['key'] # type: ignore
+    
+    logger.info(f"Novo item adicionado com id {new_id} e key {new_key}")
+    return new_id, new_key
+
+
+async def remove_directory_item_cascade(key: str):
+    delete_items_query = """
+    WITH RECURSIVE children AS (
+        SELECT key FROM processos.directory_items WHERE key = $1
+        UNION ALL
+        SELECT d.key FROM processos.directory_items d
+        JOIN children c ON d.parent_key = c.key
+    )
+    DELETE FROM processos.directory_items
+    WHERE key IN (SELECT key FROM children);
+    """
+    
+    await execute_query(delete_items_query, key)
+    logger.info(f"Item com key {key} e seus filhos foram removidos com sucesso!")
+    
+async def get_directory_structure():
+    select_query = """
+    SELECT key, parent_key, label, data, icon, is_folder, url_painel, tx_painel 
+    FROM processos.directory_items 
+    ORDER BY key;
+    """
+    
+    items = await execute_query(select_query)
+    return items
+
+def build_tree(items):
+    nodes = {}
+    
+    # Criando nós a partir dos itens
+    for item in items:
+        node = {
+            'key': item['key'],
+            'label': item['label'],
+            'data': item['data'],
+            'icon': item['icon'],
+            'is_folder': item['is_folder'],
+            'url_painel': item['url_painel'] if 'url_painel' in item else '',
+            'tx_painel': item['tx_painel'] if 'tx_painel' in item else '', 
+            'children': []
+        }
+        nodes[item['key']] = node
+
+    # Atribuindo os filhos aos pais
+    tree = []
+    for item in items:
+        parent_key = item['parent_key']
+        if parent_key:
+            nodes[parent_key]['children'].append(nodes[item['key']])
+        else:
+            tree.append(nodes[item['key']])
+
+    return tree
+
+
