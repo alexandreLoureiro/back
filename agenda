@@ -896,3 +896,23 @@ uploadRelatorioRCM(
 @import "../node_modules/primeicons/primeicons.css";
 
 
+from app.infra.sqlalchemy.config.database_pool import execute_query
+
+async def deletar_relatorio_rcm(relatorio_id: int) -> bool:
+    """
+    Remove um registro da tabela rcm.rcm_relatorios pelo seu id.
+
+    Retorna True se excluiu algo (rowcount > 0), 
+    ou False se o id não foi encontrado.
+    """
+    query = """
+    DELETE FROM rcm.rcm_relatorios
+    WHERE id = $1
+    RETURNING id;
+    """
+    result = await execute_query(query, relatorio_id, return_one=True)
+    if result and 'id' in result:
+        return True
+    return False
+
+
