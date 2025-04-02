@@ -1,3 +1,19 @@
+Estamos pensando em uma forma de, no ambiente da intranet da audit, nos processos dos trabalhos, a própria intranet fornecer o embasamento que envolva base de dados 
+(dos painéis construídos pelas GA em parceria com a Antec), seria de forma dinâmica à medida que o auditor preenche os campos por exemplo: 
+Objetivo, Escopo, Período de Abrangência, Áreas Foco da Auditoria (Dependências Auditadas), Processos PMI, Eventos de Risco, e Governança Gerenciamento de Riscos e Controles. 
+Quanto mais informações o auditor tem, mais ele é subsidiado no momento de registro. Exemplos:
+ 
+Objetivo e Escopo: Informações gerais sobre notas e decisões do painel decisório e perdas gerais.
+Período de Abrangência: Dados históricos relevantes para o período selecionado.
+Áreas Foco da Auditoria (Dependências Auditadas): Dados específicos de perdas e eventos de risco dessas áreas.
+Processos PMI e Eventos de Risco: Informações detalhadas sobre processos e eventos de risco vinculados ao trabalho de auditoria.
+Governança Gerenciamento de Riscos e Controles: Dados que auxiliam na definição e avaliação da governança e controles de risco.
+Tem algum painel de vocês que acha que se encaixa?
+Embora não estamos falando do como mas poderia emvolver IA Generativa ou vinculos por campos mesmo, exemplo prefixo dependências auditadas
+
+
+
+
 No documento compartilhado não foram encontrados trechos específicos que detalhem diretamente o uso constante e estratégico de informações em tempo real, vinculadas à taxonomia de riscos e processos via tecnologias como IA Generativa ou ferramentas como Kafka.
 
 Porém, a proposta que você está desenhando está fortemente alinhada às boas práticas e ao que é recomendado pelo The Institute of Internal Auditors (IIA) (Instituto dos Auditores Internos), principalmente no que se refere ao uso contínuo e estratégico de dados para agregar valor, melhorar processos internos e sustentar decisões baseadas em riscos.
