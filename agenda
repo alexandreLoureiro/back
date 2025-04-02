@@ -1,212 +1,106 @@
-pip install websockets
+from fastapi import APIRouter, File, UploadFile, responses, HTTPException, Form
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+
+from fastapi.responses import StreamingResponse, Response
+from fastapi.responses import FileResponse
+
+from fastapi.responses import FileResponse
 
 
-main
+from app.infra.sqlalchemy.dao.queries_rcm import tcu_upate_insert
+from app.infra.sqlalchemy.config.conexoes import *
+from app.infra.sqlalchemy.config.database_pool import pool, execute_query
 
-import asyncio
-from app.infra.sqlalchemy.dao.listen_to_db_notifications import listen_to_db_notifications  # ajuste o caminho conforme necessário
+from io import BytesIO
+import re
+import fitz  # PyMuPDF
+import uuid  # Importe o módulo uuid aqui
+import PyPDF2
 
-@app.on_event("startup")
-async def startup_event():
-    asyncio.create_task(listen_to_db_notifications())
+from datetime import datetime, timedelta
+from hashlib import sha256
 
-if __name__ == "__main__":
-    import uvicorn
+import pdfkit as pdf
 
-    uvicorn.run(app, host="0.0.0.0", port=80, reload=True)
-
-
-listen_to_db_notifications.py
-
-import asyncio
-import asyncpg
-import json
-import logging
-from app.infra.sqlalchemy.config.database_pool import get_connection, DATABASE_URL
-from app.routers.rotas_geral import manager  # Certifique-se de que o manager está importado corretamente
-
-logger = logging.getLogger(__name__)
-
-async def listen_to_db_notifications():
-    while True:
-        try:
-            conn = await get_connection()
-            logger.info("Conectado ao PostgreSQL para escutar notificações.")
-            
-            def notification_handler(connection, pid, channel, payload):
-                logger.info(f"Notificação recebida no canal {channel}: {payload}")
-                try:
-                    data = json.loads(payload)
-                    nr_trabalho = data.get("nr_trabalho")
-                    alerta_evt_risco = data.get("alerta_evt_risco")
-                    if nr_trabalho is not None and alerta_evt_risco:
-                        message = f"Produto {nr_trabalho} alterado. Alerta: {alerta_evt_risco}"
-                        asyncio.create_task(manager.broadcast(message))
-                except Exception as e:
-                    logger.error("Erro ao processar payload: %s", e)
-            
-            await conn.add_listener('row_changed', notification_handler)
-            logger.info("Listener registrado para o canal 'row_changed'.")
-            
-            # Loop de keep-alive: executa uma query simples a cada segundo
-            while True:
-                await asyncio.sleep(1)
-                try:
-                    await conn.execute("SELECT 1")
-                except Exception as e:
-                    logger.error("Erro no keep-alive da conexão: %s", e)
-                    break  # Sai do loop interno para reconectar
-        except Exception as e:
-            logger.error(f"Erro na conexão de notificações: {e}")
-        logger.info("Tentando reconectar em 5 segundos...")
-        await asyncio.sleep(5)
-
-# CREATE OR REPLACE FUNCTION notify_alerta_evt_risco() 
-# RETURNS trigger AS $$
-# DECLARE
-#     payload JSON;
-# BEGIN
-#     -- Se o valor de alerta_evt_risco mudou, envia a notificação
-#     IF NEW.alerta_evt_risco IS DISTINCT FROM OLD.alerta_evt_risco THEN
-#         payload := json_build_object(
-#             'nr_trabalho', NEW.nr_trabalho,
-#             'alerta_evt_risco', NEW.alerta_evt_risco
-#         );
-#         PERFORM pg_notify('row_changed', payload::text);
-#     END IF;
-#     RETURN NEW;
-# END;
-# $$ LANGUAGE plpgsql;
-
-# CREATE TRIGGER trg_notify_alerta_evt_risco
-# AFTER UPDATE ON destaques.gpt_destaques_teste
-# FOR EACH ROW
-# WHEN (OLD.alerta_evt_risco IS DISTINCT FROM NEW.alerta_evt_risco)
-# EXECUTE FUNCTION notify_alerta_evt_risco();
-
-
-web-socket.service.ts
-
-
-import { Injectable } from '@angular/core';
-import { Observable, Subject } from 'rxjs';
-
-@Injectable({
-  providedIn: 'root'
-})
-export class WebSocketService {
-  private socket: WebSocket | undefined;
-  private messageSubject: Subject<string> = new Subject<string>();
-
-  constructor() {
-    console.log('WebSocketService iniciado.');
-    this.connect();
-  }
-
-  private connect(): void {
-    this.socket = new WebSocket('ws://192.168.2.80:5002/apiptai/ws');
-
-
-    this.socket.onopen = (event) => {
-      console.log('WebSocket connection opened', event);
-    };
-
-    this.socket.onmessage = (event) => {
-      console.log('Message from server:', event.data);
-      this.messageSubject.next(event.data);
-    };
-
-    this.socket.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
-
-    this.socket.onclose = (event) => {
-      console.log('WebSocket connection closed', event);
-    };
-  }
-
-  public sendMessage(message: string): void {
-    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-      this.socket.send(message);
-    } else {
-      console.error('WebSocket is not open. Current state:', this.socket ? this.socket.readyState : 'undefined');
-    }
-  }
-
-  public closeConnection(): void {
-    if (this.socket) {
-      this.socket.close();
-    }
-  }
-
-  public getMessages(): Observable<string> {
-    return this.messageSubject.asObservable();
-  }
-}
+from pyvirtualdisplay import Display
 
 
 
-chat.ts
+import pandas as pd
+import openpyxl
+from openpyxl import load_workbook
 
-// Propriedade para armazenar as mensagens recebidas via WebSocket para teste
-  socketTestMessages: string[] = [];
 
-  // Subscription para o WebSocket
-  private wsSubscription: Subscription | undefined;
+from openpyxl.styles import colors, PatternFill
 
-  constructor(
-    private servicoLLM: ServicoLLMService,
-    private messageService: MessageService,
-    private wsService: WebSocketService  // Injeção do serviço WebSocket
-  ) { }
+from openpyxl.utils import get_column_letter
+from openpyxl.drawing.image import Image as ExcelImage
 
-  ngOnInit(): void {
-    this.servicoLLM.user$.subscribe((user) => {
-      this.usuario = user;
-    });
+import xlsxwriter
 
-    // Carrega trabalhos ao iniciar a aplicação
-    const defaultRequest = {
-      nome: 'teste',
-      ano: 2025
-    };
-    this.loadTrabalhos(defaultRequest);
+from matplotlib.colors import rgb2hex
+import matplotlib.pyplot as plt
+from PIL import Image as PILImage
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 
-    // Cria uma nova sessão ao carregar o componente
-    this.servicoLLM.createSession().subscribe({
-      next: (response) => {
-        this.sessionId = response.sessionId;
-      },
-      error: (err) => {
-        console.error('Erro ao criar sessão:', err);
-      },
-    });
+from PIL import Image, ImageDraw, ImageFont, ImageColor
+import io
+import os
+from datetime import datetime
 
-    // Inscreve-se para receber mensagens via WebSocket
-    this.wsSubscription = this.wsService.getMessages().subscribe((message: string) => {
-      console.log('Mensagem recebida via WebSocket:', message);
-      // Armazena somente nas mensagens de teste, para serem exibidas no "socket-test"
-      this.socketTestMessages.push(message);
-      // Não adicione a "messages" para que o chat principal permaneça inalterado.
-    });
-  }
+import shutil
+from os import getcwd
 
-  ngOnDestroy(): void {
-    if (this.wsSubscription) {
-      this.wsSubscription.unsubscribe();
-    }
-  }
+from app.infra.sqlalchemy.dao.queries_geral import inserir_relatorio_rcm
+from fastapi.responses import StreamingResponse, Response
+import io
 
-chat.html
+router = APIRouter()
 
-<div class="socket-test" style="position: fixed; top: 10px; right: 10px; background: #f1f1f1; padding: 10px; border: 1px solid #ccc; max-height: 200px; overflow-y: auto; z-index: 1000;">
-    <h4>Socket Test</h4>
-    <ul style="list-style-type: none; padding: 0; margin: 0;">
-      <li *ngFor="let msg of socketTestMessages" style="margin-bottom: 5px;">{{ msg }}</li>
-    </ul>
-  </div>
+@router.post("/apiptai/rcmkpmg")
+async def salvar_relatorio_rcm(
+    nome: str = Form(...),
+    data: str = Form(...),
+    constatacoes: str = Form(...),
+    recomendacoes: str = Form(...),
+    file: UploadFile = File(...)
+):
+    # Lê o conteúdo binário do PDF
+    pdf_bytes = await file.read()
 
-  loadTrabalhos(request: { nome: string; ano: number }): void {
-    this.servicoLLM.getTrabalhos(request).subscribe({
-      ....
+    # Chama a função para inserir no PostgreSQL
+    try:
+        novo_id = await inserir_relatorio_rcm(nome, data, constatacoes, recomendacoes, pdf_bytes)
+        return {
+            "status": "ok",
+            "id_inserido": novo_id,
+            "mensagem": "Relatório RCM salvo com sucesso no banco."
+        }
+    except Exception as e:
+        return {
+            "status": "erro",
+            "detalhe": str(e)
+        }
+        
+@router.get("/apiptai/rcmkpmg/{relatorio_id}")
+async def get_relatorio_rcm(relatorio_id: int):
+    query = """
+    SELECT pdf_file, nome, data, constatacoes, recomendacoes
+    FROM rcm.rcm_relatorios
+    WHERE id = $1;
+    """
+    resultado = await execute_query(query, relatorio_id, return_one=True)
+    if not resultado:
+        return {"erro": "Relatório não encontrado"}
+    
+    pdf_bytes = resultado['pdf_file']  # isto deve ser um campo BYTEA (bytes)
 
+    # Abordagem 1: Retornar de uma vez só usando Response
+    return Response(content=pdf_bytes, media_type="application/pdf")
+
+    # Abordagem 2: Usar StreamingResponse
+    # return StreamingResponse(
+    #     io.BytesIO(pdf_bytes),
+    #     media_type="application/pdf"
+    # )
