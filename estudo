@@ -1,108 +1,164 @@
-e assim? 
-df_resultados['pontos_positivo'] = df_resultados['pontos_positivo'].apply(lambda x: json.dumps(x, ensure_ascii=False))
-df_resultados['pontos_aprimorar'] = df_resultados['pontos_aprimorar'].apply(lambda x: json.dumps(x, ensure_ascii=False))
-        
+// rcm-relatorio.model.ts (ou algo similar)
+export interface RcmRelatorio {
+  id: number;
+  nome: string;
+  data: string;          // ou Date, dependendo de como você trabalha
+  constatacoes: string;
+  recomendacoes: string;
+}
 
+import { Component, OnInit, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Table, TableModule } from 'primeng/table';
+import { PaginatorModule } from 'primeng/paginator';
+import { ButtonModule } from 'primeng/button';
+import { CheckboxModule } from 'primeng/checkbox';
+import { InputTextModule } from 'primeng/inputtext';
+import { RcmRelatorio } from './rcm-relatorio.model'; // a interface
+import { ServicoLLMService } from '../servico-llm.service'; // ajuste o caminho
+import { FormsModule } from '@angular/forms'; // Para o [(ngModel)] no filtro global
 
-deu erro ao inserir os dados no meu postgres configurado como latin1
+@Component({
+  selector: 'app-rcm-list',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    TableModule,
+    PaginatorModule,
+    ButtonModule,
+    CheckboxModule,
+    InputTextModule
+  ],
+  templateUrl: './rcm-list.component.html'
+})
+export class RcmListComponent implements OnInit {
+  relatorios: RcmRelatorio[] = [];
+  selectedRelatorios: RcmRelatorio[] = [];
 
-Processando linhas: 100%|██████████| 1/1 [00:08<00:00,  8.29s/it]
-ERROR:root:Erro ao inserir dados no PostgreSQL: (psycopg2.errors.UntranslatableCharacter) unsupported Unicode escape sequence
-LINE 5: ...e Educação Financeira e no processo antifraude.', '["Iniciat...
-                                                             ^
-DETAIL:  Unicode escape values cannot be used for code point values above 007F when the server encoding is not UTF8.
-CONTEXT:  JSON data, line 1: [...
-[SQL: INSERT INTO destaques.gpt_destaques2 (nr_trabalho, ano, nm_trab, obj_trab, justif, processo_avaliado, hierarquia_processo, evento_rsco_avaliado, hierarquia_evento_risco, tx_rel_atvd, tx_constatacao, rel_hash, ocorrencia_concat, rcm_concat, combined_text, titulo, pontos_positivo, pontos_aprimo
+  // Para o filtro global (opcional)
+  globalFilter: string = '';
 
+  // Captura a referência da tabela para acionar o filter manual
+  @ViewChild('dt') dt!: Table;
 
+  constructor(private servicoLLM: ServicoLLMService) {}
 
+  ngOnInit() {
+    this.carregarRelatorios();
+  }
 
-import json
+  carregarRelatorios() {
+    // Exemplo: supõe que seu serviço retorne um Observable<RcmRelatorio[]>
+    this.servicoLLM.listarRelatorios().subscribe({
+      next: (lista) => {
+        this.relatorios = lista;
+      },
+      error: (err) => {
+        console.error('Erro ao carregar relatórios:', err);
+      }
+    });
+  }
 
-# Antes de fazer o to_sql, converta os arrays em strings JSON
-for col in ['pontos_positivo', 'pontos_aprimorar']:
-    if col in df_resultados.columns:
-        df_resultados[col] = df_resultados[col].apply(lambda x: json.dumps(x) if isinstance(x, list) else x)
+  // Chamado ao clicar no botão "excluir"
+  excluirRelatorio(id: number) {
+    if (!confirm('Tem certeza que deseja excluir este relatório?')) {
+      return;
+    }
+    // Chama o serviço para deletar no backend
+    this.servicoLLM.excluirRelatorio(id).subscribe({
+      next: () => {
+        // Remove do array local
+        this.relatorios = this.relatorios.filter(r => r.id !== id);
+      },
+      error: (err) => {
+        console.error('Erro ao excluir relatório:', err);
+      }
+    });
+  }
 
-# Agora faça a inserção
-df_resultados.to_sql(
-    name=table_name,
-    con=engine,
-    schema=schema_name,
-    if_exists='append',
-    index=False
-)
+  // Se quiser um "filtro global" manual, pode usar esse método
+  filtrarGlobal(event: any) {
+    const valor = event.target.value;
+    this.dt.filterGlobal(valor, 'contains');
+  }
+}
 
+listarRelatorios(): Observable<RcmRelatorio[]> {
+  return this.http.get<RcmRelatorio[]>(`${this.API_ptai}/rcmkpmg`);
+}
 
-quando fui inserir os dados no meu banco de dados postgres latin1 deu o erro
+excluirRelatorio(id: number): Observable<any> {
+  return this.http.delete(`${this.API_ptai}/rcmkpmg/${id}`);
+}
 
-código:
-df_resultados.to_sql(
-            name=table_name,
-            con=engine,
-            schema=schema_name,
-            if_exists='append',  # ou 'append'
-            index=False
-        )
-        logging.info(f"Processamento concluído. {len(resultados)} registros inseridos no banco de dados.")
-    except Exception as e:
-        logging.error(f"Erro ao inserir dados no PostgreSQL: {e}")
+<div class="card">
+  <h2>Relatórios RCM</h2>
 
-erro:
+  <!-- Filtro global -->
+  <div style="text-align: right; margin-bottom: .5rem;">
+    <i class="pi pi-search" style="margin-right: 4px;"></i>
+    <input
+      #gb
+      type="text"
+      pInputText
+      placeholder="Filtrar..."
+      (input)="dt.filterGlobal(gb.value, 'contains')"
+    />
+  </div>
 
-Processando linhas: 100%|██████████| 1/1 [00:08<00:00,  8.79s/it]
-ERROR:root:Erro ao inserir dados no PostgreSQL: (psycopg2.errors.DatatypeMismatch) column "pontos_positivo" is of type jsonb but expression is of type text[]
-LINE 5: ...o do Brasil requer aprimoramentos estruturantes', ARRAY['Ini...
-                                                             ^
-HINT:  You will need to rewrite or cast the expression.
+  <!-- Tabela p-table -->
+  <p-table
+    #dt
+    [value]="relatorios"
+    [paginator]="true"
+    [rows]="5"
+    selectionMode="checkbox"
+    [(selection)]="selectedRelatorios"
+    [globalFilterFields]="['nome','data','constatacoes','recomendacoes']"
+    dataKey="id"
+  >
 
-[SQL: INSERT INTO destaques.gpt_destaques2 (nr_trabalho, ano, nm_trab, obj_trab, justif, processo_avaliado, hierarquia_processo, evento_rsco_avaliado, hierarquia_evento_risco, tx_rel_atvd, tx_constatacao, rel_hash, ocorrencia_concat, rcm_concat, combined_text, titulo, pont
+    <!-- Cabeçalho -->
+    <ng-template pTemplate="header">
+      <tr>
+        <!-- Checkbox select-all -->
+        <th style="width: 3em">
+          <p-tableHeaderCheckbox></p-tableHeaderCheckbox>
+        </th>
+        <th pSortableColumn="id">ID <p-sortIcon field="id"></p-sortIcon></th>
+        <th pSortableColumn="nome">Nome <p-sortIcon field="nome"></p-sortIcon></th>
+        <th pSortableColumn="data">Data <p-sortIcon field="data"></p-sortIcon></th>
+        <th pSortableColumn="constatacoes">Constatações <p-sortIcon field="constatacoes"></p-sortIcon></th>
+        <th pSortableColumn="recomendacoes">Recomendações <p-sortIcon field="recomendacoes"></p-sortIcon></th>
+        <th>Ações</th>
+      </tr>
+    </ng-template>
 
+    <!-- Corpo da tabela -->
+    <ng-template pTemplate="body" let-relatorio>
+      <tr>
+        <td>
+          <p-tableCheckbox [value]="relatorio"></p-tableCheckbox>
+        </td>
+        <td>{{ relatorio.id }}</td>
+        <td>{{ relatorio.nome }}</td>
+        <td>{{ relatorio.data }}</td>
+        <td>{{ relatorio.constatacoes }}</td>
+        <td>{{ relatorio.recomendacoes }}</td>
+        <td>
+          <button
+            pButton
+            icon="pi pi-trash"
+            class="p-button-rounded p-button-danger"
+            (click)="excluirRelatorio(relatorio.id)"
+            title="Excluir"
+          ></button>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
 
-
-
-ALTER TABLE ptai.com_resultado_tx_completo 
-ALTER COLUMN pontos_positivo TYPE JSONB USING 
-  (SELECT array_to_json(array_agg(trim(regexp_replace(item, '^\d+\)\s*', ''))))
-   FROM regexp_split_to_table(pontos_positivo, ',') AS item);
-
-ALTER TABLE ptai.com_resultado_tx_completo 
-ALTER COLUMN pontos_aprimorar TYPE JSONB USING
-  (SELECT array_to_json(array_agg(trim(regexp_replace(item, '^\d+\)\s*', ''))))
-   FROM regexp_split_to_table(pontos_aprimorar, ',') AS item);
-
-# Após obter o DataFrame do PostgreSQL
-for idx, row in df.iterrows():
-    # Converte pontos_positivo de string para lista
-    if pd.notna(row['pontos_positivo']):
-        pontos_positivo_str = row['pontos_positivo']
-        # Regex para extrair os pontos numerados
-        import re
-        pontos_positivo_list = [item.strip() for item in re.split(r'\d+\)\s*', pontos_positivo_str) if item.strip()]
-        df.at[idx, 'pontos_positivo'] = pontos_positivo_list
-    
-    # Converte pontos_aprimorar de string para lista
-    if pd.notna(row['pontos_aprimorar']):
-        pontos_aprimorar_str = row['pontos_aprimorar']
-        pontos_aprimorar_list = [item.strip() for item in re.split(r'\d+\)\s*', pontos_aprimorar_str) if item.strip()]
-        df.at[idx, 'pontos_aprimorar'] = pontos_aprimorar_list
-
-
-# Diagnóstico
-print("Estrutura do evento a ser enviado:")
-print(json.dumps(evento_processado, indent=2, ensure_ascii=False))
-
-# Verificar se há problemas de serialização
-try:
-    json_test = json.dumps(evento_processado)
-    print("Serialização JSON bem-sucedida")
-except Exception as e:
-    print(f"Erro ao serializar para JSON: {e}")
-    
-# Verificar conteúdo específico dos campos problemáticos
-print(f"Tipo de pontos_positivo: {type(evento_processado.get('pontos_positivo'))}")
-print(f"Valor de pontos_positivo: {evento_processado.get('pontos_positivo')}")
-print(f"Tipo de pontos_aprimorar: {type(evento_processado.get('pontos_aprimorar'))}")
-print(f"Valor de pontos_aprimorar: {evento_processado.get('pontos_aprimorar')}")
 
 
