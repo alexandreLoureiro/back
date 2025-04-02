@@ -1,3 +1,16 @@
+-- Cria o schema rcm se não existir
+CREATE SCHEMA IF NOT EXISTS rcm;
+
+-- Cria a tabela rcm_relatorios (ajuste nomes de colunas conforme desejar)
+CREATE TABLE IF NOT EXISTS rcm.rcm_relatorios (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL,
+    data DATE NOT NULL,
+    constatacoes TEXT NOT NULL,
+    recomendacoes TEXT NOT NULL,
+    pdf_file BYTEA,                 -- Aqui armazenaremos o PDF como blob
+    dt_inserido TIMESTAMP DEFAULT NOW()
+);
 
 rotas_upload
 
