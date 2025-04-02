@@ -161,4 +161,44 @@ excluirRelatorio(id: number): Observable<any> {
 </div>
 
 
+// servico-llm.service.ts (exemplo)
+getPdfRcm(id: number): Observable<Blob> {
+  const url = `${this.API_ptai}/rcmkpmg/${id}`;
+  // Precisamos `responseType: 'blob'` para receber um Blob (PDF)
+  return this.http.get(url, { responseType: 'blob' });
+}
+<th>PDF</th>
+<!-- ... -->
+<ng-template pTemplate="body" let-relatorio>
+  <tr>
+    <!-- ... outras colunas -->
+    <td>
+      <button
+        pButton
+        icon="pi pi-file-pdf"
+        (click)="abrirPdf(relatorio.id)"
+        label="Abrir PDF"
+      ></button>
+    </td>
+  </tr>
+</ng-template>
+abrirPdf(id: number) {
+  this.servicoLLM.getPdfRcm(id).subscribe({
+    next: (pdfBlob) => {
+      // Cria uma URL temporária para exibir o PDF
+      const fileURL = URL.createObjectURL(pdfBlob);
+      // Abre em uma nova aba
+      window.open(fileURL, '_blank');
+    },
+    error: (err) => {
+      console.error('Erro ao obter PDF:', err);
+    }
+  });
+}
+
+
+
+
+
+
 
