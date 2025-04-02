@@ -606,4 +606,293 @@ def build_tree(items):
 
     return tree
 
+rcm_hml
+
+<p-toast></p-toast> <!-- Se usar PrimeNG Toast global -->
+
+<div style="max-width: 800px; margin: auto;">
+  <h2>Upload de Relatório de Auditoria</h2>
+
+  <p-fileUpload
+    name="relatorio"
+    accept=".pdf"
+    customUpload="true"
+    [auto]="true"
+    [showUploadButton]="false"
+    [showCancelButton]="false"
+    (onSelect)="onFileSelected($event)"
+    (onClear)="onFileCleared()"
+    (onRemove)="onFileRemoved($event)"
+  >
+  </p-fileUpload>
+
+  <form [formGroup]="relatorioForm" (ngSubmit)="onSubmit()" style="margin-top: 1rem;">
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+      <div style="flex: 1 1 300px;">
+        <label for="nome">Nome do Relatório</label>
+        <input
+          id="nome"
+          pInputText
+          formControlName="nome"
+          placeholder="Ex: CCI BB DI"
+          style="width: 100%;"
+          readonly
+        />
+      </div>
+      <div style="flex: 1 1 300px;">
+        <label for="data">Data</label>
+        <input
+          id="data"
+          pInputText
+          formControlName="data"
+          placeholder="DD-MM-YYYY"
+          style="width: 100%;"
+          readonly
+        />
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem;">
+      <div style="flex: 1 1 300px;">
+        <label for="constatacoes">Constatações</label>
+        <textarea
+          id="constatacoes"
+          pInputTextarea
+          formControlName="constatacoes"
+          rows="3"
+          placeholder="Descreva as constatações..."
+          style="width: 100%;"
+        ></textarea>
+      </div>
+      <div style="flex: 1 1 300px;">
+        <label for="recomendacoes">Recomendações</label>
+        <textarea
+          id="recomendacoes"
+          pInputTextarea
+          formControlName="recomendacoes"
+          rows="3"
+          placeholder="Descreva as recomendações..."
+          style="width: 100%;"
+        ></textarea>
+      </div>
+    </div>
+
+    <div style="margin-top: 1rem;">
+      <button pButton label="Enviar" type="submit" [disabled]="!relatorioForm.valid"></button>
+    </div>
+  </form>
+</div>
+
+rcm_ts
+
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { HttpEventType } from '@angular/common/http';
+
+// PrimeNG
+import { FileUploadModule } from 'primeng/fileupload';
+import { InputTextModule } from 'primeng/inputtext';
+import { ButtonModule } from 'primeng/button';
+import { TextareaModule } from 'primeng/textarea';
+import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
+
+// Serviço
+import { ServicoLLMService } from '../servico-llm.service';
+
+@Component({
+  selector: 'app-rcm',
+  standalone: true,
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    FileUploadModule,
+    InputTextModule,
+    TextareaModule,
+    ButtonModule, ToastModule
+  ],
+  templateUrl: './rcm.component.html',
+  styleUrls: ['./rcm.component.css']
+})
+export class RcmComponent {
+  relatorioForm: FormGroup;
+  selectedFile: File | null = null;
+
+  constructor(
+    private fb: FormBuilder,
+    private servicoLLM: ServicoLLMService,
+    private messageService: MessageService
+  ) {
+    this.relatorioForm = this.fb.group({
+      nome: ['', Validators.required],
+      data: ['', Validators.required],
+      constatacoes: ['', Validators.required],
+      recomendacoes: ['', Validators.required],
+    });
+  }
+
+  // Quando seleciona o arquivo
+  onFileSelected(event: any) {
+    const file: File = event.files ? event.files[0] : null;
+    if (!file) return;
+
+    this.selectedFile = file;
+
+    // Remove .pdf
+    let nomeArquivo = file.name.replace('.pdf', '');
+    // Normaliza hífens duplicados
+    nomeArquivo = nomeArquivo.replace(/-+/g, '-');
+
+    // Extrai data
+    const dataRegex = /(\d{2}-\d{2}-\d{4})/;
+    const dataMatch = nomeArquivo.match(dataRegex);
+    const data = dataMatch ? dataMatch[1] : '';
+
+    // Extrai prefixo
+    const nomeRegex = /^(cci bb di|leasing)/i;
+    const nomeMatch = nomeArquivo.match(nomeRegex);
+    const nomeBase = nomeMatch ? nomeMatch[0].toUpperCase() : '';
+
+    // Remove prefixo + data
+    const restanteNome = nomeArquivo
+      .replace(dataRegex, '')
+      .replace(nomeRegex, '')
+      .replace(/[-_]/g, ' ')
+      .trim()
+      .toUpperCase();
+
+    const nomeFinal = `${nomeBase} ${restanteNome}`.trim();
+
+    // Preenche o form
+    this.relatorioForm.patchValue({
+      nome: nomeFinal,
+      data: data,
+    });
+  }
+
+  // Reset form se o arquivo for removido
+  onFileCleared() {
+    this.relatorioForm.reset({
+      nome: '',
+      data: '',
+      constatacoes: '',
+      recomendacoes: '',
+    });
+    this.selectedFile = null;
+  }
+  onFileRemoved(event: any) {
+    this.onFileCleared();
+  }
+
+  // Envia ao backend
+  onSubmit() {
+    if (!this.selectedFile) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Aviso',
+        detail: 'Nenhum arquivo selecionado.'
+      });
+      return;
+    }
+
+    const { nome, data, constatacoes, recomendacoes } = this.relatorioForm.value;
+
+    // Chama o método do serviço
+    this.servicoLLM.uploadRelatorioRCM(
+      this.selectedFile,
+      nome,
+      data,
+      constatacoes,
+      recomendacoes
+    ).subscribe({
+      next: (event) => {
+        // Se observe: 'events', analisamos o tipo do evento
+        if (event.type === HttpEventType.UploadProgress) {
+          // Progresso do upload (opcional)
+          const percentDone = Math.round((100 * event.loaded) / (event.total ?? 1));
+          // console.log('Progresso:', percentDone + '%');
+        }
+        else if (event.type === HttpEventType.Response) {
+          // Upload concluído
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Sucesso',
+            detail: 'Relatório enviado com sucesso!'
+          });
+          // Limpa o formulário e o arquivo
+          this.relatorioForm.reset();
+          this.selectedFile = null;
+        }
+      },
+      error: (err) => {
+        console.error('Erro ao enviar relatório:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Erro',
+          detail: 'Falha ao enviar relatório.'
+        });
+      }
+    });
+  }
+}
+
+service
+
+
+uploadDocumento(rota: string, file: File, nome: string): Observable<any> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const headers = new HttpHeaders({
+    'enctype': 'multipart/form-data' // Adicione o cabeçalho de Content-Type
+  });
+    const url = `${this.API_ptaiDocker}/${rota}/?nome=${nome}`;
+  return this.http.post<any>(url, formData, { headers, reportProgress: true, observe: 'events' });
+}
+
+uploadRelatorioRCM(
+  file: File,
+  nome: string,
+  data: string,
+  constatacoes: string,
+  recomendacoes: string
+): Observable<any> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('nome', nome);
+  formData.append('data', data);
+  formData.append('constatacoes', constatacoes);
+  formData.append('recomendacoes', recomendacoes);
+
+  // Ajuste a URL para o endpoint que criamos no FastAPI:
+  // /apiptai/rcmkpmg
+  const url = `${this.API_ptai}/rcmkpmg`;
+
+  return this.http.post<any>(url, formData, {
+    reportProgress: true,
+    observe: 'events', // se quiser acompanhar progresso
+  }).pipe(
+    catchError((error) => {
+      console.error('Erro ao enviar relatório RCM:', error);
+      return throwError(() => error);
+    })
+  );
+}
+
+}
+
+
+"styles": [
+              "node_modules/primeflex/primeflex.css",
+              "node_modules/bootstrap/dist/css/bootstrap.css",
+              "node_modules/animate.css/animate.css",
+              "src/styles.css"
+            ],
+/* You can add global styles to this file, and also import other style files */
+@import "../node_modules/bootstrap/dist/css/bootstrap.css";
+@import "../node_modules/animate.css/animate.css";
+@import "primeflex/primeflex.css";
+@import "../node_modules/primeicons/primeicons.css";
+
 
