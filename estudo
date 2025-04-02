@@ -1,3 +1,20 @@
+agora mudou, além do upload tem subir um arquivo excel que tem esses cabelalhos por exemplo
+
+ RELATORIO 	 DATA_EMISSAO 	 CONSTATACAO 	 EVIDENCIAS 	 RECOMENDACAO 	 INSTITUICAO_RESPONSAVEL 	 PREFIXO_RESPONSAVEL 	 INSTITUICAO_ASSUNTO_ELBB 	 PREVISAO_IMPLEMENTACAO 	 MATRICULA_DO_GESTOR_RESPONSAVEL 
+
+exemplo:
+ RELATORIO 	 DATA_EMISSAO 	 CONSTATACAO 	 EVIDENCIAS 	 RECOMENDACAO 	 INSTITUICAO_RESPONSAVEL 	 PREFIXO_RESPONSAVEL 	 INSTITUICAO_ASSUNTO_ELBB 	 PREVISAO_IMPLEMENTACAO 	 MATRICULA_DO_GESTOR_RESPONSAVEL 
+CCI BB – 30/06/2024	20/09/2024	teste	teste	teste	1	1000	1	28/02/2025	xxxxxx
+
+a ideia é que faça o upload dessa planilha e junto faça o upload do relatório pdf que tem que ter o mesmo nome da coluna relatorio
+
+se a planilha tiver mais de uma com relação diferente de relatório tem que criticar e possibilitar o envio de todos....
+
+
+
+
+
+
 // rcm-relatorio.model.ts (ou algo similar)
 export interface RcmRelatorio {
   id: number;
