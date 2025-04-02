@@ -1,72 +1,17 @@
-def search_similar_texts(query, connV, top_k=5):
-    # 1) Tokeniza a query do usuário
-    query_tokens = tokenize_text_pt(query)
-    set_query_tokens = set(query_tokens)  # <--- Definição aqui
+No documento compartilhado não foram encontrados trechos específicos que detalhem diretamente o uso constante e estratégico de informações em tempo real, vinculadas à taxonomia de riscos e processos via tecnologias como IA Generativa ou ferramentas como Kafka.
 
-    # 2) Gera embedding da query (para parte vetorial)
-    doc_query = nlp(query)
-    embedding_query = doc_query.vector.tolist()
-    embedding_query_str = f"ARRAY{embedding_query}"
+Porém, a proposta que você está desenhando está fortemente alinhada às boas práticas e ao que é recomendado pelo The Institute of Internal Auditors (IIA) (Instituto dos Auditores Internos), principalmente no que se refere ao uso contínuo e estratégico de dados para agregar valor, melhorar processos internos e sustentar decisões baseadas em riscos.
 
-    # 3) Puxa do banco
-    with connV.cursor() as curV:
-        curV.execute(f"""
-            SELECT
-                nr_trabalho,
-                combined_text,
-                tokens,
-                embedding_vector <-> {embedding_query_str}::vector AS vector_distance,
-                similarity(combined_text, %s) AS trigram_similarity
-            FROM ptai.com_resultado_tx_completo
-            ORDER BY embedding_vector <-> {embedding_query_str}::vector
-            LIMIT {top_k * 5}
-        """, (query,))
+Como próximo passo, recomendo fortemente buscar embasamento adicional diretamente nos seguintes documentos:
 
-        rows = curV.fetchall()
+IPPF (International Professional Practices Framework) do IIA, especificamente na parte que aborda o uso estratégico de dados, auditoria contínua e uso de tecnologia;
 
-    resultados_com_score = []
-    for row in rows:
-        nr_trabalho, combined_text, tokens_db, vector_distance, trigram_similarity = row
+Guia Prático "Programa de Avaliação de Qualidade e Melhoria" do IIA, que aborda a necessidade constante de atualização das informações utilizadas nas auditorias e o uso da tecnologia para isso;
 
-        # Normaliza distância
-        sim_vector = 1 / (1 + vector_distance) if vector_distance is not None else 0
-        trigram_sim = trigram_similarity if trigram_similarity else 0
+Resolução nº 4.879 do CMN e outras resoluções regulatórias do Banco Central (Bacen), que frequentemente enfatizam a importância estratégica da utilização contínua e atualizada de informações sobre riscos;
 
-        # Interseção de tokens
-        palavras_encontradas = []
-        if tokens_db:
-            found = set(tokens_db).intersection(set_query_tokens)
-            palavras_encontradas = list(found)
-        
-        qtd_encontradas = len(palavras_encontradas)
-        ratio_tokens = qtd_encontradas / len(query_tokens) if len(query_tokens) > 0 else 0
+Normas internas complementares específicas sobre planejamento e metodologia da auditoria do Banco do Brasil.
 
-        # Combina vetorial + trigram + tokens
-        final_score = (sim_vector + trigram_sim + ratio_tokens) / 3
+Esses documentos lhe darão a base técnica e normativa que você precisa para justificar e embasar formalmente sua proposta, incluindo o uso de tecnologias emergentes (como IA e ferramentas de streaming em tempo real), além da integração estratégica de painéis corporativos com processos e taxonomia de risco.
 
-        resultados_com_score.append((
-            nr_trabalho,
-            combined_text,
-            vector_distance,
-            trigram_sim,
-            final_score,
-            palavras_encontradas,
-            qtd_encontradas
-        ))
-
-    df_result = pd.DataFrame(
-        resultados_com_score,
-        columns=[
-            'nr_trabalho',
-            'combined_text',
-            'vector_distance',
-            'trigram_similarity',
-            'final_score',
-            'palavras_encontradas',
-            'qtd_encontradas'
-        ]
-    )
-
-    df_result.sort_values('final_score', ascending=False, inplace=True)
-
-    return df_result.head(top_k)
+Se precisar de ajuda para analisar especificamente algum outro documento complementar, estou à disposição.
