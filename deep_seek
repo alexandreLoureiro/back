@@ -1,118 +1,50 @@
-Segue o texto ajustado, destacando que o painel precisa ter informações estratégicas e abrangentes para toda a Audit:
-
-⸻
-
-Texto resumido e ajustado:
-
-Estamos avaliando uma proposta para tornar a intranet da Audit mais dinâmica, retroalimentando automaticamente o auditor com informações estratégicas e abrangentes para toda a Audit, conforme avança no preenchimento dos trabalhos.
-
-Por exemplo: ao registrar inicialmente um tema como Open Finance, o auditor recebe dados gerais estratégicos do painel decisório relacionados a este tema. Quando ele especifica um item PMI, o sistema refina dinamicamente as informações, exibindo apenas as notas decisórias e dados estratégicos já vinculados ao item selecionado (por IA ou campos específicos). Quanto mais o auditor avança, mais específicas, estratégicas e aderentes ao contexto ficam as informações exibidas.
-
-Você identifica algum painel estratégico existente que poderia se encaixar ou apoiar diretamente essa proposta?
-
-Obrigado!
-
-
-
-
-Estamos pensando em uma forma de, no ambiente da intranet da audit, nos processos dos trabalhos, a própria intranet fornecer o embasamento que envolva base de dados 
-(dos painéis construídos pelas GA em parceria com a Antec), seria de forma dinâmica à medida que o auditor preenche os campos por exemplo: 
-Objetivo, Escopo, Período de Abrangência, Áreas Foco da Auditoria (Dependências Auditadas), Processos PMI, Eventos de Risco, e Governança Gerenciamento de Riscos e Controles. 
-Quanto mais informações o auditor tem, mais ele é subsidiado no momento de registro. Exemplos:
- 
-Objetivo e Escopo: Informações gerais sobre notas e decisões do painel decisório e perdas gerais.
-Período de Abrangência: Dados históricos relevantes para o período selecionado.
-Áreas Foco da Auditoria (Dependências Auditadas): Dados específicos de perdas e eventos de risco dessas áreas.
-Processos PMI e Eventos de Risco: Informações detalhadas sobre processos e eventos de risco vinculados ao trabalho de auditoria.
-Governança Gerenciamento de Riscos e Controles: Dados que auxiliam na definição e avaliação da governança e controles de risco.
-Tem algum painel de vocês que acha que se encaixa?
-Embora não estamos falando do como mas poderia emvolver IA Generativa ou vinculos por campos mesmo, exemplo prefixo dependências auditadas
-
-
-
-Esses documentos lhe darão a base técnica e normativa que você precisa para justificar e embasar formalmente sua proposta, incluindo o uso de tecnologias emergentes (como IA e ferramentas de streaming em tempo real), além da integração estratégica de painéis corporativos com processos e taxonomia de risco.
-
-Se precisar de ajuda para analisar especificamente algum outro documento complementar, estou à disposição.
-
-
-Sua ideia é bastante robusta e totalmente alinhada à visão moderna e estratégica de auditoria interna, especialmente por propor um uso integrado de dados com vínculo direto a processos e riscos. Vou te ajudar a organizar sua proposta, ressaltando o embasamento no normativo compartilhado e nas orientações estratégicas do Instituto de Auditores Internos (IIA), especialmente na perspectiva estratégica de utilização contínua de dados.
-
----
-
-## 📌 **Contextualizando claramente a proposta:**
-
-Você está propondo a integração direta e automática das informações dos diferentes **painéis existentes** (perdas, reclamações, fraudes, planos governamentais, etc.) aos processos e eventos de riscos definidos na **taxonomia de riscos do Banco do Brasil**, utilizando tecnologias como **IA generativa** e transmissão em tempo real, por exemplo via Apache Kafka.
-
----
-
-## ✅ **Justificativa com base nos normativos (Banco do Brasil):**
-
-Conforme o normativo compartilhado (Instrução Normativa do Banco do Brasil):
-
-1. **Conceito de Auditoria Integrada com abordagem por riscos (ABR):**
-   - O documento enfatiza a abordagem baseada em riscos, que permite identificar, priorizar e mensurar riscos para focar nos processos mais significativos.
-   - Vincular diretamente informações estratégicas (paineis diversos) à taxonomia de riscos fortalece o processo de identificação e mensuração de riscos e otimiza a priorização dos trabalhos.
-
-2. **Alinhamento com objetivos estratégicos:**
-   - O planejamento estratégico da auditoria é baseado em "identificação dos maiores riscos aos quais o Conglomerado está exposto".
-   - Informações constantes e atualizadas garantem a aderência a esses objetivos, aumentando a eficiência e assertividade da auditoria.
-
-3. **Utilização de Benefícios Potenciais (BP) e Benefícios Efetivos (BE):**
-   - O normativo requer a identificação e registro de benefícios concretos gerados pela auditoria (financeiros e não financeiros).
-   - A integração automática facilita demonstrar claramente os benefícios obtidos pela auditoria em tempo real, garantindo compliance com as exigências internas e regulatórias.
-
-4. **Interação com segunda linha e demais entidades de fiscalização:**
-   - O normativo sugere interação e aproveitamento de informações das demais linhas de defesa.
-   - Sua proposta justamente materializa essa diretriz ao garantir que dados estratégicos estejam constantemente disponíveis e vinculados diretamente aos processos auditados.
-
----
-
-## 🎯 **Referências Estratégicas do IIA (não conceitual, mas operacional e estratégica):**
-
+Uso de Abordagem Data-Driven nos Processos de Auditoria
+Propomos uma abordagem orientada por dados (data-driven) nos processos de auditoria, com uso integrado de dados vinculados diretamente a processos e riscos, para gerar informações estratégicas alinhadas aos objetivos da empresa. Com foco em garantir a observância dos preceitos metodológicos, esta abordagem visa fortalecer a metodologia da auditoria, garantindo que todas as informações relevantes sejam integradas e utilizadas de forma eficaz.
+Integração Direta e Automática das Informações
+Integração direta e automática das informações dos diferentes painéis cadastrados no Catiana (Catálogo de Instrumentos de Análises Avançadas), desenvolvidos pela GA Antec em conjunto com as GA responsáveis pelos processos (ex.: perdas, reclamações, fraudes, processos decisórios, dados da segunda linha de defesa, etc.), com os processos e eventos de riscos definidos na taxonomia de riscos do Banco do Brasil.
+Suporte Dinâmico ao Processo de Auditoria
+Ao iniciar um trabalho de auditoria, o auditor passa por várias camadas, como Objetivo, Escopo, Período de Abrangência, Áreas Foco da Auditoria (Dependências Auditadas), Processos PMI, Eventos de Risco, e Governança Gerenciamento de Riscos e Controles. À medida que o auditor preenche esses dados, a base de informações em dados fornece o embasamento necessário de forma dinâmica e específica na intranet da audit, no momento de registro. Exemplos:
+•	Objetivo e Escopo: Informações gerais sobre notas e decisões do painel decisório e perdas gerais.
+•	Período de Abrangência: Dados históricos relevantes para o período selecionado.
+•	Áreas Foco da Auditoria (Dependências Auditadas): Dados específicos de perdas e eventos de risco dessas áreas.
+•	Processos PMI e Eventos de Risco: Informações detalhadas sobre processos e eventos de risco vinculados ao trabalho de auditoria.
+•	Governança Gerenciamento de Riscos e Controles: Dados que auxiliam na definição e avaliação da governança e controles de risco.
+Essa integração dinâmica permite que o auditor obtenha dados mais específicos e relevantes à medida que avança nas camadas de preenchimento, garantindo uma análise mais precisa e embasada.
+Auxílio nos Demais Estágios do Trabalho de Auditoria
+À medida que essas informações são preenchidas com embasamento de dados, elas auxiliam na confecção dos processos dos trabalhos abaixo, por exemplo:
+•	Maturidade da Área Auditada (PT MRLD): Avaliação da maturidade da área auditada com base em dados específicos e relevantes.
+•	Achados e Evidências de Auditoria: Registro de achados e evidências de auditoria suportados por dados concretos.
+•	Insights de Trabalhos Futuros: Identificação de áreas de foco para trabalhos futuros com base em tendências e padrões observados nos dados.
+•	Recomendações das Áreas: Desenvolvimento de recomendações baseadas em análises detalhadas e dados específicos.
+•	Relatório de Auditoria: Geração de relatórios de auditoria completos e embasados, facilitando a comunicação dos resultados e recomendações.
+IN 978: Conceito de Auditoria Integrada com Abordagem por Riscos (ABR)
+•	Abordagem Baseada em Riscos (ABR):
+•	Identificação, priorização e mensuração de riscos para focar nos processos mais significativos.
+•	Vinculação direta de informações estratégicas (painéis diversos) à taxonomia de riscos fortalece o processo de identificação e mensuração de riscos e otimiza a priorização dos trabalhos.
+•	Alinhamento com Objetivos Estratégicos:
+•	O planejamento estratégico da auditoria é baseado na "identificação dos maiores riscos aos quais o Conglomerado está exposto".
+•	Informações constantes e atualizadas garantem a aderência a esses objetivos, aumentando a eficiência e assertividade da auditoria.
+•	Utilização de Benefícios Potenciais (BP) e Benefícios Efetivos (BE):
+•	Identificação e registro de benefícios concretos gerados pela auditoria (financeiros e não financeiros).
+•	A integração automática facilita demonstrar claramente os benefícios obtidos pela auditoria em tempo real, garantindo compliance com as exigências internas e regulatórias.
+•	Interação com Segunda Linha e Demais Entidades de Fiscalização:
+•	Interação e aproveitamento de informações das demais linhas de defesa.
+•	Garantia de que dados estratégicos estejam constantemente disponíveis e vinculados diretamente aos processos auditados.
+Referências Estratégicas do IIA
 Segundo o Instituto dos Auditores Internos (IIA), especialmente nas práticas recomendadas de auditoria interna, há uma clara orientação estratégica:
+•	Uso Contínuo e Estratégico de Dados (Continuous Auditing & Monitoring):
+•	Uso contínuo e proativo dos dados para avaliação em tempo real, fortalecendo a governança e gestão de riscos e controles.
+•	Auditoria Orientada por Dados (Data-Driven Audit):
+•	Uso de analytics e IA para vincular automaticamente os dados da organização a processos internos e riscos identificados na taxonomia.
+•	Relatórios e Comunicação em Tempo Real:
+•	Relatórios dinâmicos possibilitados por ferramentas tecnológicas (painéis, dashboards), permitindo aos auditores e gestores acesso em tempo real às informações.
+Viabilidade Técnica e Ferramentas
+•	Definição de Painéis Compartilháveis e Específicos: As gerências que construíram os painéis, em conjunto com a Antec, devem definir quais painéis possuem informações que podem ser compartilhadas com todas as GA aderentes aos trabalhos e quais são específicos, com escopo reduzido.
+•	IA Generativa: Realiza vínculos semânticos automáticos entre dados em alguns painéis existentes e processos/eventos de risco da taxonomia.
+•	Apache Kafka (Real-Time Streaming): Transmissão imediata dos resultados para a intranet da Audit, proporcionando atualização contínua e ágil dos dados no ambiente corporativo da audit.
+•	Indexação Solr
+•	API: Desenvolvimento de API para consumo online das informações entre os painéis e a intranet da audit.
+•	Dashboards Integrados (Power BI ou Similares): Facilitam visualizações estratégicas e operacionais contínuas dos dados.
 
-- **Uso contínuo e estratégico de dados (Continuous Auditing & Monitoring):**
-  - O IIA defende explicitamente o uso contínuo e proativo dos dados para avaliação em tempo real, fortalecendo a governança e gestão de riscos e controles.
-
-- **Auditoria orientada por dados (Data-Driven Audit):**
-  - Recomendação expressa sobre uso de analytics e IA para vincular automaticamente os dados da organização a processos internos e riscos identificados na taxonomia.
-
-- **Relatórios e comunicação em tempo real:**
-  - O IIA recomenda fortemente relatórios dinâmicos, possibilitados por ferramentas tecnológicas (painéis, dashboards), permitindo aos auditores e gestores acesso em tempo real às informações.
-
----
-
-## ⚙️ **Viabilidade técnica e ferramentas sugeridas:**
-
-A proposta técnica (tecnologias sugeridas por você) é perfeitamente viável e bem aceita no mercado atual de auditoria digital:
-
-- **IA Generativa:**
-  - Realiza vínculos semânticos automáticos entre dados dos painéis existentes e processos/eventos de risco da taxonomia.
-
-- **Apache Kafka (real-time streaming):**
-  - Transmissão imediata dos resultados para intranet da Audit, proporcionando atualização contínua e ágil dos dados.
-
-- **Dashboards integrados (Power BI ou similares):**
-  - Facilitam visualizações estratégicas e operacionais contínuas dos dados.
-
----
-
-## 📑 **Modelo resumido para apresentar aos superiores:**
-
-Sugiro esta explicação concisa:
-
-> "Considerando o normativo interno do Banco do Brasil, especialmente sua abordagem estratégica de auditoria baseada em riscos e integrada às demais linhas de defesa, propomos integrar automaticamente os painéis estratégicos existentes (ex.: perdas, fraudes, reclamações) à taxonomia de processos e eventos de riscos já estabelecida.  
-> Utilizando tecnologias emergentes recomendadas pelo IIA (IA generativa para vínculos automáticos, Apache Kafka para transmissão em tempo real), seremos capazes de realizar um planejamento e execução de auditoria contínuos, dinâmicos e assertivos.  
-> Essa estratégia atende plenamente ao normativo interno, garantindo acesso constante às informações necessárias aos trabalhos de auditoria, promovendo alinhamento direto aos objetivos estratégicos da organização e aos princípios operacionais e estratégicos do IIA."
-
----
-
-## 🔖 **Recomendação para o próximo passo:**
-
-Para viabilizar sua proposta, recomendo:
-
-- Formalizar a proposta destacando claramente a aderência aos pontos estratégicos e regulatórios acima destacados.
-- Apresentar um exemplo prático do fluxo simplificado usando um painel existente (como "reclamações de clientes") demonstrando o vínculo automático com processos/áreas e riscos.
-- Buscar aprovação em etapas, começando por um MVP (mínimo produto viável), com integração inicial de um painel e validação dos resultados.
-
-**Dessa forma, sua proposta terá embasamento sólido e aderência estratégica ao normativo do banco e às melhores práticas do IIA.**
+Resumo
+Considerando o normativo interno do Banco do Brasil, a estratégia de auditoria baseada em riscos e integrada às demais linhas de defesa, propomos integrar automaticamente os painéis estratégicos existentes no Catiana (ex.: perdas, fraudes, reclamações, processos decisórios) à taxonomia de processos e eventos de riscos já estabelecida. Utilizando tecnologias emergentes recomendadas pelo IIA (IA generativa para vínculos automáticos, Apache Kafka para transmissão em tempo real, APIs para consumo e troca de informações), seremos capazes de realizar um planejamento e execução de auditoria contínuos, dinâmicos e assertivos.
