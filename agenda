@@ -1,20 +1,753 @@
--- Cria o schema rcm se não existir
 CREATE SCHEMA IF NOT EXISTS rcm;
 
--- Cria a tabela rcm_relatorios (ajuste nomes de colunas conforme desejar)
 CREATE TABLE IF NOT EXISTS rcm.rcm_relatorios (
-    id SERIAL PRIMARY KEY,
-    nome VARCHAR(255) NOT NULL,
-    data DATE NOT NULL,
-    constatacoes TEXT NOT NULL,
-    recomendacoes TEXT NOT NULL,
-    pdf_file BYTEA,                 -- Aqui armazenaremos o PDF como blob
-    dt_inserido TIMESTAMP DEFAULT NOW()
+  id SERIAL PRIMARY KEY,
+  relatorio VARCHAR(255) NOT NULL,                     -- corresponde à coluna RELATORIO
+  data_emissao TEXT NOT NULL,                          -- armazena a data de emissão como texto (ex.: "20/09/2024")
+  constatacoes TEXT,                                   -- corresponde à coluna CONSTATACAO
+  evidencias TEXT,                                     -- corresponde à coluna EVIDENCIAS
+  recomendacao TEXT,                                   -- corresponde à coluna RECOMENDACAO
+  instituicao_responsavel VARCHAR(255),                -- corresponde à coluna INSTITUICAO_RESPONSAVEL
+  prefixo_responsavel VARCHAR(255),                    -- corresponde à coluna PREFIXO_RESPONSAVEL
+  instituicao_assunto_elbb VARCHAR(255),               -- corresponde à coluna INSTITUICAO_ASSUNTO_ELBB
+  previsao_implementacao TEXT,                         -- corresponde à coluna PREVISAO_IMPLEMENTACAO
+  matricula_do_gestor_responsavel VARCHAR(50),         -- corresponde à coluna MATRICULA_DO_GESTOR_RESPONSAVEL
+  pdf_file BYTEA,                                      -- armazena o PDF como blob
+  dt_inserido TIMESTAMP DEFAULT NOW()
 );
 
-rotas_upload
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
+import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
+import { environment } from '../environments/environment';
 
-from fastapi import APIRouter, File, UploadFile, responses, HTTPException, Form
+import { MensagemPayload } from './models/models';
+
+import { FeedbackPayload } from './models/models';
+
+import { MensagemPayloadGeral } from './models/models';
+
+// No seu servico-llm.service.ts
+export interface RcmRelatorio {
+  id: number;
+  nome: string;
+  data_emissao: string | null;
+  constatacoes: string;
+  recomendacoes: string;
+}
+
+
+
+@Injectable({
+  providedIn: 'root'
+})
+export class ServicoLLMService {
+
+  private APIprod = 'http://10.2.96.55:5000/api';
+
+  //private API_LOCAL = 'http://192.168.2.80:5002/apilocal';
+  //private API = 'http://192.168.2.80/api';
+private API_ptai = 'http://192.168.2.80:5002/apiptai';
+private API_ptaiDocker = "http://192.168.2.80:5002/apiptai"
+
+//private API_ptaiDocker = "https://mefis.bb.com.br/apiptai"
+//private API_ptai = 'https://mefis.bb.com.br/apilocal';
+private API = "https://mefis.bb.com.br/api"
+//private API_ptai_ = "https://mefis.bb.com.br/apiptai"
+
+  // =============================
+  // ARMAZENAMENTO DE USUÁRIO
+  // =============================
+  private userSubject = new BehaviorSubject<any>(null);
+  /** Observable para quem quiser “ouvir” mudanças no usuário. */
+  public user$ = this.userSubject.asObservable();
+
+  // =============================
+  // CONSTRUTOR
+  // =============================
+  constructor(private http: HttpClient) {}
+
+  // =============================
+  // MÉTODOS DE GESTÃO DO USUÁRIO
+  // =============================
+  /**
+   * Define o usuário atual no BehaviorSubject.
+   */
+  setUser(user: any) {
+    this.userSubject.next(user);
+  }
+
+  /**
+   * Retorna o valor atual do usuário (sem precisar se inscrever).
+   */
+  getUser() {
+    return this.userSubject.value;
+  }
+
+  // =============================
+  // MÉTODOS DE AUTENTICAÇÃO
+  // =============================
+  authFunci(goto: any) {
+    return this.http.post<any>(`${this.API_ptai}/auth/`, goto);
+  }
+
+  getFuncionario() {
+    return this.http.get<any>(`${this.API}/authrest`);
+  }
+
+  getAuthFunci() {
+    return this.http.get<any>(`${this.API}/authrestfunci`);
+  }
+
+  /**
+   * Chama o backend para autenticar via corpo (com goto e environment).
+   * Se retornar user, armazenamos no BehaviorSubject para uso global.
+   */
+  getauthrestfunci(goto: string): Observable<any> {
+    if (!goto) {
+      console.error('Parâmetro "goto" é obrigatório.');
+      return throwError(() => new Error('Parâmetro "goto" é obrigatório.'));
+    }
+
+    const body = {
+      goto,
+      environment: environment.environmentName,
+    };
+
+    return this.http.post<any>(`${this.API_ptai}/authrestfunci/`, body).pipe(
+      map((response) => {
+        if (response?.redirectUrl) {
+          window.location.href = response.redirectUrl;
+        }
+        return response;
+      }),
+      catchError((error) => {
+        console.error('Erro na autenticação:', error);
+        return throwError(() => new Error('Erro ao autenticar. Por favor, tente novamente.'));
+      })
+    );
+  }
+
+  // =============================
+  // MÉTODOS DE CHAT E OUTROS
+  // =============================
+  sendMessage(
+    sessionId: string,
+    userMessage: string,
+    roleUser?: string,
+    roleAssistant?: string
+  ): Observable<any> {
+    const body = { sessionId, userMessage, roleUser, roleAssistant };
+    return this.http.post<any>(`${this.API_ptai}/chat`, body).pipe(
+      catchError((error: HttpErrorResponse) => {
+        let errorMessage = 'Erro desconhecido. Por favor, tente novamente mais tarde.';
+
+        if (error.error instanceof ErrorEvent) {
+          // Erro do lado do cliente
+          errorMessage = `Erro do cliente: ${error.error.message}`;
+        } else {
+          // Erro do lado do servidor
+          switch (error.status) {
+            case 400:
+              errorMessage = 'Requisição inválida. Verifique os dados enviados.';
+              break;
+            case 500:
+              errorMessage = 'Erro interno no servidor. Por favor, tente novamente mais tarde.';
+              break;
+            default:
+              errorMessage = `Erro (${error.status}): ${error.message}`;
+          }
+        }
+
+        console.error('Erro na chamada ao backend:', error);
+        return throwError(() => new Error(errorMessage));
+      })
+    );
+  }
+
+  getTrabalhos(request: { nome: string; ano: number }): Observable<any[]> {
+    return this.http.post<any[]>(`${this.API_ptai}/chat_trabalhos/`, request);
+  }
+
+  getTrabalhoDetails(nr_trabalho: number): Observable<any> {
+    return this.http.post(`${this.API_ptai}/chat_trabalho/`, { nr_trabalho });
+  }
+
+  createSession(): Observable<{ sessionId: string }> {
+    return this.http.post<{ sessionId: string }>(`${this.API_ptai}/create_session`, {});
+  }
+
+  resetSession(sessionId: string): Observable<any> {
+    const body = { sessionId };
+    return this.http.post(`${this.API_ptai}/reset_session`, body);
+  }
+
+  // ... dentro da classe ServicoLLMService
+
+
+
+salvarMensagem(payload: MensagemPayload): Observable<any> {
+  // Ajuste a URL conforme sua configuração
+  const url = `${this.API_ptai}/msgchatdest/`;
+  return this.http.post<any>(url, payload).pipe(
+    catchError((error) => {
+      console.error('Erro ao salvar mensagem:', error);
+      // Retornar um observable completado em erro não precisa interromper a UI
+      return of(null);
+    })
+  );
+}
+
+
+salvarChatGeral(payload: MensagemPayloadGeral): Observable<any> {
+  // Ajuste a URL conforme sua configuração
+  const url = `${this.API_ptai}/msgchatgeral/`;
+  return this.http.post<any>(url, payload).pipe(
+    catchError((error) => {
+      console.error('Erro ao salvar mensagem:', error);
+      // Retornar um observable completado em erro não precisa interromper a UI
+      return of(null);
+    })
+  );
+}
+
+salvarFeedback(payload: FeedbackPayload): Observable<any> {
+  const url = `${this.API_ptai}/feedback`;  // Ajuste conforme necessário
+  return this.http.post<any>(url, payload).pipe(
+    catchError((error) => {
+      console.error('Erro ao enviar feedback:', error);
+      return throwError(() => error);
+    })
+  );
+}
+
+servicosAgentes(payload: { [key: string]: string }): Observable<any> {
+  const url = `${this.API_ptai}/agentesllm/`; // Endpoint no FastAPI
+  return this.http.post<any>(url, payload).pipe(
+    catchError((error) => {
+      console.error('Erro ao enviar dados dinâmicos:', error);
+      return throwError(() => new Error('Erro ao enviar dados dinâmicos.'));
+    })
+  );
+}
+
+
+trbpln(rota: any, json: any): Observable<any[]> {
+  return this.http.post<any[]>(`${this.API_ptaiDocker}/${rota}/`, json);
+}
+
+getAtb(rota: any, json: any): Observable<any[]> {
+  return this.http.post<any[]>(`${this.API_ptaiDocker}/${rota}/`, json);
+}
+
+getPDF(rota: any): Observable<any> {
+  return this.http.get(`${this.API_ptaiDocker}/${rota}/`, { responseType: 'blob' });
+}
+
+uploadDocumento(rota: string, file: File, nome: string): Observable<any> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const headers = new HttpHeaders({
+    'enctype': 'multipart/form-data' // Adicione o cabeçalho de Content-Type
+  });
+    const url = `${this.API_ptaiDocker}/${rota}/?nome=${nome}`;
+  return this.http.post<any>(url, formData, { headers, reportProgress: true, observe: 'events' });
+}
+
+uploadRelatorioRCM(
+  file: File,
+  nome: string,
+  data: string,
+  constatacoes: string,
+  recomendacoes: string
+): Observable<any> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('nome', nome);
+  formData.append('data', data);
+  formData.append('constatacoes', constatacoes);
+  formData.append('recomendacoes', recomendacoes);
+
+  // Ajuste a URL para o endpoint que criamos no FastAPI:
+  // /apiptai/rcmkpmg
+  const url = `${this.API_ptai}/rcmkpmg`;
+
+  return this.http.post<any>(url, formData, {
+    reportProgress: true,
+    observe: 'events', // se quiser acompanhar progresso
+  }).pipe(
+    catchError((error) => {
+      console.error('Erro ao enviar relatório RCM:', error);
+      return throwError(() => error);
+    })
+  );
+}
+
+uploadExcelMultiplosPdfs(excel: File, pdfs: File[]): Observable<any> {
+  const formData = new FormData();
+  // Adiciona o arquivo Excel
+  formData.append('file_excel', excel);
+
+  // Adiciona cada PDF com um nome único
+  pdfs.forEach((pdf, index) => {
+    formData.append(`file_pdf_${index}`, pdf, pdf.name);
+  });
+
+  // Defina a rota de destino
+  const url = `${this.API_ptai}/upload-rcm-excel-multiplos`;
+
+  return this.http.post<any>(url, formData).pipe(
+    catchError((error) => {
+      console.error('Erro ao enviar Excel + múltiplos PDFs:', error);
+      return throwError(() => error);
+    })
+  );
+}
+
+
+
+listarRelatoriosRcm(): Observable<RcmRelatorio[]> {
+  const url = `${this.API_ptai}/listar_rcm_relatorios`;
+  return this.http.get<RcmRelatorio[]>(url).pipe(
+    catchError((error) => {
+      console.error('Erro ao listar rcm_relatorios:', error);
+      return throwError(() => error);
+    })
+  );
+}
+
+
+
+}
+
+
+<p-toast></p-toast>
+
+<div style="max-width: 1200px; margin: auto; font-family: Arial, sans-serif;">
+  <h2 style="text-align: center; margin-bottom: 1rem;">Upload Recomendações KPMG</h2>
+
+  <!-- Componente Steps para indicar o fluxo -->
+  <p-steps [model]="steps" [activeIndex]="activeStep" [readonly]="true" [ngStyle]="{'margin-bottom': '1rem'}"></p-steps>
+
+  <!-- Passo 1: Excel KPMG -->
+  <div style="border: 1px solid #ccc; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;">
+    <h3 style="margin-bottom: .5rem;">Passo 1: Excel KPMG</h3>
+    <p-fileUpload
+      #excelUploader
+      name="excelFile"
+      accept=".xls,.xlsx"
+      customUpload="true"
+      [auto]="true"
+      [showUploadButton]="false"
+      [showCancelButton]="false"
+      (onSelect)="onSelectExcel($event)"
+      (onClear)="onClearExcel()"
+    >
+    </p-fileUpload>
+    <div *ngIf="excelFile" style="margin-top: 0.5rem;">
+      <small>Arquivo Selecionado: <strong>{{ excelFile.name }}</strong></small>
+    </div>
+  </div>
+
+  <!-- Passo 2: Selecione os relatórios (PDFs) -->
+  <div *ngIf="excelFile" style="border: 1px solid #ccc; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;">
+    <h3 style="margin-bottom: .5rem;">Passo 2: Selecione os relatórios</h3>
+    <p-fileUpload
+      #pdfUploader
+      name="pdfFiles"
+      accept=".pdf"
+      customUpload="true"
+      [auto]="true"
+      [multiple]="true"
+      [showUploadButton]="false"
+      [showCancelButton]="false"
+      (onSelect)="onSelectPDF($event)"
+      (onClear)="onClearPDF()"
+    >
+    </p-fileUpload>
+    <div *ngIf="pdfFiles.length" style="margin-top: 0.5rem;">
+      <small>Arquivos Selecionados: <strong>{{ pdfFilesNames }}</strong></small>
+    </div>
+  </div>
+
+  <!-- Passo 3: Botão final -->
+  <div *ngIf="excelFile && pdfFiles.length >= relatoriosExcel.length" style="text-align: center; margin-bottom: 1rem;">
+    <button pButton type="button" label="Upload Recomendações KPMG" style="font-size: 0.8rem; padding: .5rem 1rem;" (click)="enviarArquivosExcel()"></button>
+  </div>
+
+  <!-- Exibe os nomes dos arquivos enviados após o envio -->
+  <div *ngIf="lastUploadedExcel || lastUploadedPdfs.length" style="margin-top: 1rem; border-top: 1px solid #ccc; padding-top: 1rem;">
+    <h3 style="text-align: center;">Arquivos Enviados:</h3>
+    <p *ngIf="lastUploadedExcel" style="text-align: center;"><strong>Excel:</strong> {{ lastUploadedExcel }}</p>
+    <div *ngIf="lastUploadedPdfs.length">
+      <p style="text-align: center;"><strong>PDFs:</strong></p>
+      <ul style="list-style: none; padding: 0; text-align: center;">
+        <li *ngFor="let pdfName of lastUploadedPdfs" style="display: inline-block; margin: 0 0.5rem;">
+          {{ pdfName }}
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Tabela de registros (p-table) -->
+<div class="card" style="max-width: 800px; margin: 2rem auto; font-family: Arial, sans-serif;">
+  <h2 style="text-align: center;">Tabela de Relatórios RCM</h2>
+
+  <!-- Filtro global -->
+  <div style="text-align:right; margin-bottom:1rem;">
+    <span class="p-input-icon-left">
+      <i class="pi pi-search"></i>
+      <input type="text" pInputText (input)="dt.filterGlobal($any($event.target).value, 'contains')" placeholder="Filtro global..." style="width: 200px;" />
+    </span>
+  </div>
+
+  <p-table
+    #dt
+    [value]="rcmRelatorios"
+    [paginator]="true"
+    [rows]="5"
+    [globalFilterFields]="['relatorio','data_emissao','constatacoes','recomendacoes']"
+    sortMode="multiple"
+    [responsiveLayout]="'scroll'"
+  >
+    <ng-template pTemplate="header">
+      <tr>
+        <th pSortableColumn="relatorio">
+          Relatório
+          <p-sortIcon field="relatorio"></p-sortIcon>
+        </th>
+        <th pSortableColumn="data_emissao">
+          Data Emissão
+          <p-sortIcon field="data_emissao"></p-sortIcon>
+        </th>
+        <th pSortableColumn="constatacoes">
+          Constatações
+          <p-sortIcon field="constatacoes"></p-sortIcon>
+        </th>
+        <th pSortableColumn="recomendacoes">
+          Recomendações
+          <p-sortIcon field="recomendacoes"></p-sortIcon>
+        </th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-rel>
+      <tr>
+        <td>{{ rel.relatorio }}</td>
+        <td>{{ rel.data_emissao }}</td>
+        <td>{{ rel.constatacoes }}</td>
+        <td>{{ rel.recomendacoes }}</td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+
+import { Component, ViewChild, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FileUpload, FileUploadModule } from 'primeng/fileupload';
+import { ButtonModule } from 'primeng/button';
+import { MessageService, MenuItem } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
+import { TableModule } from 'primeng/table';
+import { StepsModule } from 'primeng/steps';
+import * as XLSX from 'xlsx';
+import { ServicoLLMService } from '../servico-llm.service';
+
+export interface RcmRelatorio {
+  id: number;
+  relatorio: string;
+  data_emissao: string | null;
+  constatacoes: string;
+  recomendacoes: string;
+}
+
+@Component({
+  selector: 'app-rcmexcel',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FileUploadModule,
+    ButtonModule,
+    ToastModule,
+    TableModule,
+    StepsModule
+  ],
+  providers: [ServicoLLMService, MessageService],
+  templateUrl: './rcmexcel.component.html',
+  styleUrls: ['./rcmexcel.component.css']
+})
+export class RcmexcelComponent implements OnInit {
+  excelFile: File | null = null;
+  pdfFiles: File[] = [];
+  relatoriosExcel: string[] = [];
+  rcmRelatorios: RcmRelatorio[] = [];
+
+  @ViewChild('excelUploader') excelUploader!: FileUpload;
+  @ViewChild('pdfUploader') pdfUploader!: FileUpload;
+
+  lastUploadedExcel: string | null = null;
+  lastUploadedPdfs: string[] = [];
+
+  steps: MenuItem[] = [];
+  activeStep: number = 0;
+
+  colunasObrigatorias = [
+    'RELATORIO',
+    'DATA_EMISSAO',
+    'CONSTATACAO',
+    'EVIDENCIAS',
+    'RECOMENDACAO',
+    'INSTITUICAO_RESPONSAVEL',
+    'PREFIXO_RESPONSAVEL',
+    'INSTITUICAO_ASSUNTO_ELBB',
+    'PREVISAO_IMPLEMENTACAO',
+    'MATRICULA_DO_GESTOR_RESPONSAVEL'
+  ];
+
+  constructor(
+    private messageService: MessageService,
+    private servicoLLM: ServicoLLMService
+  ) {}
+
+  ngOnInit() {
+    this.steps = [
+      { label: 'Excel KPMG' },
+      { label: 'Selecione os Relatórios' },
+      { label: 'Upload Recomendações KPMG' }
+    ];
+    this.getRmcKpmg();
+  }
+
+  get pdfFilesNames(): string {
+    return this.pdfFiles.map(f => f.name).join(', ');
+  }
+
+  onSelectExcel(event: any) {
+    if (event.files && event.files.length) {
+      const file = event.files[0];
+      this.excelFile = file;
+      this.lerExcel(file);
+      this.activeStep = 1;
+    }
+  }
+
+  onClearExcel() {
+    this.excelFile = null;
+    this.relatoriosExcel = [];
+  }
+
+  onSelectPDF(event: any) {
+    this.pdfFiles = [...this.pdfFiles, ...event.files];
+    console.log('PDFs selecionados:', this.pdfFiles.map(f => f.name));
+    if (this.pdfFiles.length >= this.relatoriosExcel.length) {
+      this.activeStep = 2;
+    }
+  }
+
+  onClearPDF() {
+    this.pdfFiles = [];
+  }
+
+  lerExcel(file: File) {
+    const reader = new FileReader();
+    reader.onload = (e: any) => {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      if (!jsonData || !jsonData.length) {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Planilha vazia',
+          detail: 'Não há dados.'
+        });
+        return;
+      }
+      const cabecalho: string[] = jsonData[0].map((val: any) => val?.toString().trim());
+      for (const col of this.colunasObrigatorias) {
+        if (!cabecalho.includes(col)) {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Coluna faltando',
+            detail: `Coluna "${col}" não encontrada na planilha.`
+          });
+          this.excelFile = null;
+          return;
+        }
+      }
+      const dataObjects = XLSX.utils.sheet_to_json(worksheet, {
+        defval: '',
+        header: cabecalho,
+        range: 1
+      });
+      const relSet = new Set<string>();
+      (dataObjects as any[]).forEach(row => {
+        if (row['RELATORIO']) {
+          relSet.add(row['RELATORIO'].toString().trim());
+        }
+      });
+      this.relatoriosExcel = Array.from(relSet);
+      if (this.relatoriosExcel.length > 1) {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Vários RELATORIO',
+          detail: `Planilha tem ${this.relatoriosExcel.length} valores distintos.`
+        });
+      }
+      console.log('Relatórios Excel:', this.relatoriosExcel);
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  enviarArquivosExcel() {
+    if (!this.excelFile) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Aviso',
+        detail: 'Selecione a planilha Excel.'
+      });
+      return;
+    }
+    if (!this.pdfFiles.length) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Aviso',
+        detail: 'Selecione os PDFs.'
+      });
+      return;
+    }
+    if (this.pdfFiles.length < this.relatoriosExcel.length) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Faltam PDFs',
+        detail: `Você tem ${this.relatoriosExcel.length} relatórios distintos, mas apenas ${this.pdfFiles.length} PDFs.`
+      });
+      return;
+    }
+    for (const relatorio of this.relatoriosExcel) {
+      const pdfEncontrado = this.pdfFiles.some(pdf => {
+        const nameNoExt = pdf.name.replace('.pdf', '').trim();
+        return nameNoExt === relatorio;
+      });
+      if (!pdfEncontrado) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Nome divergente',
+          detail: `Relatório "${relatorio}" não tem PDF correspondente.`
+        });
+        return;
+      }
+    }
+    this.servicoLLM.uploadExcelMultiplosPdfs(this.excelFile, this.pdfFiles)
+      .subscribe({
+        next: (res) => {
+          console.log('Resposta do backend:', res);
+          if (this.excelFile) {
+            this.lastUploadedExcel = this.excelFile.name;
+          }
+          this.lastUploadedPdfs = this.pdfFiles.map(pdf => pdf.name);
+          this.excelFile = null;
+          this.pdfFiles = [];
+          this.relatoriosExcel = [];
+          this.excelUploader.clear();
+          this.pdfUploader.clear();
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Sucesso',
+            detail: 'Excel e PDFs enviados com sucesso!'
+          });
+          this.getRmcKpmg();
+        },
+        error: (err: any) => {
+          console.error('Erro ao enviar Excel+PDFs:', err);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Erro',
+            detail: err.error?.detail || err.message || 'Falha no upload.'
+          });
+        }
+      });
+  }
+
+  getRmcKpmg() {
+    this.servicoLLM.listarRelatoriosRcm().subscribe({
+      next: (lista) => {
+        this.rcmRelatorios = lista.map(item => ({
+          ...item,
+          relatorio: item.nome
+        }));
+      },
+      error: (err) => {
+        console.error('Erro ao buscar relatórios RCM:', err);
+      }
+    });
+  }
+}
+import { Routes } from '@angular/router';
+import { ChatComponent } from './chat/chat.component';
+import { ChatDetalheComponent } from './chat-detalhe/chat-detalhe.component';
+import { authGuard } from './auth.guard';
+import { AcessoNegadoComponent } from './acesso-negado/acesso-negado.component';
+import { ChatgeralComponent } from './chatgeral/chatgeral.component';
+import { chatgeralMatcher } from './chatgeral.matcher';
+import { AtbComponent } from './atb/atb.component';
+import { RcmComponent } from './rcm/rcm.component'; // <- Importando o standalone
+import { RcmexcelComponent } from './rcmexcel/rcmexcel.component';
+
+export const routes: Routes = [
+  {
+    path: '',
+    redirectTo: '/chat',
+    pathMatch: 'full',
+  },
+  {
+    path: 'chat',
+    component: ChatComponent,
+    canActivate: [authGuard],
+  },
+  {
+    path: 'atb',
+    component: AtbComponent,
+    canActivate: [authGuard],
+  },
+  {
+    path: 'chatdetalhe/:nr_trabalho',
+    component: ChatDetalheComponent,
+    canActivate: [authGuard],
+    data: { renderMode: 'lazy' },
+  },
+  {
+    matcher: chatgeralMatcher,
+    component: ChatgeralComponent,
+    canActivate: [authGuard],
+    data: { renderMode: 'lazy' },
+  },
+  {
+    path: 'rcm',
+    component: RcmComponent,
+    canActivate: [authGuard],
+  },
+  {
+    path: 'rcmexel',
+    component: RcmexcelComponent,
+    canActivate: [authGuard],
+  },
+  {
+    path: 'acesso-negado',
+    component: AcessoNegadoComponent,
+  },
+  {
+    path: '**',
+    redirectTo: '/chat',
+  },
+];
+
+
+from fastapi import APIRouter, File, UploadFile, responses, HTTPException, Form, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -62,15 +795,18 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 
 from PIL import Image, ImageDraw, ImageFont, ImageColor
 import io
-import os
+
 from datetime import datetime
 
 import shutil
 from os import getcwd
 
-from app.infra.sqlalchemy.dao.queries_geral import inserir_relatorio_rcm
+from app.infra.sqlalchemy.dao.queries_geral import inserir_relatorio_rcm, inserir_linha_rcm
 from fastapi.responses import StreamingResponse, Response
 import io
+
+from io import BytesIO
+from typing import Dict, List
 
 router = APIRouter()
 
@@ -99,6 +835,21 @@ async def salvar_relatorio_rcm(
             "detalhe": str(e)
         }
         
+@router.get("/apiptai/listar_rcm_relatorios")
+async def listar_rcm_relatorios():
+    query = """
+    SELECT
+      id,
+      relatorio,               -- em vez de "nome"
+      data_emissao,
+      constatacoes,
+      recomendacao AS recomendacoes  -- se quiser renomear no SELECT
+    FROM rcm.rcm_relatorios
+    ORDER BY id ASC;
+    """
+    registros = await execute_query(query)
+    return registros
+
 @router.get("/apiptai/rcmkpmg/{relatorio_id}")
 async def get_relatorio_rcm(relatorio_id: int):
     query = """
@@ -120,8 +871,112 @@ async def get_relatorio_rcm(relatorio_id: int):
     #     io.BytesIO(pdf_bytes),
     #     media_type="application/pdf"
     # )
+    
 
-queries_geral.py
+@router.post("/apiptai/upload-rcm-excel-multiplos")
+async def upload_rcm_excel_multiplos(request: Request):
+    """
+    Recebe 1 Excel (file_excel) + PDFs (file_pdf_0, file_pdf_1, ...).
+    Para cada DATA_EMISSAO encontrada na planilha:
+      - Apaga do BD as linhas com data_emissao = X
+      - Insere todas as linhas correspondentes com os dados do Excel
+    """
+    form = await request.form()
+
+    # Pega o Excel
+    file_excel: UploadFile = form.get("file_excel")
+    if not file_excel:
+        raise HTTPException(status_code=400, detail="Arquivo Excel (file_excel) é obrigatório.")
+    if not (file_excel.filename.lower().endswith(".xlsx") or file_excel.filename.lower().endswith(".xls")):
+        raise HTTPException(status_code=400, detail="O arquivo Excel deve ser .xlsx ou .xls")
+
+    excel_bytes = await file_excel.read()
+    try:
+        df = pd.read_excel(BytesIO(excel_bytes))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Erro ao ler Excel: {str(e)}")
+
+    # Valida colunas obrigatórias
+    colunas_obrigatorias = [
+        "RELATORIO", "DATA_EMISSAO", "CONSTATACAO", "EVIDENCIAS", "RECOMENDACAO",
+        "INSTITUICAO_RESPONSAVEL", "PREFIXO_RESPONSAVEL", "INSTITUICAO_ASSUNTO_ELBB",
+        "PREVISAO_IMPLEMENTACAO", "MATRICULA_DO_GESTOR_RESPONSAVEL"
+    ]
+    for col in colunas_obrigatorias:
+        if col not in df.columns:
+            raise HTTPException(status_code=400, detail=f"Coluna '{col}' não encontrada no Excel.")
+
+    # PDFs
+    pdf_keys = [key for key in form.keys() if key.startswith("file_pdf_")]
+    if len(pdf_keys) == 0:
+        raise HTTPException(status_code=400, detail="Nenhum PDF enviado (file_pdf_0, file_pdf_1, ...).")
+
+    pdf_dict: Dict[str, bytes] = {}
+    for key in pdf_keys:
+        pdf_upload: UploadFile = form[key]
+        if not pdf_upload.filename.lower().endswith(".pdf"):
+            raise HTTPException(status_code=400, detail=f"O arquivo {pdf_upload.filename} não é PDF.")
+        pdf_name_no_ext = pdf_upload.filename.replace(".pdf", "").strip()
+        pdf_content = await pdf_upload.read()
+        pdf_dict[pdf_name_no_ext] = pdf_content
+
+    # Agrupa o DataFrame pela coluna DATA_EMISSAO
+    df_records = df.to_dict("records")
+    grouped: Dict[str, List[Dict]] = {}
+    for row in df_records:
+        data_emissao = str(row["DATA_EMISSAO"]).strip()
+        if data_emissao not in grouped:
+            grouped[data_emissao] = []
+        grouped[data_emissao].append(row)
+
+    ids_inseridos_total = []
+    for data_emissao_val, rows in grouped.items():
+        # Apaga registros com a mesma data_emissao
+        delete_query = "DELETE FROM rcm.rcm_relatorios WHERE data_emissao = $1"
+        await execute_query(delete_query, data_emissao_val)
+
+        # Insere cada linha para essa data_emissao
+        for row in rows:
+            relatorio_val = str(row["RELATORIO"]).strip()
+            constatacoes = str(row["CONSTATACAO"]).strip()
+            evidencias = str(row["EVIDENCIAS"]).strip()
+            recomendacao = str(row["RECOMENDACAO"]).strip()
+            instituicao_responsavel = str(row["INSTITUICAO_RESPONSAVEL"]).strip()
+            prefixo_responsavel = str(row["PREFIXO_RESPONSAVEL"]).strip()
+            instituicao_assunto_elbb = str(row["INSTITUICAO_ASSUNTO_ELBB"]).strip()
+            previsao_implementacao = str(row["PREVISAO_IMPLEMENTACAO"]).strip()
+            matricula_do_gestor_responsavel = str(row["MATRICULA_DO_GESTOR_RESPONSAVEL"]).strip()
+
+            pdf_bytes = pdf_dict.get(relatorio_val)
+            if not pdf_bytes:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Falta PDF '{relatorio_val}.pdf' para o relatório '{relatorio_val}'."
+                )
+
+            novo_id = await inserir_linha_rcm(
+                relatorio=relatorio_val,
+                data_emissao=data_emissao_val,
+                constatacoes=constatacoes,
+                evidencias=evidencias,
+                recomendacao=recomendacao,
+                instituicao_responsavel=instituicao_responsavel,
+                prefixo_responsavel=prefixo_responsavel,
+                instituicao_assunto_elbb=instituicao_assunto_elbb,
+                previsao_implementacao=previsao_implementacao,
+                matricula_do_gestor_responsavel=matricula_do_gestor_responsavel,
+                pdf_blob=pdf_bytes
+            )
+            if novo_id:
+                ids_inseridos_total.append(novo_id)
+
+    return {
+        "status": "ok",
+        "mensagem": "Upload múltiplo concluído com sobrescrita por data_emissao.",
+        "datas_processadas": list(grouped.keys()),
+        "ids_inseridos": ids_inseridos_total
+    }
+
 
 import json
 from typing import List, Dict
@@ -138,36 +993,28 @@ from typing import Optional
 
 async def inserir_relatorio_rcm(
     nome: str,
-    data_str: str,  # Recebe como 'DD-MM-YYYY'
+    data_str: str,  # Recebe como string (ex.: '2024-09-20 00:00:00' ou '30-06-2025')
     constatacoes: str,
     recomendacoes: str,
     pdf_blob: bytes
 ):
     """
     Insere um relatório RCM no schema rcm, armazenando também o PDF como blob (bytea).
-    
-    Args:
-        nome (str): Nome do relatório.
-        data_str (str): Data no formato 'DD-MM-YYYY'.
-        constatacoes (str): Texto das constatações.
-        recomendacoes (str): Texto das recomendações.
-        pdf_blob (bytes): Conteúdo binário do PDF (bytes).
-    
-    Returns:
-        (int|None): O ID do registro inserido, ou None se falhar.
-    """
-    # Aqui usamos TO_DATE($2, 'DD-MM-YYYY') para o PostgreSQL converter a data_str adequadamente
-    query = """
-    INSERT INTO rcm.rcm_relatorios (nome, data, constatacoes, recomendacoes, pdf_file)
-    VALUES ($1, TO_DATE($2, 'DD-MM-YYYY'), $3, $4, $5)
-    RETURNING id;
+    Agora, a coluna 'data' da tabela rcm.rcm_relatorios é do tipo TEXT, não date.
     """
 
-    # Fazemos a inserção usando o helper de queries (execute_query)
+    query = """
+    INSERT INTO rcm.rcm_relatorios (nome, data, constatacoes, recomendacoes, pdf_file)
+    VALUES ($1, $2, $3, $4, $5)
+    RETURNING id;
+    """
+    # Observe que na coluna 'data' estamos passando $2 (data_str) diretamente,
+    # sem TO_DATE ou cast de data.
+
     result = await execute_query(
         query,
         nome,
-        data_str,          # '01-06-2025', por exemplo
+        data_str,  # inserido como texto na coluna 'data'
         constatacoes,
         recomendacoes,
         pdf_blob,
@@ -178,754 +1025,86 @@ async def inserir_relatorio_rcm(
         return result.get('id')
     return None
 
-class Mensagem(BaseModel):
-    numero_trabalho: int
-    sessao: str
-    remetente: str  # "usuario" ou "assistente"
-    conteudo: str
-    
-async def salvar_mensagem(mensagem: Mensagem):
+async def inserir_linha_rcm(nome: str,
+                            data_emissao: str,
+                            constatacoes: str,
+                            recomendacoes: str,
+                            pdf_blob: bytes):
     """
-    Insere uma mensagem no banco de dados no formato fornecido.
-    
-    Args:
-        mensagem (Mensagem): Dados da mensagem.
-    """
-    query = f"""
-        INSERT INTO destaques.chat_destaques (
-            numero_trabalho, sessao, remetente, conteudo
-        ) VALUES (
-            '{mensagem.numero_trabalho}', '{mensagem.sessao}', 
-            '{mensagem.remetente}', '{mensagem.conteudo}'
-        );
-    """
-    try:
-        await execute_query(query)
-        logger.info("Mensagem salva com sucesso.")
-        return "Inserido"
-    except Exception as e:
-        logger.error(f"Erro ao salvar mensagem: {e}")
-        return "Erro"
-
-class Feedback(BaseModel):
-    texto: str
-    matricula: str
-    trabalho: int
-    sessao: str
-    feedback: str
-    data: Optional[datetime] = None
-      
-async def salvar_feedback(feedback: Feedback):
-    """
-    Insere um feedback no banco de dados.
-    """
-    # Caso a data não seja fornecida, usa a data atual
-    data_feedback = feedback.data.isoformat() if feedback.data else 'CURRENT_TIMESTAMP'
-
-    query = f"""
-        INSERT INTO destaques.feedback_destaques (
-            texto, matricula, trabalho, sessao, feedback, data
-        ) VALUES (
-            '{feedback.texto}', 
-            '{feedback.matricula}', 
-            {feedback.trabalho}, 
-            '{feedback.sessao}', 
-            '{feedback.feedback}', 
-            {data_feedback}
-        );
-    """
-    try:
-        await execute_query(query)
-        logger.info("Feedback salvo com sucesso.")
-        return "Inserido"
-    except Exception as e:
-        logger.error(f"Erro ao salvar feedback: {e}")
-        raise e
-
-
-
-
-async def chat_trabalhos(ano: int):
-    """
-    Executa a consulta SQL usando o parâmetro ano_fim_real.
+    Insere 1 linha na tabela rcm.rcm_relatorios,
+    armazenando data_emissao como text e pdf_file como blob.
     """
     query = """
-    SELECT DISTINCT nr_trabalho, nm_trab
-    FROM destaques.gpt_destaques_teste
-    WHERE ano = $1;
-    """
-
-    # Valor do parâmetro como um inteiro (não uma lista ou tupla)
-    values = (ano,)  # Certifique-se de passar como tupla
-
-    # Log para depuração
-  
-    # Executa a consulta usando o método ajustado
-    return await execute_query3(query, values)
-
-async def chat_trabalho(nr_trabalho: int):
-    query = """
-    SELECT DISTINCT  nr_trabalho, titulo, nr_trabalho, ano, nm_trab, obj_trab, rel_hash, pontos_positivo_html, pontos_aprimorar_html,
-    materialidade_html, manchete_html, materia_html,
-concat('Você é um assistente especializado em auditoria interna. Sua tarefa é analisar as informações fornecidas sobre um
-    trabalho de auditoria e gerar um Destaque de Auditoria seguindo as diretrizes estabelecidas.
-
-    Definição de Destaque de Auditoria:
-    Um Destaque de Auditoria são informações de valor agregado, relevantes e úteis, descritas sob a forma de pequenas
-    manchetes. Eles podem se referir à identificação e mitigação de constatações significativas ou a melhorias de
-    processos implementadas pelos gestores. Destinam-se ao Conselho de Administração (CA), Conselho Fiscal (CF),
-    Coadutoria (Coaud) e Conselho de Diretoria (CD). Deve apresentar uma visão sistêmica, linguagem jornalística, ordem direta,
-    sem tecnicismos, coerência com os eventos de risco avaliados, e alinhamento com a materialidade e criticidade das recomendações.
-
-    Estrutura dos Dados da Auditoria:
-    Os dados fornecidos para análise estão estruturados da seguinte forma:
-    - [trabalho]: Número do trabalho.
-    - [objetivo trabalho]: Objetivo do trabalho.
-    - [justificativa trabalho]: Justificativa do trabalho.
-    - [eventos de riscos avaliados]: Eventos de riscos avaliados.
-    - [relatorio auditoria]: Relatório de auditoria.
-    - [principal constatação no relatorio]: Principal constatação do relatório.
-    - [ocorrência e evidencia de achados de auditoria]: Ocorrências e evidências de achados de auditoria.
-    - **[recomendações]:** Recomendações.
-
-    Critérios para Identificar Relevância:
-    - **Eventos de Risco Críticos:** Priorizar eventos avaliados com notas 4 e 5 em [eventos de riscos avaliados].
-    - **Recomendações Relevantes:** Priorizar recomendações com criticidade "A" e "B", disponíveis em [recomendações].
-    - **Ocorrências e Evidências Significativas:** Identificar as evidências e ocorrências mais relevantes em [ocorrência e evidência de achados de auditoria].
-
-    Dados da Auditoria: ', 'trabalho: ', nr_trabalho, ' objetivo trabalho: ', obj_trab, ' eventos de riscos avaliados: ', evento_rsco_avaliado,
-    ' relatorio auditoria: ', tx_rel_atvd,  ' principal constatação no relatorio', tx_constatacao, 
-     ' recomendações: ', rcm_concat, 
-     'A partir de agora, você participará de um chat em que o auditor poderá fazer perguntas sobre o trabalho de auditoria, incluindo detalhes como recomendações, principais constatações do relatório e pontos de atenção. É fundamental que suas respostas sejam consistentes, diretas e baseadas nos dados fornecidos. Evite pedidos de desculpas ou tentativas de adequação desnecessárias. Caso seja questionado por que um ponto específico não foi incluído como recomendação ou destaque, explique o raciocínio por trás da decisão com base nos critérios de relevância e criticidade. Sempre que possível, reforce a lógica usada para gerar os destaques e justifique sua análise. Seu objetivo é fornecer informações claras, objetivas procurar responder em até dois paragrafos e baseadas nos dados disponíveis, mantendo a confiança e a assertividade em suas respostas. importante: procure não ultrapasse em 800 caracteres as respostas '
-     ) as role_user,
-           concat('segue minha análise', 
-           ' pontos_positivo: ',  pontos_positivo, ' pontos_aprimorar: ', pontos_aprimorar, ' materialidade: ', materialidade) AS role_assistant
-    FROM destaques.gpt_destaques_teste
-    WHERE nr_trabalho  = $1;
-    """
-    values = (nr_trabalho,)  # Certifique-se de passar como tupla
-    
-    
-    return await execute_query3(query, values)
-
-
-
-
-
-async def get_opcoes_rcm(servico):
-    json_results = {}
-    
-    # Utilizando a função execute_query para realizar as consultas ao banco de dados
-    ctgr_dmd_query_result = await execute_query("SELECT DISTINCT cd_ctgr_dmd_ocr, tx_ctgr_dmd FROM riscometro.rcm_status_atual;")
-    json_results['ctgr_dmd'] = [{'code': int(code), 'name': name} for code, name in ctgr_dmd_query_result.items()]
-
-    est_rcm_query_result = await execute_query("SELECT DISTINCT cd_tip_est_rcm, situacao_rcm FROM riscometro.rcm_status_atual;", return_one=False)
-    json_results['est_rcm'] = [{'code': int(code), 'name': name} for code, name in est_rcm_query_result.items()]
-
-    # Obter a data máxima
-    dt_ems_rcm_max_query_result = await execute_query("SELECT MAX(dt_ems_rcm) AS dt_ems_rcm_max FROM riscometro.rcm_status_atual;", return_one=True)
-    json_results['dt_ems_rcm_max'] = dt_ems_rcm_max_query_result.get('dt_ems_rcm_max', None)
-
-    # Obter a data mínima
-    dt_ems_rcm_min_query_result = await execute_query("SELECT MIN(dt_ems_rcm) AS dt_ems_rcm_min FROM riscometro.rcm_status_atual;", return_one=True)
-    json_results['dt_ems_rcm_min'] = dt_ems_rcm_min_query_result.get('dt_ems_rcm_min', None)
-
-    ano_ems_rcm_query_result = await execute_query("SELECT DISTINCT CAST(ano_ems_rcm AS INTEGER) AS code, CAST(ano_ems_rcm AS VARCHAR) AS name FROM riscometro.rcm_status_atual ORDER BY code DESC;", return_one=False)
-    ano_ems_rcm_formatted = [{"code": int(code), "name": name} for code, name in ano_ems_rcm_query_result.items()]
-    json_results['ano_ems_rcm'] = ano_ems_rcm_formatted
-
-    json_results['ga_coord'] = await execute_query("SELECT distinct  cd_ga_coord as code, nm_ga_coord as name FROM ptai.ptai_trabalhos;")
-    #json_results['ga_coord'] = [{'code': int(code), 'name': name} for code, name in ctgr_dmd_query_result.items()]
-
-
-
-
-    json_results['gpt_offline'] = obter_textos()
-    
-    return json_results
-
-
-def converter_para_latin1(input_str): 
-    # Codifica a string como LATIN1, substituindo caracteres que não têm equivalente por '?' 
-    return input_str.encode('latin1', 'replace').decode('latin1')
-
-def substituir_aspas_por_espaco(texto):
-    """
-    Substitui as aspas simples por espaços no texto.
-    """
-    return texto.replace("'", " ")
-
-async def tcu_upate_insert(informacoes):
-    informacoes = {k: substituir_aspas_por_espaco(v) if isinstance(v, str) else v for k, v in informacoes.items()} # 
-    
-    informacoes_latin1 = {k: converter_para_latin1(v) if isinstance(v, str) else v for k, v in informacoes.items()} # 
- 
-    #informacoes['oficio'] = informacoes['oficio'].strip()
-    query = f"SELECT distinct * FROM tcu.oficio_tcu WHERE oficio = '{informacoes['oficio']}'"
-    
-    record = await  execute_query2(query)
-    status = ""
-    if record: 
-        print('>>>>>>>>>>>>>>>>>>')
-        query = f"""
-                UPDATE tcu.oficio_tcu
-                SET processo = '{informacoes['processo']}' ,
-                data = '{informacoes['data']}',
-                tipo_processo = '{informacoes['tipo_processo']}',
-                assunto = '{informacoes['assunto']}',
-                solicitacao = '{informacoes_latin1['solicitacao']}',
-                texto_oficio = '{informacoes_latin1['texto_oficio']}',
-                acordao = '{informacoes_latin1['acordao']}',
-                despacho= '{informacoes_latin1['despacho']}',
-                informacoes_adicionais = '{informacoes_latin1['informacoes_adicionais']}',
-                proposta_encaminhamento = '{informacoes_latin1['proposta_encaminhamento']}',
-                conclusao = '{informacoes_latin1['conclusao']}',
-                introducao = '{informacoes_latin1['introducao']}',
-                admissibilidade = '{informacoes_latin1['admissibilidade']}',
-                exame_tecnico = '{informacoes_latin1['exame_tecnico']}'
-
-                WHERE oficio =  '{informacoes['oficio']}';
-                """
-        status = "Atualizado"
-        await execute_query(query)
-    else:
-        query = f"""
-                INSERT INTO tcu.oficio_tcu
-                (oficio, processo, "data", tipo_processo, 
-                assunto, solicitacao, texto_oficio, 
-                conclusao, informacoes_adicionais, proposta_encaminhamento, 
-                acordao, despacho, introducao, admissibilidade, exame_tecnico)
-                VALUES('{informacoes['oficio']}', '{informacoes['processo']}', '{informacoes['data']}', '{informacoes['tipo_processo']}', 
-                       '{informacoes['assunto']}', '{informacoes_latin1['solicitacao']}', '{informacoes_latin1['texto_oficio']}',
-                       '{informacoes_latin1['conclusao']}', '{informacoes_latin1['informacoes_adicionais']}', 
-                       '{informacoes_latin1['proposta_encaminhamento']}', '{informacoes_latin1['acordao']}', '{informacoes_latin1['despacho']}', 
-                       '{informacoes_latin1['introducao']}', '{informacoes_latin1['admissibilidade']}', '{informacoes_latin1['exame_tecnico']}');
-                """
-        status = "Inserido"
-        await execute_query(query)
-    return status
-
-
-# modelos de buscas
-async def buscar_oficios_tcu():
-    query = """
-    SELECT * FROM tcu.oficio_tcu;
-    """
-    return await execute_query2(query)
-    
-
-
-async def fetch_all(query, params=None):
-    return await execute_query2(query)
-    
-# Função rcm_ae_update (assumindo que é uma função assíncrona)
-async def rcm_ae_update(cd_rcm):
-    # Implemente a lógica de atualização aqui
-    
-    #txt_gpt = apicainfgpt('Novo resumo atualizado')
-    #resumo_text, classificacao_dict, json_obj = processar_texto_gpt_rcm_ae(txt_gpt)
-    
-    resumo_gpt = '''
-    O texto aborda um relatório de Auditoria Externa da Deloitte, especificamente relacionado à área Digov do Fundo de Parcerias Público-Privadas (FPPP). O documento, datado de 31/12/2022, discute a necessidade de aprimoramento e implementação de controles internos. O objetivo é assegurar que os prazos normatizados para o pagamento de honras de avais sejam devidamente cumpridos, indicando uma preocupação com a eficiência e conformidade dos processos internos. 
-    '''
-    
-    txt_gpt = '''[{'tipo': 'Auditoria de Tecnologia da Informação', 'resposta': 'NÃO', 'justificativa': 'O texto não menciona qualquer termo ou contexto relacionado à Auditoria de Tecnologia da Informação.'}, {'tipo': 'Impostos', 'resposta': 'NÃO', 'justificativa': 'O texto não menciona qualquer termo ou contexto relacionado a Impostos.'}, {'tipo': 'Previdência', 'resposta': 'NÃO', 'justificativa': 'O texto não menciona qualquer termo ou contexto relacionado a Previdência.'}, {'tipo': 'Consórcio', 'resposta': 'NÃO', 'justificativa': 'O texto não menciona qualquer termo ou contexto relacionado a Consórcio.'}]
-    '''
-    
-    update_query = f"""
-    UPDATE riscometro.rcm_status_atual
-    SET  txt_gpt = '{txt_gpt}''
-    WHERE cd_rcm = '{cd_rcm}';
-    """
-    await execute_query2(update_query)
-    
-async def acoes_gerais_dao(servico):
-    if servico['acao'] == 'remover_oficio':
-        query_delecao = f"""
-        DELETE FROM tcu.oficio_tcu
-        WHERE oficio = '{servico['variavel']}';
-        """
-        await execute_query2(query_delecao)
-
-        # Após a remoção, buscar a lista atualizada
-        query_lista_atualizada = "SELECT * FROM tcu.oficio_tcu;"
-        results = await fetch_all(query_lista_atualizada)
-        return results
-    
-    if servico['acao'] == 'rcm_ae_gpt':
-        query_lista_atualizada = f"""
-        SELECT cd_rcm, tx_gpt, resumo_gpt, classificacao_dict, resumo_gpt, txt_gpt
-        FROM rcm.rcm_ae
-        WHERE cd_rcm = '{servico['cd_rcm']}';
-        """
-        print(query_lista_atualizada)
-        results = await fetch_all(query_lista_atualizada)
-        
-        # # Verificar se o resumo é nulo e chamar a função rcm_ae_update se necessário
-        if results and results[0]['txt_gpt'] is None:
-            await rcm_ae_update(servico['cd_rcm'])
-        #     # Buscar os resultados atualizados após a atualização
-            results = await fetch_all(query_lista_atualizada)
-        
-        # return results
-        
-        #json_obj = processar_texto_gpt_rcm_ae('txt_gpt')
-        #return json_obj
-        return results
-    
-async def update_item_in_directory(key: str, data: dict):
-    fields = []
-    values = [key]
-
-    for i, (field, value) in enumerate(data.items(), start=2):
-        fields.append(f"{field} = ${i}")
-        values.append(value)
-
-    if not fields:
-        return False
-
-    update_query = f"""
-    UPDATE processos.directory_items
-    SET {', '.join(fields)}
-    WHERE key = $1
+    INSERT INTO rcm.rcm_relatorios (
+       nome,
+       data_emissao,
+       constatacoes,
+       recomendacoes,
+       pdf_file
+    ) VALUES ($1, $2, $3, $4, $5)
     RETURNING id;
     """
-    print('update_query ', )
-
-    result = await execute_query(update_query, *values, return_one=True)
-    return result is not None
-
-
-async def get_last_root_key():
-    query = """
-    SELECT key 
-    FROM processos.directory_items 
-    WHERE parent_key IS NULL
-    ORDER BY CAST(key AS INTEGER) DESC
-    LIMIT 1;
-    """
-    result = await execute_query(query, return_one=True)
-    return int(result['key']) if result else 0  # type: ignore # Se não houver raízes, retorna 0 como base
-
-async def get_last_subitem_key(parent_key: str):
-    query = """
-    SELECT key 
-    FROM processos.directory_items
-    WHERE parent_key = $1
-    ORDER BY CAST(SUBSTRING(key FROM '[0-9]+$') AS INTEGER) DESC
-    LIMIT 1;
-    """
-    result = await execute_query(query, parent_key, return_one=True)
-    
-    if result is None:
-        return f"{parent_key}-0"  # Se não houver subitens, retorna o primeiro subitem
-    
-    base_key = result['key'].rsplit('-', 1)[0] # type: ignore
-    last_number = int(result['key'].split('-')[-1]) # type: ignore
-    
-    return f"{base_key}-{last_number + 1}"
-
-async def insert_directory_item(label, data, icon, parent_key=None, is_folder=True, url_painel=None, tx_painel=None):
-    # Verifica se um item com as mesmas propriedades já existe (sem verificar url_painel e tx_painel)
-    check_duplicate_query = """
-    SELECT id, key 
-    FROM processos.directory_items 
-    WHERE label = $1 
-    AND parent_key IS NOT DISTINCT FROM $2
-    AND icon = $3
-    AND COALESCE(data, '') = COALESCE($4, '')
-    AND is_folder = $5
-    LIMIT 1;
-    """
-
-    existing_item = await execute_query(check_duplicate_query, label.strip(), parent_key, icon.strip(), data.strip() if data else None, is_folder, return_one=True)
-    
-    if existing_item:
-        logger.info(f"Item com label '{label}' já existe no diretório com id {existing_item['id']}, inserção ignorada.")
-        return existing_item['id'], existing_item['key']  # Retorna o ID e a key existente para evitar inserção
-    
-    # Gerar um novo 'key' se não foi passado
-    if parent_key is None:
-        last_root_key = await get_last_root_key()
-        key = str(last_root_key + 1)
-    else:
-        key = await get_last_subitem_key(parent_key)
-
-    # Inserir o novo item
-    insert_query = """
-    INSERT INTO processos.directory_items (key, parent_key, label, data, icon, is_folder, url_painel, tx_painel)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-    RETURNING id, key;
-    """
-    
-    result = await execute_query(insert_query, key, parent_key, label.strip(), data.strip() if data else None, icon.strip(), is_folder, url_painel, tx_painel, return_one=True)
-    new_id = result['id'] # type: ignore
-    new_key = result['key'] # type: ignore
-    
-    logger.info(f"Novo item adicionado com id {new_id} e key {new_key}")
-    return new_id, new_key
-
-
-async def remove_directory_item_cascade(key: str):
-    delete_items_query = """
-    WITH RECURSIVE children AS (
-        SELECT key FROM processos.directory_items WHERE key = $1
-        UNION ALL
-        SELECT d.key FROM processos.directory_items d
-        JOIN children c ON d.parent_key = c.key
+    result = await execute_query(
+        query,
+        nome,
+        data_emissao,
+        constatacoes,
+        recomendacoes,
+        pdf_blob,
+        return_one=True
     )
-    DELETE FROM processos.directory_items
-    WHERE key IN (SELECT key FROM children);
+    if result:
+        return result.get("id")
+    return None
+
+async def inserir_linha_rcm(
+    relatorio: str,
+    data_emissao: str,
+    constatacoes: str,
+    evidencias: str,
+    recomendacao: str,
+    instituicao_responsavel: str,
+    prefixo_responsavel: str,
+    instituicao_assunto_elbb: str,
+    previsao_implementacao: str,
+    matricula_do_gestor_responsavel: str,
+    pdf_blob: bytes
+):
     """
-    
-    await execute_query(delete_items_query, key)
-    logger.info(f"Item com key {key} e seus filhos foram removidos com sucesso!")
-    
-async def get_directory_structure():
-    select_query = """
-    SELECT key, parent_key, label, data, icon, is_folder, url_painel, tx_painel 
-    FROM processos.directory_items 
-    ORDER BY key;
-    """
-    
-    items = await execute_query(select_query)
-    return items
-
-def build_tree(items):
-    nodes = {}
-    
-    # Criando nós a partir dos itens
-    for item in items:
-        node = {
-            'key': item['key'],
-            'label': item['label'],
-            'data': item['data'],
-            'icon': item['icon'],
-            'is_folder': item['is_folder'],
-            'url_painel': item['url_painel'] if 'url_painel' in item else '',
-            'tx_painel': item['tx_painel'] if 'tx_painel' in item else '', 
-            'children': []
-        }
-        nodes[item['key']] = node
-
-    # Atribuindo os filhos aos pais
-    tree = []
-    for item in items:
-        parent_key = item['parent_key']
-        if parent_key:
-            nodes[parent_key]['children'].append(nodes[item['key']])
-        else:
-            tree.append(nodes[item['key']])
-
-    return tree
-
-rcm_hml
-
-<p-toast></p-toast> <!-- Se usar PrimeNG Toast global -->
-
-<div style="max-width: 800px; margin: auto;">
-  <h2>Upload de Relatório de Auditoria</h2>
-
-  <p-fileUpload
-    name="relatorio"
-    accept=".pdf"
-    customUpload="true"
-    [auto]="true"
-    [showUploadButton]="false"
-    [showCancelButton]="false"
-    (onSelect)="onFileSelected($event)"
-    (onClear)="onFileCleared()"
-    (onRemove)="onFileRemoved($event)"
-  >
-  </p-fileUpload>
-
-  <form [formGroup]="relatorioForm" (ngSubmit)="onSubmit()" style="margin-top: 1rem;">
-    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-      <div style="flex: 1 1 300px;">
-        <label for="nome">Nome do Relatório</label>
-        <input
-          id="nome"
-          pInputText
-          formControlName="nome"
-          placeholder="Ex: CCI BB DI"
-          style="width: 100%;"
-          readonly
-        />
-      </div>
-      <div style="flex: 1 1 300px;">
-        <label for="data">Data</label>
-        <input
-          id="data"
-          pInputText
-          formControlName="data"
-          placeholder="DD-MM-YYYY"
-          style="width: 100%;"
-          readonly
-        />
-      </div>
-    </div>
-
-    <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem;">
-      <div style="flex: 1 1 300px;">
-        <label for="constatacoes">Constatações</label>
-        <textarea
-          id="constatacoes"
-          pInputTextarea
-          formControlName="constatacoes"
-          rows="3"
-          placeholder="Descreva as constatações..."
-          style="width: 100%;"
-        ></textarea>
-      </div>
-      <div style="flex: 1 1 300px;">
-        <label for="recomendacoes">Recomendações</label>
-        <textarea
-          id="recomendacoes"
-          pInputTextarea
-          formControlName="recomendacoes"
-          rows="3"
-          placeholder="Descreva as recomendações..."
-          style="width: 100%;"
-        ></textarea>
-      </div>
-    </div>
-
-    <div style="margin-top: 1rem;">
-      <button pButton label="Enviar" type="submit" [disabled]="!relatorioForm.valid"></button>
-    </div>
-  </form>
-</div>
-
-rcm_ts
-
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { HttpEventType } from '@angular/common/http';
-
-// PrimeNG
-import { FileUploadModule } from 'primeng/fileupload';
-import { InputTextModule } from 'primeng/inputtext';
-import { ButtonModule } from 'primeng/button';
-import { TextareaModule } from 'primeng/textarea';
-import { MessageService } from 'primeng/api';
-import { ToastModule } from 'primeng/toast';
-
-// Serviço
-import { ServicoLLMService } from '../servico-llm.service';
-
-@Component({
-  selector: 'app-rcm',
-  standalone: true,
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    FileUploadModule,
-    InputTextModule,
-    TextareaModule,
-    ButtonModule, ToastModule
-  ],
-  templateUrl: './rcm.component.html',
-  styleUrls: ['./rcm.component.css']
-})
-export class RcmComponent {
-  relatorioForm: FormGroup;
-  selectedFile: File | null = null;
-
-  constructor(
-    private fb: FormBuilder,
-    private servicoLLM: ServicoLLMService,
-    private messageService: MessageService
-  ) {
-    this.relatorioForm = this.fb.group({
-      nome: ['', Validators.required],
-      data: ['', Validators.required],
-      constatacoes: ['', Validators.required],
-      recomendacoes: ['', Validators.required],
-    });
-  }
-
-  // Quando seleciona o arquivo
-  onFileSelected(event: any) {
-    const file: File = event.files ? event.files[0] : null;
-    if (!file) return;
-
-    this.selectedFile = file;
-
-    // Remove .pdf
-    let nomeArquivo = file.name.replace('.pdf', '');
-    // Normaliza hífens duplicados
-    nomeArquivo = nomeArquivo.replace(/-+/g, '-');
-
-    // Extrai data
-    const dataRegex = /(\d{2}-\d{2}-\d{4})/;
-    const dataMatch = nomeArquivo.match(dataRegex);
-    const data = dataMatch ? dataMatch[1] : '';
-
-    // Extrai prefixo
-    const nomeRegex = /^(cci bb di|leasing)/i;
-    const nomeMatch = nomeArquivo.match(nomeRegex);
-    const nomeBase = nomeMatch ? nomeMatch[0].toUpperCase() : '';
-
-    // Remove prefixo + data
-    const restanteNome = nomeArquivo
-      .replace(dataRegex, '')
-      .replace(nomeRegex, '')
-      .replace(/[-_]/g, ' ')
-      .trim()
-      .toUpperCase();
-
-    const nomeFinal = `${nomeBase} ${restanteNome}`.trim();
-
-    // Preenche o form
-    this.relatorioForm.patchValue({
-      nome: nomeFinal,
-      data: data,
-    });
-  }
-
-  // Reset form se o arquivo for removido
-  onFileCleared() {
-    this.relatorioForm.reset({
-      nome: '',
-      data: '',
-      constatacoes: '',
-      recomendacoes: '',
-    });
-    this.selectedFile = null;
-  }
-  onFileRemoved(event: any) {
-    this.onFileCleared();
-  }
-
-  // Envia ao backend
-  onSubmit() {
-    if (!this.selectedFile) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Aviso',
-        detail: 'Nenhum arquivo selecionado.'
-      });
-      return;
-    }
-
-    const { nome, data, constatacoes, recomendacoes } = this.relatorioForm.value;
-
-    // Chama o método do serviço
-    this.servicoLLM.uploadRelatorioRCM(
-      this.selectedFile,
-      nome,
-      data,
-      constatacoes,
-      recomendacoes
-    ).subscribe({
-      next: (event) => {
-        // Se observe: 'events', analisamos o tipo do evento
-        if (event.type === HttpEventType.UploadProgress) {
-          // Progresso do upload (opcional)
-          const percentDone = Math.round((100 * event.loaded) / (event.total ?? 1));
-          // console.log('Progresso:', percentDone + '%');
-        }
-        else if (event.type === HttpEventType.Response) {
-          // Upload concluído
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Sucesso',
-            detail: 'Relatório enviado com sucesso!'
-          });
-          // Limpa o formulário e o arquivo
-          this.relatorioForm.reset();
-          this.selectedFile = null;
-        }
-      },
-      error: (err) => {
-        console.error('Erro ao enviar relatório:', err);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Erro',
-          detail: 'Falha ao enviar relatório.'
-        });
-      }
-    });
-  }
-}
-
-service
-
-
-uploadDocumento(rota: string, file: File, nome: string): Observable<any> {
-  const formData = new FormData();
-  formData.append('file', file);
-
-  const headers = new HttpHeaders({
-    'enctype': 'multipart/form-data' // Adicione o cabeçalho de Content-Type
-  });
-    const url = `${this.API_ptaiDocker}/${rota}/?nome=${nome}`;
-  return this.http.post<any>(url, formData, { headers, reportProgress: true, observe: 'events' });
-}
-
-uploadRelatorioRCM(
-  file: File,
-  nome: string,
-  data: string,
-  constatacoes: string,
-  recomendacoes: string
-): Observable<any> {
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('nome', nome);
-  formData.append('data', data);
-  formData.append('constatacoes', constatacoes);
-  formData.append('recomendacoes', recomendacoes);
-
-  // Ajuste a URL para o endpoint que criamos no FastAPI:
-  // /apiptai/rcmkpmg
-  const url = `${this.API_ptai}/rcmkpmg`;
-
-  return this.http.post<any>(url, formData, {
-    reportProgress: true,
-    observe: 'events', // se quiser acompanhar progresso
-  }).pipe(
-    catchError((error) => {
-      console.error('Erro ao enviar relatório RCM:', error);
-      return throwError(() => error);
-    })
-  );
-}
-
-}
-
-
-"styles": [
-              "node_modules/primeflex/primeflex.css",
-              "node_modules/bootstrap/dist/css/bootstrap.css",
-              "node_modules/animate.css/animate.css",
-              "src/styles.css"
-            ],
-/* You can add global styles to this file, and also import other style files */
-@import "../node_modules/bootstrap/dist/css/bootstrap.css";
-@import "../node_modules/animate.css/animate.css";
-@import "primeflex/primeflex.css";
-@import "../node_modules/primeicons/primeicons.css";
-
-
-from app.infra.sqlalchemy.config.database_pool import execute_query
-
-async def deletar_relatorio_rcm(relatorio_id: int) -> bool:
-    """
-    Remove um registro da tabela rcm.rcm_relatorios pelo seu id.
-
-    Retorna True se excluiu algo (rowcount > 0), 
-    ou False se o id não foi encontrado.
+    Insere uma linha na tabela rcm.rcm_relatorios com todas as colunas.
     """
     query = """
-    DELETE FROM rcm.rcm_relatorios
-    WHERE id = $1
+    INSERT INTO rcm.rcm_relatorios (
+      relatorio,
+      data_emissao,
+      constatacoes,
+      evidencias,
+      recomendacao,
+      instituicao_responsavel,
+      prefixo_responsavel,
+      instituicao_assunto_elbb,
+      previsao_implementacao,
+      matricula_do_gestor_responsavel,
+      pdf_file
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
     RETURNING id;
     """
-    result = await execute_query(query, relatorio_id, return_one=True)
-    if result and 'id' in result:
-        return True
-    return False
-
+    result = await execute_query(
+        query,
+        relatorio,
+        data_emissao,
+        constatacoes,
+        evidencias,
+        recomendacao,
+        instituicao_responsavel,
+        prefixo_responsavel,
+        instituicao_assunto_elbb,
+        previsao_implementacao,
+        matricula_do_gestor_responsavel,
+        pdf_blob,
+        return_one=True
+    )
+    if result:
+        return result.get("id")
+    return None
 
