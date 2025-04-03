@@ -20,7 +20,408 @@ CREATE TABLE IF NOT EXISTS rcm.rcm_relatorios (
 ALTER TABLE rcm.rcm_relatorios
 ADD COLUMN relatorio_text_extract TEXT;
 
+<p-toast></p-toast>
 
+<div style="max-width: 1200px; margin: auto; font-family: Arial, sans-serif;">
+  <h2 style="text-align: center; margin-bottom: 1rem;">Upload Recomendações KPMG</h2>
+
+  <!-- Componente Steps para indicar o fluxo -->
+  <p-steps [model]="steps" [activeIndex]="activeStep" [readonly]="true" [ngStyle]="{'margin-bottom': '1rem'}"></p-steps>
+
+  <!-- Passo 1: Excel KPMG -->
+  <div style="border: 1px solid #ccc; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;">
+    <h3 style="margin-bottom: .5rem;">Passo 1: Excel KPMG</h3>
+    <p-fileUpload
+      #excelUploader
+      name="excelFile"
+      accept=".xls,.xlsx"
+      customUpload="true"
+      [auto]="true"
+      [showUploadButton]="false"
+      [showCancelButton]="false"
+      (onSelect)="onSelectExcel($event)"
+      (onClear)="onClearExcel()"
+    >
+    </p-fileUpload>
+    <div *ngIf="excelFile" style="margin-top: 0.5rem;">
+      <small>Arquivo Selecionado: <strong>{{ excelFile.name }}</strong></small>
+    </div>
+  </div>
+
+  <!-- Passo 2: Selecione os relatórios (PDFs) -->
+  <div *ngIf="excelFile" style="border: 1px solid #ccc; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;">
+    <h3 style="margin-bottom: .5rem;">Passo 2: Selecione os relatórios</h3>
+    <p-fileUpload
+      #pdfUploader
+      name="pdfFiles"
+      accept=".pdf"
+      customUpload="true"
+      [auto]="true"
+      [multiple]="true"
+      [showUploadButton]="false"
+      [showCancelButton]="false"
+      (onSelect)="onSelectPDF($event)"
+      (onClear)="onClearPDF()"
+    >
+    </p-fileUpload>
+    <div *ngIf="pdfFiles.length" style="margin-top: 0.5rem;">
+      <small>Arquivos Selecionados: <strong>{{ pdfFilesNames }}</strong></small>
+    </div>
+  </div>
+
+  <!-- Passo 3: Botão final -->
+  <div *ngIf="excelFile && pdfFiles.length >= relatoriosExcel.length" style="text-align: center; margin-bottom: 1rem;">
+    <button pButton type="button" label="Upload Recomendações KPMG" style="font-size: 0.8rem; padding: .5rem 1rem;" (click)="enviarArquivosExcel()"></button>
+  </div>
+
+  <!-- Exibe os nomes dos arquivos enviados após o envio -->
+  <div *ngIf="lastUploadedExcel || lastUploadedPdfs.length" style="margin-top: 1rem; border-top: 1px solid #ccc; padding-top: 1rem;">
+    <h3 style="text-align: center;">Arquivos Enviados:</h3>
+    <p *ngIf="lastUploadedExcel" style="text-align: center;"><strong>Excel:</strong> {{ lastUploadedExcel }}</p>
+    <div *ngIf="lastUploadedPdfs.length">
+      <p style="text-align: center;"><strong>PDFs:</strong></p>
+      <ul style="list-style: none; padding: 0; text-align: center;">
+        <li *ngFor="let pdfName of lastUploadedPdfs" style="display: inline-block; margin: 0 0.5rem;">
+          {{ pdfName }}
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Tabela de registros (p-table) -->
+<div class="card" style="max-width: 800px; margin: 2rem auto; font-family: Arial, sans-serif;">
+  <h2 style="text-align: center;">Tabela de Relatórios RCM</h2>
+
+  <!-- Filtro global -->
+  <div style="text-align:right; margin-bottom:1rem;">
+    <span class="p-input-icon-left">
+      <i class="pi pi-search"></i>
+      <input type="text" pInputText (input)="dt.filterGlobal($any($event.target).value, 'contains')" placeholder="Filtro global..." style="width: 200px;" />
+    </span>
+  </div>
+
+  <p-table
+  #dt
+  [value]="rcmRelatorios"
+  [paginator]="true"
+  [rows]="5"
+  [globalFilterFields]="['relatorio','data_emissao','constatacoes','recomendacoes']"
+  sortMode="multiple"
+  [responsiveLayout]="'scroll'"
+>
+  <ng-template pTemplate="header">
+    <tr style="font-size: 0.7rem;">
+      <th pSortableColumn="relatorio">
+        Relatório
+        <p-sortIcon field="relatorio"></p-sortIcon>
+      </th>
+      <th pSortableColumn="data_emissao">
+        Data Emissão
+        <p-sortIcon field="data_emissao"></p-sortIcon>
+      </th>
+      <th pSortableColumn="constatacoes">
+        Constatações
+        <p-sortIcon field="constatacoes"></p-sortIcon>
+      </th>
+      <th pSortableColumn="recomendacoes">
+        Recomendações
+        <p-sortIcon field="recomendacoes"></p-sortIcon>
+      </th>
+      <th style="text-align: center;">Ações</th>
+    </tr>
+  </ng-template>
+
+  <ng-template pTemplate="body" let-rel>
+    <tr style="font-size: 0.7rem;">
+      <td>{{ rel.relatorio }}</td>
+      <td>{{ rel.data_emissao }}</td>
+      <td>{{ rel.constatacoes }}</td>
+      <td>{{ rel.recomendacoes }}</td>
+      <td style="text-align: center;">
+        <!-- Botão de excluir -->
+        <button pButton type="button" icon="pi pi-trash" style="font-size: 0.7rem; padding: 0.3rem" (click)="deletarRelatorio(rel.id)"></button>
+        <!-- Botão de detalhes -->
+        <button
+          pButton
+          type="button"
+          label="Detalhes"
+          style="font-size: 0.7rem; padding: 0.3rem 0.5rem; margin-left: 0.3rem"
+          [routerLink]="['/chatdetalhe', rel.id]"
+        ></button>
+      </td>
+    </tr>
+  </ng-template>
+</p-table>
+
+import { Component, ViewChild, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FileUpload, FileUploadModule } from 'primeng/fileupload';
+import { ButtonModule } from 'primeng/button';
+import { MessageService, MenuItem } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
+import { TableModule } from 'primeng/table';
+import { StepsModule } from 'primeng/steps';
+import { RouterModule } from '@angular/router';
+import * as XLSX from 'xlsx';
+import { ServicoLLMService } from '../servico-llm.service';
+
+export interface RcmRelatorio {
+  id: number;
+  relatorio: string;
+  data_emissao: string | null;
+  constatacoes: string;
+  recomendacoes: string;
+}
+
+@Component({
+  selector: 'app-rcmexcel',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FileUploadModule,
+    ButtonModule,
+    ToastModule,
+    TableModule,
+    StepsModule, RouterModule
+  ],
+  providers: [ServicoLLMService, MessageService],
+  templateUrl: './rcmexcel.component.html',
+  styleUrls: ['./rcmexcel.component.css']
+})
+export class RcmexcelComponent implements OnInit {
+  excelFile: File | null = null;
+  pdfFiles: File[] = [];
+  relatoriosExcel: string[] = [];
+  rcmRelatorios: RcmRelatorio[] = [];
+
+  @ViewChild('excelUploader') excelUploader!: FileUpload;
+  @ViewChild('pdfUploader') pdfUploader!: FileUpload;
+
+  lastUploadedExcel: string | null = null;
+  lastUploadedPdfs: string[] = [];
+
+  steps: MenuItem[] = [];
+  activeStep: number = 0;
+
+  colunasObrigatorias = [
+    'RELATORIO',
+    'DATA_EMISSAO',
+    'CONSTATACAO',
+    'EVIDENCIAS',
+    'RECOMENDACAO',
+    'INSTITUICAO_RESPONSAVEL',
+    'PREFIXO_RESPONSAVEL',
+    'INSTITUICAO_ASSUNTO_ELBB',
+    'PREVISAO_IMPLEMENTACAO',
+    'MATRICULA_DO_GESTOR_RESPONSAVEL'
+  ];
+
+  constructor(
+    private messageService: MessageService,
+    private servicoLLM: ServicoLLMService
+  ) {}
+
+  ngOnInit() {
+    this.steps = [
+      { label: 'Excel KPMG' },
+      { label: 'Selecione os Relatórios' },
+      { label: 'Upload Recomendações KPMG' }
+    ];
+    this.getRmcKpmg();
+  }
+
+  get pdfFilesNames(): string {
+    return this.pdfFiles.map(f => f.name).join(', ');
+  }
+
+  onSelectExcel(event: any) {
+    if (event.files && event.files.length) {
+      const file = event.files[0];
+      this.excelFile = file;
+      this.lerExcel(file);
+      this.activeStep = 1;
+    }
+  }
+
+  onClearExcel() {
+    this.excelFile = null;
+    this.relatoriosExcel = [];
+  }
+
+  onSelectPDF(event: any) {
+    this.pdfFiles = [...this.pdfFiles, ...event.files];
+    console.log('PDFs selecionados:', this.pdfFiles.map(f => f.name));
+    if (this.pdfFiles.length >= this.relatoriosExcel.length) {
+      this.activeStep = 2;
+    }
+  }
+
+  onClearPDF() {
+    this.pdfFiles = [];
+  }
+
+  lerExcel(file: File) {
+    const reader = new FileReader();
+    reader.onload = (e: any) => {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      if (!jsonData || !jsonData.length) {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Planilha vazia',
+          detail: 'Não há dados.'
+        });
+        return;
+      }
+      const cabecalho: string[] = jsonData[0].map((val: any) => val?.toString().trim());
+      for (const col of this.colunasObrigatorias) {
+        if (!cabecalho.includes(col)) {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Coluna faltando',
+            detail: `Coluna "${col}" não encontrada na planilha.`
+          });
+          this.excelFile = null;
+          return;
+        }
+      }
+      const dataObjects = XLSX.utils.sheet_to_json(worksheet, {
+        defval: '',
+        header: cabecalho,
+        range: 1
+      });
+      const relSet = new Set<string>();
+      (dataObjects as any[]).forEach(row => {
+        if (row['RELATORIO']) {
+          relSet.add(row['RELATORIO'].toString().trim());
+        }
+      });
+      this.relatoriosExcel = Array.from(relSet);
+      if (this.relatoriosExcel.length > 1) {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Vários RELATORIO',
+          detail: `Planilha tem ${this.relatoriosExcel.length} valores distintos.`
+        });
+      }
+      console.log('Relatórios Excel:', this.relatoriosExcel);
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  enviarArquivosExcel() {
+    if (!this.excelFile) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Aviso',
+        detail: 'Selecione a planilha Excel.'
+      });
+      return;
+    }
+    if (!this.pdfFiles.length) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Aviso',
+        detail: 'Selecione os PDFs.'
+      });
+      return;
+    }
+    if (this.pdfFiles.length < this.relatoriosExcel.length) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Faltam PDFs',
+        detail: `Você tem ${this.relatoriosExcel.length} relatórios distintos, mas apenas ${this.pdfFiles.length} PDFs.`
+      });
+      return;
+    }
+    for (const relatorio of this.relatoriosExcel) {
+      const pdfEncontrado = this.pdfFiles.some(pdf => {
+        const nameNoExt = pdf.name.replace('.pdf', '').trim();
+        return nameNoExt === relatorio;
+      });
+      if (!pdfEncontrado) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Nome divergente',
+          detail: `Relatório "${relatorio}" não tem PDF correspondente.`
+        });
+        return;
+      }
+    }
+    this.servicoLLM.uploadExcelMultiplosPdfs(this.excelFile, this.pdfFiles)
+      .subscribe({
+        next: (res) => {
+          console.log('Resposta do backend:', res);
+          if (this.excelFile) {
+            this.lastUploadedExcel = this.excelFile.name;
+          }
+          this.lastUploadedPdfs = this.pdfFiles.map(pdf => pdf.name);
+          this.excelFile = null;
+          this.pdfFiles = [];
+          this.relatoriosExcel = [];
+          this.excelUploader.clear();
+          this.pdfUploader.clear();
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Sucesso',
+            detail: 'Excel e PDFs enviados com sucesso!'
+          });
+          this.getRmcKpmg();
+        },
+        error: (err: any) => {
+          console.error('Erro ao enviar Excel+PDFs:', err);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Erro',
+            detail: err.error?.detail || err.message || 'Falha no upload.'
+          });
+        }
+      });
+  }
+
+  getRmcKpmg() {
+    this.servicoLLM.listarRelatoriosRcm().subscribe({
+      next: (lista) => {
+        this.rcmRelatorios = lista.map(item => ({
+          ...item,
+          relatorio: item.nome
+        }));
+      },
+      error: (err) => {
+        console.error('Erro ao buscar relatórios RCM:', err);
+      }
+    });
+  }
+
+  deletarRelatorio(id: number) {
+    // Chame o serviço que exclui o registro.
+    // Supondo que o seu serviço tenha um método deletarRelatorioRCM que retorna um Observable.
+    this.servicoLLM.deletarRelatorioRCM(id).subscribe({
+      next: (res) => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Deletado',
+          detail: 'Registro deletado com sucesso!'
+        });
+        // Atualiza a lista de registros
+        this.getRmcKpmg();
+      },
+      error: (err) => {
+        console.error('Erro ao deletar o registro:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Erro',
+          detail: 'Falha ao deletar o registro.'
+        });
+      }
+    });
+  }
+
+}
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
@@ -323,433 +724,18 @@ listarRelatoriosRcm(): Observable<RcmRelatorio[]> {
   );
 }
 
-
-
+deletarRelatorioRCM(id: number): Observable<any> {
+  const url = `${this.API_ptai}/deletar_rcm_relatorio/${id}`;
+  return this.http.delete(url).pipe(
+    catchError((error) => {
+      console.error('Erro ao deletar relatório:', error);
+      return throwError(() => error);
+    })
+  );
 }
 
 
-<p-toast></p-toast>
-
-<div style="max-width: 1200px; margin: auto; font-family: Arial, sans-serif;">
-  <h2 style="text-align: center; margin-bottom: 1rem;">Upload Recomendações KPMG</h2>
-
-  <!-- Componente Steps para indicar o fluxo -->
-  <p-steps [model]="steps" [activeIndex]="activeStep" [readonly]="true" [ngStyle]="{'margin-bottom': '1rem'}"></p-steps>
-
-  <!-- Passo 1: Excel KPMG -->
-  <div style="border: 1px solid #ccc; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;">
-    <h3 style="margin-bottom: .5rem;">Passo 1: Excel KPMG</h3>
-    <p-fileUpload
-      #excelUploader
-      name="excelFile"
-      accept=".xls,.xlsx"
-      customUpload="true"
-      [auto]="true"
-      [showUploadButton]="false"
-      [showCancelButton]="false"
-      (onSelect)="onSelectExcel($event)"
-      (onClear)="onClearExcel()"
-    >
-    </p-fileUpload>
-    <div *ngIf="excelFile" style="margin-top: 0.5rem;">
-      <small>Arquivo Selecionado: <strong>{{ excelFile.name }}</strong></small>
-    </div>
-  </div>
-
-  <!-- Passo 2: Selecione os relatórios (PDFs) -->
-  <div *ngIf="excelFile" style="border: 1px solid #ccc; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;">
-    <h3 style="margin-bottom: .5rem;">Passo 2: Selecione os relatórios</h3>
-    <p-fileUpload
-      #pdfUploader
-      name="pdfFiles"
-      accept=".pdf"
-      customUpload="true"
-      [auto]="true"
-      [multiple]="true"
-      [showUploadButton]="false"
-      [showCancelButton]="false"
-      (onSelect)="onSelectPDF($event)"
-      (onClear)="onClearPDF()"
-    >
-    </p-fileUpload>
-    <div *ngIf="pdfFiles.length" style="margin-top: 0.5rem;">
-      <small>Arquivos Selecionados: <strong>{{ pdfFilesNames }}</strong></small>
-    </div>
-  </div>
-
-  <!-- Passo 3: Botão final -->
-  <div *ngIf="excelFile && pdfFiles.length >= relatoriosExcel.length" style="text-align: center; margin-bottom: 1rem;">
-    <button pButton type="button" label="Upload Recomendações KPMG" style="font-size: 0.8rem; padding: .5rem 1rem;" (click)="enviarArquivosExcel()"></button>
-  </div>
-
-  <!-- Exibe os nomes dos arquivos enviados após o envio -->
-  <div *ngIf="lastUploadedExcel || lastUploadedPdfs.length" style="margin-top: 1rem; border-top: 1px solid #ccc; padding-top: 1rem;">
-    <h3 style="text-align: center;">Arquivos Enviados:</h3>
-    <p *ngIf="lastUploadedExcel" style="text-align: center;"><strong>Excel:</strong> {{ lastUploadedExcel }}</p>
-    <div *ngIf="lastUploadedPdfs.length">
-      <p style="text-align: center;"><strong>PDFs:</strong></p>
-      <ul style="list-style: none; padding: 0; text-align: center;">
-        <li *ngFor="let pdfName of lastUploadedPdfs" style="display: inline-block; margin: 0 0.5rem;">
-          {{ pdfName }}
-        </li>
-      </ul>
-    </div>
-  </div>
-</div>
-
-<!-- Tabela de registros (p-table) -->
-<div class="card" style="max-width: 800px; margin: 2rem auto; font-family: Arial, sans-serif;">
-  <h2 style="text-align: center;">Tabela de Relatórios RCM</h2>
-
-  <!-- Filtro global -->
-  <div style="text-align:right; margin-bottom:1rem;">
-    <span class="p-input-icon-left">
-      <i class="pi pi-search"></i>
-      <input type="text" pInputText (input)="dt.filterGlobal($any($event.target).value, 'contains')" placeholder="Filtro global..." style="width: 200px;" />
-    </span>
-  </div>
-
-  <p-table
-    #dt
-    [value]="rcmRelatorios"
-    [paginator]="true"
-    [rows]="5"
-    [globalFilterFields]="['relatorio','data_emissao','constatacoes','recomendacoes']"
-    sortMode="multiple"
-    [responsiveLayout]="'scroll'"
-  >
-    <ng-template pTemplate="header">
-      <tr>
-        <th pSortableColumn="relatorio">
-          Relatório
-          <p-sortIcon field="relatorio"></p-sortIcon>
-        </th>
-        <th pSortableColumn="data_emissao">
-          Data Emissão
-          <p-sortIcon field="data_emissao"></p-sortIcon>
-        </th>
-        <th pSortableColumn="constatacoes">
-          Constatações
-          <p-sortIcon field="constatacoes"></p-sortIcon>
-        </th>
-        <th pSortableColumn="recomendacoes">
-          Recomendações
-          <p-sortIcon field="recomendacoes"></p-sortIcon>
-        </th>
-      </tr>
-    </ng-template>
-
-    <ng-template pTemplate="body" let-rel>
-      <tr>
-        <td>{{ rel.relatorio }}</td>
-        <td>{{ rel.data_emissao }}</td>
-        <td>{{ rel.constatacoes }}</td>
-        <td>{{ rel.recomendacoes }}</td>
-      </tr>
-    </ng-template>
-  </p-table>
-</div>
-
-import { Component, ViewChild, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FileUpload, FileUploadModule } from 'primeng/fileupload';
-import { ButtonModule } from 'primeng/button';
-import { MessageService, MenuItem } from 'primeng/api';
-import { ToastModule } from 'primeng/toast';
-import { TableModule } from 'primeng/table';
-import { StepsModule } from 'primeng/steps';
-import * as XLSX from 'xlsx';
-import { ServicoLLMService } from '../servico-llm.service';
-
-export interface RcmRelatorio {
-  id: number;
-  relatorio: string;
-  data_emissao: string | null;
-  constatacoes: string;
-  recomendacoes: string;
 }
-
-@Component({
-  selector: 'app-rcmexcel',
-  standalone: true,
-  imports: [
-    CommonModule,
-    FileUploadModule,
-    ButtonModule,
-    ToastModule,
-    TableModule,
-    StepsModule
-  ],
-  providers: [ServicoLLMService, MessageService],
-  templateUrl: './rcmexcel.component.html',
-  styleUrls: ['./rcmexcel.component.css']
-})
-export class RcmexcelComponent implements OnInit {
-  excelFile: File | null = null;
-  pdfFiles: File[] = [];
-  relatoriosExcel: string[] = [];
-  rcmRelatorios: RcmRelatorio[] = [];
-
-  @ViewChild('excelUploader') excelUploader!: FileUpload;
-  @ViewChild('pdfUploader') pdfUploader!: FileUpload;
-
-  lastUploadedExcel: string | null = null;
-  lastUploadedPdfs: string[] = [];
-
-  steps: MenuItem[] = [];
-  activeStep: number = 0;
-
-  colunasObrigatorias = [
-    'RELATORIO',
-    'DATA_EMISSAO',
-    'CONSTATACAO',
-    'EVIDENCIAS',
-    'RECOMENDACAO',
-    'INSTITUICAO_RESPONSAVEL',
-    'PREFIXO_RESPONSAVEL',
-    'INSTITUICAO_ASSUNTO_ELBB',
-    'PREVISAO_IMPLEMENTACAO',
-    'MATRICULA_DO_GESTOR_RESPONSAVEL'
-  ];
-
-  constructor(
-    private messageService: MessageService,
-    private servicoLLM: ServicoLLMService
-  ) {}
-
-  ngOnInit() {
-    this.steps = [
-      { label: 'Excel KPMG' },
-      { label: 'Selecione os Relatórios' },
-      { label: 'Upload Recomendações KPMG' }
-    ];
-    this.getRmcKpmg();
-  }
-
-  get pdfFilesNames(): string {
-    return this.pdfFiles.map(f => f.name).join(', ');
-  }
-
-  onSelectExcel(event: any) {
-    if (event.files && event.files.length) {
-      const file = event.files[0];
-      this.excelFile = file;
-      this.lerExcel(file);
-      this.activeStep = 1;
-    }
-  }
-
-  onClearExcel() {
-    this.excelFile = null;
-    this.relatoriosExcel = [];
-  }
-
-  onSelectPDF(event: any) {
-    this.pdfFiles = [...this.pdfFiles, ...event.files];
-    console.log('PDFs selecionados:', this.pdfFiles.map(f => f.name));
-    if (this.pdfFiles.length >= this.relatoriosExcel.length) {
-      this.activeStep = 2;
-    }
-  }
-
-  onClearPDF() {
-    this.pdfFiles = [];
-  }
-
-  lerExcel(file: File) {
-    const reader = new FileReader();
-    reader.onload = (e: any) => {
-      const data = new Uint8Array(e.target.result);
-      const workbook = XLSX.read(data, { type: 'array' });
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-      if (!jsonData || !jsonData.length) {
-        this.messageService.add({
-          severity: 'warn',
-          summary: 'Planilha vazia',
-          detail: 'Não há dados.'
-        });
-        return;
-      }
-      const cabecalho: string[] = jsonData[0].map((val: any) => val?.toString().trim());
-      for (const col of this.colunasObrigatorias) {
-        if (!cabecalho.includes(col)) {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Coluna faltando',
-            detail: `Coluna "${col}" não encontrada na planilha.`
-          });
-          this.excelFile = null;
-          return;
-        }
-      }
-      const dataObjects = XLSX.utils.sheet_to_json(worksheet, {
-        defval: '',
-        header: cabecalho,
-        range: 1
-      });
-      const relSet = new Set<string>();
-      (dataObjects as any[]).forEach(row => {
-        if (row['RELATORIO']) {
-          relSet.add(row['RELATORIO'].toString().trim());
-        }
-      });
-      this.relatoriosExcel = Array.from(relSet);
-      if (this.relatoriosExcel.length > 1) {
-        this.messageService.add({
-          severity: 'warn',
-          summary: 'Vários RELATORIO',
-          detail: `Planilha tem ${this.relatoriosExcel.length} valores distintos.`
-        });
-      }
-      console.log('Relatórios Excel:', this.relatoriosExcel);
-    };
-    reader.readAsArrayBuffer(file);
-  }
-
-  enviarArquivosExcel() {
-    if (!this.excelFile) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Aviso',
-        detail: 'Selecione a planilha Excel.'
-      });
-      return;
-    }
-    if (!this.pdfFiles.length) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Aviso',
-        detail: 'Selecione os PDFs.'
-      });
-      return;
-    }
-    if (this.pdfFiles.length < this.relatoriosExcel.length) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Faltam PDFs',
-        detail: `Você tem ${this.relatoriosExcel.length} relatórios distintos, mas apenas ${this.pdfFiles.length} PDFs.`
-      });
-      return;
-    }
-    for (const relatorio of this.relatoriosExcel) {
-      const pdfEncontrado = this.pdfFiles.some(pdf => {
-        const nameNoExt = pdf.name.replace('.pdf', '').trim();
-        return nameNoExt === relatorio;
-      });
-      if (!pdfEncontrado) {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Nome divergente',
-          detail: `Relatório "${relatorio}" não tem PDF correspondente.`
-        });
-        return;
-      }
-    }
-    this.servicoLLM.uploadExcelMultiplosPdfs(this.excelFile, this.pdfFiles)
-      .subscribe({
-        next: (res) => {
-          console.log('Resposta do backend:', res);
-          if (this.excelFile) {
-            this.lastUploadedExcel = this.excelFile.name;
-          }
-          this.lastUploadedPdfs = this.pdfFiles.map(pdf => pdf.name);
-          this.excelFile = null;
-          this.pdfFiles = [];
-          this.relatoriosExcel = [];
-          this.excelUploader.clear();
-          this.pdfUploader.clear();
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Sucesso',
-            detail: 'Excel e PDFs enviados com sucesso!'
-          });
-          this.getRmcKpmg();
-        },
-        error: (err: any) => {
-          console.error('Erro ao enviar Excel+PDFs:', err);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Erro',
-            detail: err.error?.detail || err.message || 'Falha no upload.'
-          });
-        }
-      });
-  }
-
-  getRmcKpmg() {
-    this.servicoLLM.listarRelatoriosRcm().subscribe({
-      next: (lista) => {
-        this.rcmRelatorios = lista.map(item => ({
-          ...item,
-          relatorio: item.nome
-        }));
-      },
-      error: (err) => {
-        console.error('Erro ao buscar relatórios RCM:', err);
-      }
-    });
-  }
-}
-import { Routes } from '@angular/router';
-import { ChatComponent } from './chat/chat.component';
-import { ChatDetalheComponent } from './chat-detalhe/chat-detalhe.component';
-import { authGuard } from './auth.guard';
-import { AcessoNegadoComponent } from './acesso-negado/acesso-negado.component';
-import { ChatgeralComponent } from './chatgeral/chatgeral.component';
-import { chatgeralMatcher } from './chatgeral.matcher';
-import { AtbComponent } from './atb/atb.component';
-import { RcmComponent } from './rcm/rcm.component'; // <- Importando o standalone
-import { RcmexcelComponent } from './rcmexcel/rcmexcel.component';
-
-export const routes: Routes = [
-  {
-    path: '',
-    redirectTo: '/chat',
-    pathMatch: 'full',
-  },
-  {
-    path: 'chat',
-    component: ChatComponent,
-    canActivate: [authGuard],
-  },
-  {
-    path: 'atb',
-    component: AtbComponent,
-    canActivate: [authGuard],
-  },
-  {
-    path: 'chatdetalhe/:nr_trabalho',
-    component: ChatDetalheComponent,
-    canActivate: [authGuard],
-    data: { renderMode: 'lazy' },
-  },
-  {
-    matcher: chatgeralMatcher,
-    component: ChatgeralComponent,
-    canActivate: [authGuard],
-    data: { renderMode: 'lazy' },
-  },
-  {
-    path: 'rcm',
-    component: RcmComponent,
-    canActivate: [authGuard],
-  },
-  {
-    path: 'rcmexel',
-    component: RcmexcelComponent,
-    canActivate: [authGuard],
-  },
-  {
-    path: 'acesso-negado',
-    component: AcessoNegadoComponent,
-  },
-  {
-    path: '**',
-    redirectTo: '/chat',
-  },
-];
 
 
 from fastapi import APIRouter, File, UploadFile, responses, HTTPException, Form, Request
@@ -815,6 +801,19 @@ from typing import Dict, List
 
 router = APIRouter()
 
+@router.delete("/apiptai/deletar_rcm_relatorio/{relatorio_id}")
+async def deletar_rcm_relatorio(relatorio_id: int):
+    """
+    Deleta um relatório da tabela rcm.rcm_relatorios pelo ID.
+    Retorna o ID do relatório deletado ou erro 404 se não encontrado.
+    """
+    delete_query = "DELETE FROM rcm.rcm_relatorios WHERE id = $1 RETURNING id;"
+    result = await execute_query(delete_query, relatorio_id, return_one=True)
+    if result and result.get("id"):
+        return {"status": "ok", "id_deletado": result.get("id")}
+    else:
+        raise HTTPException(status_code=404, detail="Relatório não encontrado")
+
 @router.post("/apiptai/rcmkpmg")
 async def salvar_relatorio_rcm(
     nome: str = Form(...),
@@ -877,6 +876,19 @@ async def get_relatorio_rcm(relatorio_id: int):
     #     media_type="application/pdf"
     # )
     
+import io
+from PyPDF2 import PdfReader
+
+def extrair_rel_kpmg_pdf(pdf_bytes: bytes) -> str:
+    pdf_stream = io.BytesIO(pdf_bytes)
+    reader = PdfReader(pdf_stream)
+    texto = ""
+    for page in reader.pages:
+        # Use page.extract_text(), que pode retornar None se não conseguir extrair
+        page_text = page.extract_text()
+        if page_text:
+            texto += page_text + "\n"
+    return texto.strip()
 
 @router.post("/apiptai/upload-rcm-excel-multiplos")
 async def upload_rcm_excel_multiplos(request: Request):
@@ -884,7 +896,8 @@ async def upload_rcm_excel_multiplos(request: Request):
     Recebe 1 Excel (file_excel) + PDFs (file_pdf_0, file_pdf_1, ...).
     Para cada DATA_EMISSAO encontrada na planilha:
       - Apaga do BD as linhas com data_emissao = X
-      - Insere todas as linhas correspondentes com os dados do Excel
+      - Insere todas as linhas correspondentes com os dados do Excel,
+        extraindo o texto do PDF e salvando em relatorio_text_extract.
     """
     form = await request.form()
 
@@ -959,6 +972,10 @@ async def upload_rcm_excel_multiplos(request: Request):
                     detail=f"Falta PDF '{relatorio_val}.pdf' para o relatório '{relatorio_val}'."
                 )
 
+            # Extrai o texto do PDF usando a função extrair_rcm_kpmg
+            rel_text = extrair_rel_kpmg_pdf(pdf_bytes)
+            print('rel_text ', rel_text)
+
             novo_id = await inserir_linha_rcm(
                 relatorio=relatorio_val,
                 data_emissao=data_emissao_val,
@@ -970,7 +987,8 @@ async def upload_rcm_excel_multiplos(request: Request):
                 instituicao_assunto_elbb=instituicao_assunto_elbb,
                 previsao_implementacao=previsao_implementacao,
                 matricula_do_gestor_responsavel=matricula_do_gestor_responsavel,
-                pdf_blob=pdf_bytes
+                pdf_blob=pdf_bytes,
+                relatorio_text_extract=rel_text # type: ignore
             )
             if novo_id:
                 ids_inseridos_total.append(novo_id)
@@ -1073,10 +1091,11 @@ async def inserir_linha_rcm(
     instituicao_assunto_elbb: str,
     previsao_implementacao: str,
     matricula_do_gestor_responsavel: str,
-    pdf_blob: bytes
+    pdf_blob: bytes,
+    relatorio_text_extract: str
 ):
     """
-    Insere uma linha na tabela rcm.rcm_relatorios com todas as colunas.
+    Insere uma linha na tabela rcm.rcm_relatorios com todas as colunas, inclusive o texto extraído do PDF.
     """
     query = """
     INSERT INTO rcm.rcm_relatorios (
@@ -1090,8 +1109,9 @@ async def inserir_linha_rcm(
       instituicao_assunto_elbb,
       previsao_implementacao,
       matricula_do_gestor_responsavel,
-      pdf_file
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      pdf_file,
+      relatorio_text_extract
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
     RETURNING id;
     """
     result = await execute_query(
@@ -1107,9 +1127,11 @@ async def inserir_linha_rcm(
         previsao_implementacao,
         matricula_do_gestor_responsavel,
         pdf_blob,
+        relatorio_text_extract,
         return_one=True
     )
     if result:
         return result.get("id")
     return None
+
 
