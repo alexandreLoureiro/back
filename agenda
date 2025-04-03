@@ -16,6 +16,11 @@ CREATE TABLE IF NOT EXISTS rcm.rcm_relatorios (
   dt_inserido TIMESTAMP DEFAULT NOW()
 );
 
+
+ALTER TABLE rcm.rcm_relatorios
+ADD COLUMN relatorio_text_extract TEXT;
+
+
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
