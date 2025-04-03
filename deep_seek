@@ -1,4 +1,66 @@
 Uso de Abordagem Data-Driven nos Processos de Auditoria
+
+Propomos uma abordagem orientada por dados (data-driven) nos processos de auditoria, com uso integrado de dados vinculados diretamente a processos e riscos, gerando informações estratégicas alinhadas aos objetivos da empresa. Com foco na observância dos preceitos metodológicos, essa abordagem fortalece a metodologia da auditoria, garantindo que todas as informações relevantes sejam utilizadas de forma eficaz.
+
+Integração Direta e Automática das Informações
+
+Integração direta e automática das informações dos diferentes painéis cadastrados no Catiana (Catálogo de Instrumentos de Análises Avançadas), desenvolvidos pela GA Antec em conjunto com as GA responsáveis pelos processos (ex.: perdas, reclamações, fraudes, processos decisórios, dados da segunda linha de defesa), com os processos e eventos definidos na taxonomia de riscos do Banco do Brasil.
+
+Suporte Dinâmico ao Processo de Auditoria
+
+Ao iniciar um trabalho de auditoria, o auditor passa por várias etapas: Objetivo, Escopo, Período de Abrangência, Áreas Foco da Auditoria (Dependências Auditadas), Processos PMI, Eventos de Risco e Governança Gerenciamento de Riscos e Controles. À medida que essas informações são preenchidas, a base de dados fornece automaticamente subsídios específicos e dinâmicos para o registro na intranet da Audit. Exemplos:
+
+• Objetivo e Escopo: Informações gerais sobre decisões e perdas do painel decisório.
+• Período de Abrangência: Dados históricos relevantes para o período selecionado.
+• Áreas Foco da Auditoria: Dados específicos sobre perdas e eventos de risco das áreas.
+• Processos PMI e Eventos de Risco: Informações detalhadas vinculadas ao trabalho.
+• Governança Gerenciamento de Riscos e Controles: Dados que auxiliam na definição e avaliação da governança e controles de risco.
+
+Essa integração dinâmica permite que o auditor obtenha dados mais específicos e relevantes à medida que avança no preenchimento, garantindo uma análise precisa e fundamentada.
+
+Auxílio nos Demais Estágios do Trabalho de Auditoria
+
+Essas informações auxiliam diretamente nas seguintes etapas:
+
+• Maturidade da Área Auditada (PT MRLD): Avaliação baseada em dados específicos e relevantes.
+• Achados e Evidências de Auditoria: Registro suportado por dados concretos.
+• Insights para Trabalhos Futuros: Identificação de tendências e padrões observados nos dados.
+• Recomendações: Desenvolvimento com base em análises detalhadas.
+• Relatório de Auditoria: Geração completa e embasada, facilitando a comunicação dos resultados.
+
+IN 978: Conceito de Auditoria Integrada com Abordagem por Riscos (ABR)
+
+• Identificação, priorização e mensuração de riscos para focar nos processos mais significativos.
+• Vinculação direta de informações estratégicas (painéis) à taxonomia fortalece a identificação e mensuração dos riscos, otimizando a priorização dos trabalhos.
+• Alinhamento com Objetivos Estratégicos: O planejamento estratégico da auditoria baseia-se na identificação dos maiores riscos, garantindo aderência, eficiência e assertividade.
+• Benefícios Potenciais (BP) e Benefícios Efetivos (BE): Identificação clara dos benefícios financeiros e não financeiros, facilitando a demonstração de resultados.
+• Interação com Segunda Linha e Entidades de Fiscalização: Garantia de disponibilidade constante e vinculação direta dos dados estratégicos aos processos auditados.
+
+Referências Estratégicas do IIA
+
+O Instituto dos Auditores Internos (IIA) recomenda claramente:
+
+• Uso Contínuo e Estratégico de Dados (Continuous Auditing & Monitoring): Avaliação proativa em tempo real para fortalecer governança e gestão de riscos.
+• Auditoria Orientada por Dados (Data-Driven Audit): Uso de analytics e IA para vincular automaticamente os dados aos processos internos e riscos.
+• Relatórios e Comunicação em Tempo Real: Relatórios dinâmicos e painéis tecnológicos para comunicação contínua.
+
+Viabilidade Técnica e Ferramentas
+
+• Definição clara dos painéis compartilháveis ou específicos pelas gerências que os desenvolveram.
+• IA Generativa: Vínculos automáticos entre dados e processos/eventos de risco.
+• Apache Kafka: Atualização contínua dos dados na intranet da Audit.
+• Indexação Solr.
+• Desenvolvimento de APIs para consumo das informações.
+• Dashboards Integrados (Power BI ou similares): Visualizações estratégicas e operacionais contínuas.
+
+Resumo
+
+Considerando o normativo interno do Banco do Brasil e a estratégia de auditoria baseada em riscos, propomos integrar automaticamente os painéis estratégicos existentes no Catiana à taxonomia de processos e eventos de riscos já estabelecida. Usando tecnologias recomendadas pelo IIA (IA generativa, Apache Kafka, APIs e dashboards integrados), será possível realizar planejamento e execução de auditoria contínuos, dinâmicos e assertivos.
+
+
+
+
+Uso de Abordagem Data-Driven nos Processos de Auditoria
 Propomos uma abordagem orientada por dados (data-driven) nos processos de auditoria, com uso integrado de dados vinculados diretamente a processos e riscos, para gerar informações estratégicas alinhadas aos objetivos da empresa. Com foco em garantir a observância dos preceitos metodológicos, esta abordagem visa fortalecer a metodologia da auditoria, garantindo que todas as informações relevantes sejam integradas e utilizadas de forma eficaz.
 Integração Direta e Automática das Informações
 Integração direta e automática das informações dos diferentes painéis cadastrados no Catiana (Catálogo de Instrumentos de Análises Avançadas), desenvolvidos pela GA Antec em conjunto com as GA responsáveis pelos processos (ex.: perdas, reclamações, fraudes, processos decisórios, dados da segunda linha de defesa, etc.), com os processos e eventos de riscos definidos na taxonomia de riscos do Banco do Brasil.
