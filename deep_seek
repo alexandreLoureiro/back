@@ -1,3 +1,40 @@
+Segue seu texto atualizado com as inclusões solicitadas (Postgres-pgvector e modelo DeepSeek), mantendo a clareza da mensagem original:  
+
+---
+
+### **Viabilidade Técnica e Ferramentas (visão de possibilidades)**
+
+Para embasar tecnicamente a proposta, apresentamos abaixo algumas ferramentas disponíveis no ambiente corporativo do banco que podem apoiar a solução, considerando sempre a viabilidade técnica futura. Ressalta-se, entretanto, que esta relação tem caráter orientativo e exemplificativo, sem objetivo imediato de determinar o "como fazer" ou definir antecipadamente quais ferramentas serão adotadas na implementação final. A análise técnica detalhada ocorrerá em etapa posterior.
+
+- **Painéis Compartilháveis e Específicos:**  
+  Definição prévia pelas gerências sobre quais painéis têm informações estratégicas passíveis de integração.
+
+- **IA Generativa:**  
+  Possibilidade de criação automática de vínculos semânticos entre dados estratégicos e processos/eventos da taxonomia de riscos.
+
+- **Modelo DeepSeek (ou equivalente):**  
+  Potencial uso de modelos avançados de IA com capacidade ampliada de raciocínio lógico ("reasoning"), para geração mais precisa e fundamentada de insights.
+
+- **Apache Kafka:**  
+  Potencial para atualização contínua e dinâmica dos dados, permitindo integração em tempo real na intranet da Audit.
+
+- **Apache Solr:**  
+  Capacidade técnica disponível para indexação rápida e eficiente das informações, facilitando buscas avançadas.
+
+- **Postgres com extensão pgvector:**  
+  Viabilidade de armazenamento e recuperação eficiente de embeddings vetoriais, permitindo buscas semânticas rápidas e avançadas diretamente no banco de dados.
+
+- **APIs:**  
+  Desenvolvimento de interfaces para consumo ágil e direto dos dados entre diferentes painéis e a intranet.
+
+- **Dashboards Integrados (Power BI ou similares):**  
+  Ferramentas amplamente utilizadas na empresa para visualização contínua das informações estratégicas e operacionais.
+
+- **Modelos de Transformação de Sentenças (Sentence Embeddings):**  
+  Modelos como o **'all-MiniLM-L6-v2'**, que facilitam buscas semânticas, clustering e similaridade textual, apoiando classificações automáticas e recomendações contextuais.
+
+Essas ferramentas possuem reconhecida aplicabilidade técnica e metodológica em diversas publicações e práticas de mercado, garantindo um embasamento inicial robusto. Entretanto, sua adoção efetiva e a forma exata de implementação dependerão de estudos detalhados posteriores, considerando a viabilidade técnica e operacional no ambiente corporativo do Banco.
+
 https://www.linkedin.com/pulse/o-papel-da-intelig%C3%AAncia-artificial-na-auditoria-uma-nascimento-jsl8f/
 
 Uso de Abordagem Data-Driven nos Processos de Auditoria
