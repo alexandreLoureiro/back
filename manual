@@ -1,260 +1,51 @@
-<p-toast></p-toast>
-
-<div class="dropdown-container">
-  <p-dropdown
-    [options]="trabalhos"
-    [(ngModel)]="selectedTrabalho"
-    placeholder="Selecione um trabalho"
-    [filter]="true"
-    filterPlaceholder="Pesquisar trabalho"
-    [showClear]="true"
-    (onChange)="onTrabalhoChange($event.value)"
-  ></p-dropdown>
-</div>
-
-<div class="chat-container">
-  <!-- Área de mensagens -->
-  <div class="messages" #messageContainer>
-    <div
-      *ngFor="let msg of messages"
-      [ngClass]="{
-        'user-message': msg.role === 'user',
-        'assistant-message': msg.role === 'assistant'
-      }"
-    >
-      <p-card styleClass="message-card" [style]="{ 'margin-bottom': '1rem' }">
-        <ng-container>
-          <span *ngIf="msg.role === 'user'">
-            <i class="pi pi-user" style="margin-right: .5rem;"></i>
-            Você:
-          </span>
-          <span *ngIf="msg.role === 'assistant'">
-            <i class="pi pi-android" style="margin-right: .5rem;"></i>
-            Assistente:
-          </span>
-          <br />
-          <span>{{ msg.content }}</span>
-        </ng-container>
-      </p-card>
-    </div>
-  </div>
-
-  <!-- Indicador de carregamento enquanto espera resposta -->
-  <div class="loading-indicator" *ngIf="loading">
-    <p-progressSpinner></p-progressSpinner>
-    <span style="margin-left: 8px;">Aguardando resposta...</span>
-  </div>
-
-  <!-- Barra de input e botão de enviar -->
-  <div class="input-bar">
-    <textarea
-      #textarea
-      [(ngModel)]="userMessage"
-      placeholder="Digite sua mensagem..."
-      (input)="adjustTextArea($event)"
-      (keydown)="handleEnterKey($event)"
-      [disabled]="!selectedTrabalho"
-      rows="1"
-      class="chat-textarea"
-    ></textarea>
-
-    <div class="input-action">
-      <i
-        class="pi pi-send"
-        (click)="sendMessage()"
-        [ngClass]="{ 'disabled': !selectedTrabalho || userMessage.trim().length === 0 || loading }"
-      ></i>
-    </div>
-  </div>
-</div>
-import { Component } from '@angular/core';
-import { MessageService } from 'primeng/api';
-
-@Component({
-  selector: 'app-chat',
-  templateUrl: './chat.component.html',
-  styleUrls: ['./chat.component.css'],
-  providers: [MessageService], // Adicione o serviço como provedor
-})
-export class ChatComponent {
-  // Suas variáveis existentes
-  sessionId = '12345';
-  userMessage = '';
-  selectedTrabalho: number | null = null;
-  loading = false;
-
-  constructor(private messageService: MessageService) {}
-
-  // Método para exibir notificações
-  showNotification(severity: string, summary: string, detail: string) {
-    this.messageService.add({ severity, summary, detail });
-  }
-
-  // Exemplo de uso no método sendMessage
-  sendMessage(): void {
-    const trimmedMessage = this.userMessage.trim();
-
-    if (!this.selectedTrabalho) {
-      this.showNotification('warn', 'Atenção', 'Selecione um trabalho antes de enviar uma mensagem.');
-      return;
-    }
-
-    if (!trimmedMessage) {
-      this.showNotification('warn', 'Atenção', 'Digite uma mensagem antes de enviar.');
-      return;
-    }
-
-    this.loading = true;
-    this.showNotification('info', 'Enviando', 'Sua mensagem está sendo processada.');
-
-    // Simulação de envio (substitua pelo seu serviço real)
-    setTimeout(() => {
-      this.showNotification('success', 'Sucesso', 'Mensagem enviada com sucesso.');
-      this.loading = false;
-      this.userMessage = '';
-    }, 2000);
-  }
-}
-onTrabalhoChange(nr_trabalho: number): void {
-  console.log(`Trabalho selecionado: ${nr_trabalho}`);
-
-  this.service.getTrabalhoDetails(nr_trabalho).subscribe({
-    next: (response) => {
-      console.log('Detalhes do trabalho:', response[0]);
-      this.showNotification('info', 'Trabalho Selecionado', `Trabalho ${nr_trabalho} carregado com sucesso.`);
-
-      this.service.resetSession(this.sessionId).subscribe({
-        next: () => {
-          console.log('Sessão resetada com sucesso.');
-          this.showNotification('info', 'Sessão Resetada', 'Sessão foi resetada.');
-
-          this.service.sendMessage(
-            this.sessionId,
-            '',
-            response[0].role_user,
-            response[0].role_assistant
-          ).subscribe({
-            next: () => {
-              this.showNotification('success', 'Sessão Inicializada', 'Pronto para interagir.');
-            },
-            error: (err) => {
-              this.showNotification('error', 'Erro', 'Erro ao inicializar sessão.');
-              console.error(err);
-            },
-          });
-        },
-        error: (err) => {
-          this.showNotification('error', 'Erro', 'Erro ao resetar a sessão.');
-          console.error(err);
-        },
-      });
-    },
-    error: (err) => {
-      this.showNotification('error', 'Erro', 'Erro ao carregar detalhes do trabalho.');
-      console.error(err);
-    },
-  });
-}
-sendMessage(): void {
-  const trimmedMessage = this.userMessage.trim();
-
-  if (!this.selectedTrabalho) {
-    this.showNotification('warn', 'Atenção', 'Selecione um trabalho antes de enviar uma mensagem.');
-    return;
-  }
-
-  if (!trimmedMessage) {
-    this.showNotification('warn', 'Atenção', 'Digite uma mensagem antes de enviar.');
-    return;
-  }
-
-  // Adiciona a mensagem do usuário ao histórico
-  this.messages.push({ role: 'user', content: trimmedMessage });
-
-  // Limpa o campo de input e redefine a altura da textarea
-  this.userMessage = '';
-  this.resetTextAreaHeight(); // Garante que o textarea volte para a altura padrão
-
-  this.loading = true;
-  this.showNotification('info', 'Enviando', 'Sua mensagem está sendo processada.');
-
-  // Chama o serviço para enviar a mensagem ao backend
-  this.service.sendMessage(this.sessionId, trimmedMessage).subscribe({
-    next: (response) => {
-      // Adiciona a resposta do assistente ao histórico
-      this.messages.push({ role: 'assistant', content: response.answer });
-      this.loading = false;
-
-      this.showNotification('success', 'Sucesso', 'Mensagem enviada com sucesso.');
-      this.scrollToBottom();
-    },
-    error: (err) => {
-      console.error('Erro ao processar mensagem:', err);
-      this.loading = false;
-
-      // Exibe uma mensagem de erro para o usuário
-      this.showNotification('error', 'Erro', 'Erro ao processar sua mensagem. Por favor, tente novamente mais tarde.');
-
-      // Adiciona uma mensagem de erro ao histórico
-      this.messages.push({
-        role: 'assistant',
-        content: 'Erro ao processar sua mensagem. Por favor, tente novamente mais tarde.',
-      });
-
-      this.scrollToBottom();
-    },
-  });
-}
-Serviço de Notificação
-Crie o método showNotification para reutilizar facilmente notificações no componente:
-
-showNotification(severity: string, summary: string, detail: string): void {
-  this.messageService.add({ severity, summary, detail });
-}
-
-Alteração no Template
-Certifique-se de que o componente <p-toast> esteja presente no template HTML:
-
-<p-toast></p-toast>
-<div class="chat-container">
-  <!-- Restante do código do chat -->
-</div>
-
-sendMessage(sessionId: string, userMessage: string, roleUser?: string, roleAssistant?: string): Observable<any> {
-  const body = {
-    sessionId,
-    userMessage,
-    roleUser,
-    roleAssistant,
-  };
-  console.log('Enviando para o backend: ', body);
-
-  return this.http.post<any>(`${this.API_ptai}/chat`, body).pipe(
-    catchError((error: HttpErrorResponse) => {
-      // Tratamento de erros
-      let errorMessage = 'Erro desconhecido. Por favor, tente novamente mais tarde.';
-
-      if (error.error instanceof ErrorEvent) {
-        // Erro do lado do cliente
-        errorMessage = `Erro do cliente: ${error.error.message}`;
-      } else {
-        // Erro do lado do servidor
-        switch (error.status) {
-          case 400:
-            errorMessage = 'Requisição inválida. Verifique os dados enviados.';
-            break;
-          case 500:
-            errorMessage = 'Erro interno no servidor. Por favor, tente novamente mais tarde.';
-            break;
-          default:
-            errorMessage = `Erro (${error.status}): ${error.message}`;
-        }
-      }
-
-      console.error(`Erro na chamada ao backend:`, error);
-      // Lança o erro para ser tratado no componente
-      return throwError(() => new Error(errorMessage));
-    })
-  );
-}
-
+Radar Planejamento
+Nesta opção é possível consultar diversas sugestões de temas para trabalho a partir das 
+seguintes perspectivas: Inteligência de Mercado; Entidades de Fiscalização e Controles;
+Auditorias Especiais; Reclamações de Clientes (BB Atende); e Notas avaliadas no módulo 
+PCE. Para todas as visões é possível fazer buscar por palavra-chave nos temas e filtrar os 
+resultados tanto por risco como por processo corporativo. Foi utilizado a tecnologia de IA 
+Generativa (GPT) para construir sugestões de temas e objetivos para trabalhos de 
+avaliação, além de vinculações de processo e risco, dessa forma, alertamos que as 
+informações devem ser interpretadas com cautela. A seguir, o detalhamento dessas visões.
+2.2.1 Inteligência de mercado
+A partir de informações da Diretoria Estratégia e Organização (Direo), Rede Inteligência de 
+Mercado (data-base: a partir de jan/23), é possível extrair temas, para trabalhos. Nesta 
+visão foi utilizado IA Generativa (GPT) para sugerir, a partir da leitura das notícias, temas e 
+objetivo de trabalhos com a respectiva vinculação de processo e risco corporativo. Aqui é 
+possível filtrar por player impactado (por default vem BB) e megatendência associada ao 
+tema. Além dos temas e objetivos, é possível visualizar o título da notícia, resumo, fonte, 
+URL, e data de publicação.
+2.2.2 Entidade de Fiscalização e Controles
+Para esta visão foi definido que os temas seriam gerados (GPT) a partir das 
+requisições/demandas que tiveram apontamentos pelo órgão regulador. Essas demandas 
+são registradas na intranet da Audit (data-base: a partir de jan/23). As informações de risco 
+e processo são extraídas da base de dados contida na intranet. Nesta visão é possível filtrar 
+por órgão regulador. Além dos temas e objetivos, é possível visualizar a demanda de 
+origem, nome da demanda, instituição, ocorrência e data.
+2.2.3 Auditorias Especiais
+Para esta visão foi definido que os temas e a vinculação dos riscos seriam gerados (GPT) 
+tendo como base as demandas registradas no Gedip Web (campo síntese da ocorrência, 
+data-base: a partir de jan/23). Foram extraídas da base de dados da intranet as informações 
+relacionadas ao vínculo dos processos. Nesta visão é possível filtrar por nome da
+irregularidade. Além dos temas e objetivos, é possível visualizar o enquadramento e a 
+irregularidade.
+2.2.4 Reclamações de Clientes (BB Atende)
+Foi estabelecido que o canal BB Atende como uma fonte de informação para subsidiar 
+trabalhos de auditoria. A partir de reclamações registadas por clientes (data-base: último 
+mês fechado) foram gerados (GPT) temas, e as vinculações de risco e processo. Nesta 
+visão é possível filtrar por assunto (conforme registro no BB Atende). Além dos temas e 
+objetivos, é possível visualizar o racional utilizado pelo GPT e o mês de referência
+Processo de Colegiado Estratégico (PCE)
+Para esta visão foi definido que os temas seriam gerados (GPT) a partir das informações 
+registradas pelos auditores quando analisados os PCE na intranet da Audit. A visão 
+considera as análises desde jan/24, tendo em vista que a partir dessa data o módulo de 
+PCE na intranet passou a vincular os eventos de riscos contidos na taxonomia. As 
+informações de processo também são da base de dados da intranet. Nesta visão é possível 
+filtrar por nota técnica. Além dos temas e objetivos, é possível visualizar a nota técnica de 
+origem.
+2.2.6 Temas Avaliados nos últimos 2 anos
+Neste módulo é possível consultar os trabalhos realizados/a realizar, tendo como base o 
+ano corrente e os dois anos anteriores. É possível filtrar por gerência coordenadora e 
+situação do trabalho. A visualização final contém as seguintes informações: GA 
+coordenadora, nome do trabalho, atividade, situação, objetivo do trabalho, número do 
+trabalho, justificativa e data de conclusão.
