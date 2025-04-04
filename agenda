@@ -1,3 +1,491 @@
+<p-toast></p-toast>
+
+<div class="container" style="max-width: 1200px; font-family: Arial, sans-serif; font-size: 0.8rem; margin-top: 10px">
+  <!-- Seção de Upload -->
+  <div class="card mb-3 p-2">
+    <h2 class="text-center mb-2" style="font-size: 1rem;">Upload Recomendações KPMG</h2>
+
+    <!-- Componente Steps -->
+    <p-steps [model]="steps" [activeIndex]="activeStep" [readonly]="true" [ngStyle]="{'margin-bottom': '0.5rem'}"></p-steps>
+
+    <!-- Botões customizados para upload (lado a lado) -->
+    <div class="d-flex justify-content-around align-items-center mb-2">
+      <p-fileUpload #excelUploader name="excelFile" accept=".xls,.xlsx" maxFileSize="10000000"
+                    (onSelect)="onSelectExcel($event)" (onClear)="onClearExcel()"
+                    chooseLabel="Excel KPMG" uploadLabel="Upload Excel" cancelLabel="Cancelar"
+                    [showUploadButton]="false" [showCancelButton]="false"
+                    styleClass="me-1"></p-fileUpload>
+
+      <p-fileUpload #pdfUploader name="pdfFiles" accept=".pdf" maxFileSize="10000000"
+                    (onSelect)="onSelectPDF($event)" (onClear)="onClearPDF()"
+                    chooseLabel="Selecione os Relatórios" uploadLabel="Upload PDFs" cancelLabel="Cancelar"
+                    [multiple]="true" [disabled]="!excelFile"
+                    [showUploadButton]="false" [showCancelButton]="false"
+                    styleClass="ms-1"></p-fileUpload>
+      <button pButton type="button" label="Enviar Recomendações KPMG"
+              class="btn btn-outline-success"
+              style="font-size: 0.8rem; padding: 0.3rem 0.8rem;"
+              (click)="enviarArquivosExcel()" [disabled]="!excelFile || validPdfFiles.length < relatoriosExcel.length"></button>
+
+    </div>
+
+    <!-- Inputs ocultos -->
+    <input type="file" #excelInput accept=".xls,.xlsx" style="display: none;" (change)="onSelectExcel({files: excelInput.files})" />
+    <input type="file" #pdfInput accept=".pdf" multiple style="display: none;" (change)="onSelectPDF({files: pdfInput.files})" />
+
+    <!-- Informações do arquivo Excel selecionado -->
+    <div *ngIf="excelFile" class="mt-1">
+      <small>Arquivo Selecionado: <strong>{{ excelFile.name }}</strong></small>
+    </div>
+
+    <!-- Card com lista de arquivos esperados -->
+    <div *ngIf="relatoriosExcel.length" class="card mt-2" style="font-size: 0.8rem;">
+      <div class="card-header p-1 bg-light">
+        Arquivos esperados:
+      </div>
+      <ul class="list-group list-group-flush">
+        <li *ngFor="let nome of pendingRelatorios" class="list-group-item py-1">
+          {{ nome }}.pdf
+        </li>
+      </ul>
+      <div *ngIf="pendingRelatorios.length === 0" class="text-success text-center">
+        Todos os arquivos esperados foram selecionados!
+      </div>
+    </div>
+
+    <!-- Exibe os arquivos selecionados com indicação de inválido, se houver -->
+    <div *ngIf="pdfFileItems.length" class="mt-1">
+      <small>
+        Arquivos Selecionados:
+        <span *ngFor="let item of pdfFileItems" style="margin-right: 0.3rem;">
+          {{ item.file.name }}
+          <span *ngIf="!item.isValid" class="text-danger">(Inválido)</span>
+        </span>
+      </small>
+    </div>
+  </div>
+
+  <!-- Seção da Tabela -->
+
+  <div class="card mt-3 p-2" style="font-family: Arial, sans-serif; font-size: 0.7rem; margin-top=10px">
+    <h6 class="text-center mb-1">Tabela de Relatórios RCM</h6>
+
+    <!-- Filtro global customizado -->
+    <div class="text-end mb-1">
+      <span class="custom-input-icon-left" style="font-size: 0.7rem;">
+        <i class="pi pi-search"></i>
+        <input type="text" pInputText (input)="dt.filterGlobal($any($event.target).value, 'contains')" placeholder="Pesquisar..." style="width: 160px; font-size: 0.7rem;" />
+      </span>
+    </div>
+
+    <p-table #dt [value]="rcmRelatorios" [paginator]="true" [rows]="5"
+             [globalFilterFields]="['relatorio','data_emissao','constatacoes','recomendacoes']"
+             sortMode="multiple" [responsiveLayout]="'scroll'" styleClass="p-datatable-sm">
+      <ng-template pTemplate="header">
+        <tr>
+          <th pSortableColumn="relatorio">
+            Relatório
+            <p-sortIcon field="relatorio"></p-sortIcon>
+          </th>
+          <th pSortableColumn="data_emissao">
+            Data Emissão
+            <p-sortIcon field="data_emissao"></p-sortIcon>
+          </th>
+          <th pSortableColumn="constatacoes">
+            Constatações
+            <p-sortIcon field="constatacoes"></p-sortIcon>
+          </th>
+          <th pSortableColumn="recomendacoes">
+            Recomendações
+            <p-sortIcon field="recomendacoes"></p-sortIcon>
+          </th>
+          <th style="text-align: center;">Ações</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-rel>
+        <tr>
+          <td>{{ rel.relatorio }}</td>
+          <td>{{ rel.data_emissao }}</td>
+          <td>{{ rel.constatacoes }}</td>
+          <td>{{ rel.recomendacoes }}</td>
+          <td class="text-center">
+            <p-button icon="pi pi-trash" severity="danger" [ngStyle]="{'font-size': '0.7rem', 'padding': '0.2rem', 'margin-right': '0.3rem'}" (click)="deletarRelatorio(rel.id)"></p-button>
+            <p-button icon="pi pi-telegram" severity="success" [ngStyle]="{'font-size': '0.7rem', 'padding': '0.2rem', 'margin-right': '0.3rem'}" [routerLink]="['/chatdetalhe', rel.id]"></p-button>
+            <p-button icon="pi pi-arrow-circle-down" severity="success" [ngStyle]="{'font-size': '0.7rem', 'padding': '0.2rem'}" (click)="downloadRelatorio(rel.id)"></p-button>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+
+
+
+
+
+
+.custom-input-icon-left {
+  position: relative;
+  display: inline-block;
+}
+
+.custom-input-icon-left i {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #999; /* Ajuste a cor se desejar */
+}
+
+.custom-input-icon-left input {
+  padding-left: 2rem; /* Espaço suficiente para o ícone */
+  height: 2rem; /* Ajuste conforme necessário */
+  font-size: 0.7rem;
+}
+
+
+
+
+import { Component, ViewChild, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FileUpload, FileUploadModule } from 'primeng/fileupload';
+import { ButtonModule } from 'primeng/button';
+import { MessageService, MenuItem } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
+import { TableModule } from 'primeng/table';
+import { StepsModule } from 'primeng/steps';
+import { RouterModule } from '@angular/router';
+import * as XLSX from 'xlsx';
+import { ServicoLLMService } from '../servico-llm.service';
+import { SplitButtonModule } from 'primeng/splitbutton';
+
+
+export interface RcmRelatorio {
+  id: number;
+  relatorio: string;
+  data_emissao: string | null;
+  constatacoes: string;
+  recomendacoes: string;
+}
+
+@Component({
+  selector: 'app-rcmexcel',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FileUploadModule,
+    ButtonModule,
+    ToastModule,
+    TableModule,
+    StepsModule,
+    RouterModule, SplitButtonModule
+  ],
+  providers: [ServicoLLMService, MessageService],
+  templateUrl: './rcmexcel.component.html',
+  styleUrls: ['./rcmexcel.component.css']
+})
+export class RcmexcelComponent implements OnInit {
+  excelFile: File | null = null;
+  pdfFiles: File[] = [];
+  pdfFileItems: { file: File, isValid: boolean }[] = [];
+  relatoriosExcel: string[] = [];
+  rcmRelatorios: RcmRelatorio[] = [];
+
+  @ViewChild('excelUploader') excelUploader!: FileUpload;
+  @ViewChild('pdfUploader') pdfUploader!: FileUpload;
+
+  lastUploadedExcel: string | null = null;
+  lastUploadedPdfs: string[] = [];
+
+  steps: MenuItem[] = [];
+  activeStep: number = 0;
+
+  colunasObrigatorias = [
+    'RELATORIO',
+    'DATA_EMISSAO',
+    'CONSTATACAO',
+    'EVIDENCIAS',
+    'RECOMENDACAO',
+    'INSTITUICAO_RESPONSAVEL',
+    'PREFIXO_RESPONSAVEL',
+    'INSTITUICAO_ASSUNTO_ELBB',
+    'PREVISAO_IMPLEMENTACAO',
+    'MATRICULA_DO_GESTOR_RESPONSAVEL'
+  ];
+
+  constructor(
+    private messageService: MessageService,
+    private servicoLLM: ServicoLLMService
+  ) {}
+
+  ngOnInit() {
+    this.steps = [
+      { label: 'Excel KPMG' },
+      { label: 'Selecione os Relatórios' },
+      { label: 'Upload Recomendações KPMG' }
+    ];
+    this.getRmcKpmg();
+  }
+
+  get pdfFilesNames(): string {
+    return this.pdfFileItems.map(item =>
+      item.isValid ? item.file.name : `${item.file.name} (Inválido)`
+    ).join(', ');
+  }
+
+  get validPdfFiles(): File[] {
+    return this.pdfFileItems.filter(item => item.isValid).map(item => item.file);
+  }
+
+  onSelectExcel(event: any) {
+    if (event.files && event.files.length) {
+      const file = event.files[0];
+      this.excelFile = file;
+      this.lerExcel(file);
+      this.activeStep = 1;
+    }
+  }
+
+  onClearExcel() {
+    this.excelFile = null;
+    this.relatoriosExcel = [];
+  }
+
+  onSelectPDF(event: any) {
+    const novosArquivos: File[] = Array.from(event.files);
+    const relatoriosEsperados = this.relatoriosExcel.map(r => r.trim().toUpperCase());
+    novosArquivos.forEach(arquivo => {
+      const nomeSemExt = arquivo.name.replace('.pdf', '').trim().toUpperCase();
+      const isValid = relatoriosEsperados.includes(nomeSemExt);
+      if (!this.pdfFileItems.some(item => item.file.name === arquivo.name)) {
+        this.pdfFileItems.push({ file: arquivo, isValid });
+        if (!isValid) {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Nome divergente',
+            detail: `O arquivo "${arquivo.name}" não corresponde a nenhum relatório esperado.`
+          });
+        }
+      }
+    });
+    console.log('PDFs selecionados:', this.pdfFileItems.map(item => item.file.name));
+    if (this.validPdfFiles.length >= this.relatoriosExcel.length) {
+      this.activeStep = 2;
+    }
+  }
+
+  onClearPDF() {
+    this.pdfFileItems = [];
+  }
+
+  lerExcel(file: File) {
+    const reader = new FileReader();
+    reader.onload = (e: any) => {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      if (!jsonData || !jsonData.length) {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Planilha vazia',
+          detail: 'Não há dados.'
+        });
+        return;
+      }
+      const cabecalho: string[] = jsonData[0].map((val: any) => val?.toString().trim().toUpperCase());
+      const colunasObrigatoriasUpper = this.colunasObrigatorias.map(col => col.toUpperCase());
+      for (const col of colunasObrigatoriasUpper) {
+        if (!cabecalho.includes(col)) {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Coluna faltando',
+            detail: `Coluna "${col}" não encontrada na planilha.`
+          });
+          this.excelFile = null;
+          return;
+        }
+      }
+      const dataObjects = XLSX.utils.sheet_to_json(worksheet, {
+        defval: '',
+        header: cabecalho,
+        range: 1
+      });
+      const relSet = new Set<string>();
+      (dataObjects as any[]).forEach(row => {
+        if (row['RELATORIO']) {
+          relSet.add(row['RELATORIO'].toString().trim());
+        }
+      });
+      this.relatoriosExcel = Array.from(relSet).map(r => r.toUpperCase());
+      if (this.relatoriosExcel.length > 1) {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Vários RELATORIO',
+          detail: `Planilha tem ${this.relatoriosExcel.length} valores distintos.`
+        });
+      }
+      console.log('Relatórios Excel:', this.relatoriosExcel);
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  get pendingRelatorios(): string[] {
+    return this.relatoriosExcel.filter(nome =>
+      !this.pdfFileItems.some(item => item.file.name.replace('.pdf', '').trim().toUpperCase() === nome)
+    );
+  }
+
+  // Método para alternar a exibição do painel de upload
+  toggleUploadForm(): void {
+    this.showUpload = !this.showUpload;
+  }
+
+  // Método para cancelar o upload, limpando os arquivos e fechando o painel
+  cancelUpload(): void {
+    this.excelFile = null;
+    this.pdfFileItems = [];
+    this.relatoriosExcel = [];
+    if (this.excelUploader) {
+      this.excelUploader.clear();
+    }
+    if (this.pdfUploader) {
+      this.pdfUploader.clear();
+    }
+    this.showUpload = false;
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Cancelado',
+      detail: 'O upload foi cancelado.'
+    });
+  }
+
+  enviarArquivosExcel() {
+    if (!this.excelFile) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Aviso',
+        detail: 'Selecione a planilha Excel.'
+      });
+      return;
+    }
+    if (this.pdfFileItems.length === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Aviso',
+        detail: 'Selecione os PDFs.'
+      });
+      return;
+    }
+    if (this.validPdfFiles.length < this.relatoriosExcel.length) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Faltam PDFs',
+        detail: `Você tem ${this.relatoriosExcel.length} relatórios distintos, mas apenas ${this.validPdfFiles.length} PDFs válidos.`
+      });
+      return;
+    }
+    for (const relatorio of this.relatoriosExcel) {
+      const pdfEncontrado = this.validPdfFiles.some(pdf => {
+        const nameNoExt = pdf.name.replace('.pdf', '').trim().toUpperCase();
+        return nameNoExt === relatorio;
+      });
+      if (!pdfEncontrado) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Nome divergente',
+          detail: `Relatório "${relatorio}" não tem PDF correspondente.`
+        });
+        return;
+      }
+    }
+    this.servicoLLM.uploadExcelMultiplosPdfs(this.excelFile, this.validPdfFiles)
+      .subscribe({
+        next: (res) => {
+          console.log('Resposta do backend:', res);
+          if (this.excelFile) {
+            this.lastUploadedExcel = this.excelFile.name;
+          }
+          this.lastUploadedPdfs = this.validPdfFiles.map(pdf => pdf.name);
+          this.excelFile = null;
+          this.pdfFileItems = [];
+          this.relatoriosExcel = [];
+          this.excelUploader.clear();
+          this.pdfUploader.clear();
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Sucesso',
+            detail: 'Excel e PDFs enviados com sucesso!'
+          });
+          this.getRmcKpmg();
+          // Fecha o painel de upload
+          this.showUpload = false;
+        },
+        error: (err: any) => {
+          console.error('Erro ao enviar Excel+PDFs:', err);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Erro',
+            detail: err.error?.detail || err.message || 'Falha no upload.'
+          });
+        }
+      });
+  }
+
+  getRmcKpmg(): void {
+    this.servicoLLM.listarRelatoriosRcm().subscribe({
+      next: (lista) => {
+        this.rcmRelatorios = lista.map(item => ({
+          ...item,
+          relatorio: item.nome
+        }));
+        console.log('this.rcmRelatorios ', this.rcmRelatorios)
+      },
+      error: (err) => {
+        console.error('Erro ao buscar relatórios RCM:', err);
+      }
+    });
+  }
+
+  downloadRelatorio(relatorioId: number): void {
+    const url = this.servicoLLM.getPdfUrl(relatorioId);
+    window.open(url, '_blank');
+  }
+
+  deletarRelatorio(id: number): void {
+    this.servicoLLM.deletarRelatorioRCM(id).subscribe({
+      next: (res) => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Deletado',
+          detail: 'Registro deletado com sucesso!'
+        });
+        this.getRmcKpmg();
+      },
+      error: (err) => {
+        console.error('Erro ao deletar o registro:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Erro',
+          detail: 'Falha ao deletar o registro.'
+        });
+      }
+    });
+  }
+
+  // Propriedade para controlar a exibição do painel de upload
+  showUpload: boolean = false;
+}
+
+
+
+
+
+
+
 import { Component, ViewChild, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FileUpload, FileUploadModule } from 'primeng/fileupload';
