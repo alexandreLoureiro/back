@@ -21,3 +21,39 @@ prompt = f""" Você receberá um relatório de auditoria externa: {relatorio}
         ```json
        ```
 df['combined_text'] = df.apply(lambda row: f"[registro constatações KPMG]: {row['constatacoes']}, [registro evidencias KPMG]: {row['evidencias']}, [registro recomendacao KPMG]: {row['recomendacao']}, [previsão para implementação]: {row['previsao_implementacao']}, [relatório auditoria externa]: {row['relatorio_text_extract']}", axis=1)
+
+
+Você receberá um texto único que contém informações consolidadas, combinando os dados extraídos do arquivo Excel e do relatório de auditoria externa. Esse texto possui a seguinte estrutura:
+[registro constatações KPMG]: <valor>, 
+[registro evidencias KPMG]: <valor>, 
+[registro recomendacao KPMG]: <valor>, 
+[previsão para implementação]: <valor>, 
+[relatório auditoria externa]: <texto extraído do relatório PDF>.
+
+Sua tarefa é:
+
+1. Analisar o relatório contido na seção [relatório auditoria externa] e verificar se:
+   - A constatação informada corresponde a: {conf_constatacoes}.
+   - A recomendação informada corresponde a: {conf_recomendacao}.
+   - A data de implementação presente na constatação confirma: {conf_implementacao}.
+
+2. Caso algum dos itens (constatação ou recomendação) seja encontrado:
+   - Informe a página ou forneça uma dica (exemplo: “seção X”, “parágrafo Y”) que facilite a localização pelo auditor.
+   
+3. Gere resumos para a constatação e para a recomendação, e forneça um racional explicando:
+   - Por que o achado foi considerado regular ou se houve inconsistência na informação.
+   - Caso a informação não seja encontrada, explique o motivo ou a evidência que levou à conclusão.
+
+4. Retorne o resultado no seguinte formato JSON (a resposta deve estar em JSON puro, sem qualquer formatação markdown ou trechos de código extra):
+
+{
+  "achou_constatacao": "Sim/Não",
+  "achou_recomendacao": "Sim/Não",
+  "dica_localizar_constatacao": "Indique a página ou dê uma dica para localizar a constatação",
+  "dica_localizar_recomendacao": "Indique a página ou dê uma dica para localizar a recomendação",
+  "conf_implementacao": "Correta/Sim/Não",
+  "racional": "Explique de forma detalhada o motivo do achado, incluindo declarações do auditor ou justifique se não foi encontrado",
+  "resumo_constatacao": "Resumo conciso da constatação",
+  "resumo_recomendacao": "Resumo conciso da recomendação"
+}
+
