@@ -1,3 +1,74 @@
+
+import pandas as pd
+from sqlalchemy import create_engine, inspect, text
+
+# Supondo que a função 'postgres()' já esteja definida e retorne (conn, engine)
+conn, engine = postgres()
+
+# Nome da tabela e do schema
+table_name = "rcm_kpmg_relatorios"
+schema_name = "rcm"
+
+# Lista de colunas a serem criadas (coluna: tipo de dados)
+columns_to_add = {
+    'achou_constatacao': 'TEXT',
+    'achou_recomendacao': 'TEXT',
+    'dica_localizar_constatacao': 'TEXT',
+    'dica_localizar_recomendacao': 'TEXT',
+    'conf_implementacao': 'TEXT',
+    'racional': 'TEXT',
+    'resumo_constatacao': 'TEXT',
+    'resumo_recomendacao': 'TEXT'
+}
+
+# Cria um inspetor para verificar as colunas existentes
+inspector = inspect(engine)
+existing_columns = [col['name'] for col in inspector.get_columns(table_name, schema=schema_name)]
+
+# Abre uma conexão de transação para realizar os ALTER TABLE se necessário
+with engine.begin() as connection:
+    for col, data_type in columns_to_add.items():
+        if col not in existing_columns:
+            alter_sql = f"ALTER TABLE {schema_name}.{table_name} ADD COLUMN {col} {data_type};"
+            connection.execute(text(alter_sql))
+            print(f"Coluna '{col}' adicionada à tabela {schema_name}.{table_name}.")
+
+# Agora, para cada linha do DataFrame df_gpt, fazemos um UPDATE na tabela
+update_query = text(f"""
+    UPDATE {schema_name}.{table_name}
+    SET 
+        achou_constatacao = :achou_constatacao,
+        achou_recomendacao = :achou_recomendacao,
+        dica_localizar_constatacao = :dica_localizar_constatacao,
+        dica_localizar_recomendacao = :dica_localizar_recomendacao,
+        conf_implementacao = :conf_implementacao,
+        racional = :racional,
+        resumo_constatacao = :resumo_constatacao,
+        resumo_recomendacao = :resumo_recomendacao
+    WHERE id = :id
+""")
+
+# Realiza os updates para cada registro baseado na coluna 'id'
+with engine.begin() as connection:
+    for index, row in df_gpt.iterrows():
+        params = {
+            'id': row['id'],
+            'achou_constatacao': row['achou_constatacao'],
+            'achou_recomendacao': row['achou_recomendacao'],
+            'dica_localizar_constatacao': row['dica_localizar_constatacao'],
+            'dica_localizar_recomendacao': row['dica_localizar_recomendacao'],
+            'conf_implementacao': row['conf_implementacao'],
+            'racional': row['racional'],
+            'resumo_constatacao': row['resumo_constatacao'],
+            'resumo_recomendacao': row['resumo_recomendacao']
+        }
+        connection.execute(update_query, **params)
+        print(f"Registro com id {row['id']} atualizado.")
+
+print("Processamento concluído.")
+
+
+
 ok, agora tenho esse dataframe:
 
 df_gpt[['id', 'achou_constatacao', 'achou_recomendacao',
