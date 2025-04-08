@@ -1,3 +1,23 @@
+
+SELECT 
+    EXTRACT(year FROM data_emissao) AS ano,
+    CASE 
+        WHEN EXTRACT(month FROM data_emissao) <= 6 THEN '1º Semestre'
+        ELSE '2º Semestre'
+    END AS semestre,
+    string_agg('relatorio: ' || relatorio_text_extract, ' ') AS relatorios_periodo
+FROM 
+    rcm.rcm_kpmg_relatorios
+WHERE 
+    sumario_executivo_per IS NULL
+GROUP BY 
+    EXTRACT(year FROM data_emissao),
+    CASE 
+        WHEN EXTRACT(month FROM data_emissao) <= 6 THEN '1º Semestre'
+        ELSE '2º Semestre'
+    END;
+
+
 SELECT 
     data_emissao,
     string_agg('relatorio: ' || relatorio_text_extract, ' ') AS relatorios_periodo
