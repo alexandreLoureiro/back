@@ -1,82 +1,33 @@
-<div class="container-fluid p-3">
-  <!-- Cabeçalho com informações do período -->
-  <div class="card mb-4">
-    <div class="card-header bg-primary text-white">
-      <div class="d-flex justify-content-between align-items-center">
-        <h4 class="mb-0">Relatórios de Auditoria Externa - Período: {{objetoAudDetalhes?.periodo_apuracao}}</h4>
-      </div>
-    </div>
-    
-    <div class="card-body" *ngIf="objetoAudDetalhes">
-      <!-- Sumário executivo do período (consolidado) -->
-      <div class="mb-4">
-        <h5 class="border-bottom pb-2 text-primary">Sumário Executivo do Período</h5>
-        <div class="p-3 bg-light rounded" [innerHTML]="objetoAudDetalhes.sumario_executivo_per"></div>
-        
-        <div class="mt-3">
-          <p-accordion>
-            <p-accordionTab header="Racional da Análise">
-              <pre class="p-2 bg-light rounded">{{ objetoAudDetalhes.racional_sumario_per }}</pre>
-            </p-accordionTab>
-          </p-accordion>
-        </div>
-      </div>
-      
-      <!-- Lista de relatórios no período -->
-      <div class="mb-4">
-        <h5 class="border-bottom pb-2 text-primary">Relatórios Analisados</h5>
-        <div class="p-3 bg-light rounded">
-          <pre>{{ objetoAudDetalhes.relatorios_periodo }}</pre>
-        </div>
-      </div>
-      
-      <!-- Sumários executivos dos relatórios individuais -->
-      <div class="mb-4">
-        <h5 class="border-bottom pb-2 text-primary">Detalhes por Relatório</h5>
-        
-        <div *ngIf="sumariosPorRelatorio && sumariosPorRelatorio.length > 0">
-          <p-accordion [multiple]="true" styleClass="mt-3">
-            <p-accordionTab *ngFor="let sumario of sumariosPorRelatorio" [header]="sumario.nome">
-              <div class="mb-3">
-                <h6 class="text-primary">Sumário Executivo</h6>
-                <div class="p-3 bg-light rounded" [innerHTML]="sumario.sumario_executivo_rel"></div>
-              </div>
-              
-              <div class="mb-3">
-                <h6 class="text-primary">Racional da Análise</h6>
-                <pre class="p-3 bg-light rounded">{{ sumario.racional_sumario_rel }}</pre>
-              </div>
-            </p-accordionTab>
-          </p-accordion>
-        </div>
-        
-        <div *ngIf="!sumariosPorRelatorio || sumariosPorRelatorio.length === 0" class="text-center p-4">
-          <p class="text-muted">Nenhum relatório detalhado disponível para este período.</p>
-        </div>
-      </div>
-    </div>
-    
-    <div class="card-body d-flex justify-content-center" *ngIf="!objetoAudDetalhes">
-      <p-progressSpinner strokeWidth="4" animationDuration=".5s"></p-progressSpinner>
-    </div>
-  </div>
-</div>
+dessa chamada 
 
-<style>
-/* Estilos para melhorar a apresentação dos sumários */
-pre {
-  white-space: pre-wrap;
-  font-family: inherit;
-  margin: 0;
-}
+this.servicoLLM.servicosAgentes(this.dynamicObject).subscribe({
+          next: (response) => {
+            console.log('response: ', response)
+            this.objetoAudDetalhes = response[0]; // Detalhes do trabalho
+            this.showNotification('info', 'Objeto auditoria selecionado', `Iniciando análise do trabalho ${this.dynamicObject['agente'] }`);
+        // Reseta a sessão no backend
+recebi a lista abaixo
 
-/* Configurações para melhorar a aparência do conteúdo HTML dos sumários */
-:host ::ng-deep .p-accordion .p-accordion-header a {
-  padding: 1rem;
-  font-weight: 600;
-}
+[
+    {
+        "periodo_apuracao": "30.06.2024",
+        "relatorios_periodo": "nome relatorio: CCI BB rela...
+        "sumario_executivo_rel": "<p><strong>Principais pontos do relatório:</strong> A auditoria externa da KPMG sobre os controles internos da BB Consórcios não identificou deficiências significativas, mas destacou áreas de melhoria, como o <strong>arquivamento tempestivo de contratos físicos</strong> e a <strong>formalização de parâmetros de senha no sistema Newcon</strong>. Não foram reportados descumprimentos de dispositivos legais ou regulamentares que impactem as demonstrações financeiras.<br><em>\"Não houve deficiências significativas apontadas no período. Para atender esta recomendação, a Administradora avaliará soluções alternativas para que a Proposta de Adesão, que atualmente é assinada de forma física, seja arquivada com tempestividade, atendendo ao disposto no normativo.\"</em></p>",
+        "racional_sumario_rel": "Os pontos destacados no sumário foram selecionados com base na relevância para a governança e na necessidade de ações corretivas. As áreas de melhoria identificadas, como o arquivamento de contratos e a formalização de parâmetros de senha, foram priorizadas devido ao impacto potencial na segurança e na conformidade regulatória. A ausência de deficiências significativas e descumprimentos legais foi ressaltada para tranquilizar a alta administração sobre a robustez dos controles internos.",
+        "sumario_executivo_per": "<p><strong>Gestão de Acesso Privilegiado:</strong> Foram identificadas contas de acesso privilegiado no mainframe do Banco do Brasil atribuídas a colaboradores inativos ou fora da Diretoria de Tecnologia, representando um risco potencial à segurança da informação. <br><em>\"Identificamos quatro (4) contas de acesso... cujas chaves de acesso estão atreladas a colaboradores que não fazem parte da Diretoria de Tecnologia ou não estão mais ativos na Instituição.\"</em></p><p><strong>Controle de Depósitos Judiciais:</strong> No BB Leasing, 289 depósitos judiciais, totalizando R$ 9,875 milhões, não possuem extratos bancários que comprovem sua existência, além de processos judiciais já encerrados não terem sido baixados tempestivamente. <br><em>\"Observamos que a base operacional de depósitos judiciais... para os quais não foram localizados os extratos bancários que comprovassem a sua existência.\"</em></p><p><strong>Atualização de Ratings para Marcação a Mercado:</strong> No BB Banco de Investimento, os modelos de risco de crédito não responderam tempestivamente à deterioração da situação econômico-financeira de um emissor, gerando impacto no resultado de TVM. <br><em>\"Os modelos utilizados para atribuir o risco de crédito... não responderam tempestivamente às mudanças na situação econômico-financeira de um emissor.\"</em></p><p><strong>Conciliação de Obrigações por Repasses BNDES:</strong> Diferenças não conciliadas de R$ 566,329 mil foram identificadas entre os valores registrados pelo Banco do Brasil e os valores confirmados pelo BNDES. <br><em>\"Identificamos diferença não conciliada entre os valores registrados pela Instituição e os valores da resposta de circularização... no montante de R$ 566.329 mil a menor no Banco do Brasil.\"</em></p><p><strong>Arquivamento de Contratos de Consórcios:</strong> Na BB Consórcios, contratos de adesão de consorciados não contemplados e desistentes/excluídos não foram arquivados tempestivamente, gerando riscos de compliance. <br><em>\"Não foram identificados os contratos assinados com o termo de adesão ao consórcio.\"</em></p>",
+        "racional_sumario_per": "Os pontos destacados no sumário foram selecionados com base na relevância e no impacto potencial sobre a governança, segurança da informação, compliance e resultados financeiros do Banco do Brasil e suas subsidiárias. Foram priorizados achados que envolvem riscos significativos, como falhas em controles internos, segurança cibernética, compliance regulatório e impactos financeiros diretos, considerando a criticidade para a alta administração e a necessidade de ações corretivas imediatas.",
+        "role_user": "Com base nos relatórios de auditoria externa do período \"30.06.2024\", \n                    estou à disposição para responder suas dúvidas sobre os pontos apresentados no sumário executivo.\n                    Por favor, solicite qualquer informação sobre os achados de auditoria deste período.",
+        "role_assistant": "Olá! Estou pronto para responder suas dúvidas sobre os relatórios de auditoria externa do período 30.06.2024. Posso fornecer informações detalhadas sobre os pontos identificados no sumário executivo.\n                    Como posso ajudar?"
+    },
+    {
+        "periodo_apuracao": "30.06.2024",
+        "relatorios_periodo": "nome relatorio: ...
+        "sumario_executivo_rel": "<p><strong>Principais pontos do relatório:</strong> O relatório da KPMG não identificou deficiências significativas nos controles internos do Banco do Brasil, mas apontou <strong>quatro áreas de melhoria</strong>: gestão de acessos privilegiados, avaliação de baixas para prejuízo, conciliação de obrigações por repasses do BNDES e captura de citações de processos judiciais. Não foram identificados descumprimentos de dispositivos legais ou regulamentares que impactem as demonstrações financeiras. <br><em>\"Não houve deficiências significativas apontadas no período. Outras recomendações para melhoria dos controles internos foram identificadas.\"</em></p>",
+        "racional
+....
 
-:host ::ng-deep .p-accordion .p-accordion-content {
-  padding: 1.25rem;
-}
-</style>
+quero só fazer um ng for de sumario_executivo_rel e racional_sumario_rel, sendo sumario_executivo_rel innerhtml e racional_sumario_rel nao
+depois quero apenas um nao precisa iterar pq ele repete de sumario_executivo_per com innerhtml e racional_sumario_per
+
+só qquero o frontend, isto é o arquivo html, nao altera nada o comoponete .ts e aqui que tenho meu array objetoAudDetalhes
+estou usando primeng e bootstrap
