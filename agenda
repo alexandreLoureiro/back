@@ -1,621 +1,191 @@
- File "/usr/local/lib/python3.9/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
-    await app(scope, receive, sender)
-  File "/usr/local/lib/python3.9/site-packages/starlette/routing.py", line 714, in __call__
-    await self.middleware_stack(scope, receive, send)
-  File "/usr/local/lib/python3.9/site-packages/starlette/routing.py", line 734, in app
-    await route.handle(scope, receive, send)
-  File "/usr/local/lib/python3.9/site-packages/starlette/routing.py", line 288, in handle
-    await self.app(scope, receive, send)
-  File "/usr/local/lib/python3.9/site-packages/starlette/routing.py", line 76, in app
-    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
-  File "/usr/local/lib/python3.9/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
-    raise exc
-  File "/usr/local/lib/python3.9/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
-    await app(scope, receive, sender)
-  File "/usr/local/lib/python3.9/site-packages/starlette/routing.py", line 73, in app
-    response = await f(request)
-  File "/usr/local/lib/python3.9/site-packages/fastapi/routing.py", line 301, in app
-    raw_response = await run_endpoint_function(
-  File "/usr/local/lib/python3.9/site-packages/fastapi/routing.py", line 212, in run_endpoint_function
-    return await dependant.call(**values)
-  File "/app/routers/rotas_upload.py", line 336, in upload_rcm_excel_multiplos
-    novo_id = await inserir_linha_rcm(
-TypeError: inserir_linha_rcm() got an unexpected keyword argument 'ano'
-
-
-from sqlalchemy import text
-
-# Query de update ajustada para datas no formato "DD/MM/YYYY"
-update_query = text("""
-    UPDATE rcm.rcm_kpmg_relatorios
-    SET 
-        sumario_executivo_per = :sumario_executivo_per,
-        racional_sumario_per = :racional_sumario_per
-    WHERE to_char(to_date(data_emissao, 'DD/MM/YYYY'), 'YYYY') = :ano
-      AND (
-          CASE 
-              WHEN EXTRACT(month FROM to_date(data_emissao, 'DD/MM/YYYY')) <= 6 THEN '1º Semestre'
-              ELSE '2º Semestre'
-          END
-      ) = :semestre
-      AND sumario_executivo_per IS NULL
-""")
-
-# Supondo que seu DataFrame df_gpt_period contenha as colunas: 'ano', 'semestre',
-# 'sumario_executivo_per' e 'racional_sumario_per'
-with engine.begin() as connection:
-    for index, row in df_gpt_period.iterrows():
-        print("Atualizando para ano:", row['ano'], "Semestre:", row['semestre'])
-        params = {
-            'sumario_executivo_per': row['sumario_executivo_per'] or '',
-            'racional_sumario_per': row['racional_sumario_per'] or '',
-            # Converte o ano para string para garantir compatibilidade com to_char()
-            'ano': str(row['ano']),
-            'semestre': row['semestre']
-        }
-        result = connection.execute(update_query, **params)
-        print(f"Linhas afetadas: {result.rowcount} para ano {row['ano']} e semestre {row['semestre']}")
-
-print("Atualização dos relatórios por período concluída.")
-
-
-
-
-
-
-
-
-
-from sqlalchemy import text
-
-# Query de update que utiliza a conversão de data para extrair ano e semestre
-update_query = text("""
-    UPDATE rcm.rcm_kpmg_relatorios
-    SET 
-        sumario_executivo_per = :sumario_executivo_per,
-        racional_sumario_per = :racional_sumario_per
-    WHERE to_char(data_emissao::date, 'YYYY') = :ano
-      AND (
-          CASE 
-              WHEN EXTRACT(month FROM data_emissao::date) <= 6 THEN '1º Semestre'
-              ELSE '2º Semestre'
-          END
-      ) = :semestre
-""")
-
-# Iteração para atualizar cada grupo (ano e semestre) com os valores gerados
-with engine.begin() as connection:
-    for index, row in df_gpt_period.iterrows():
-        # Certifique-se de que as colunas 'ano' e 'semestre' estão definidas no DataFrame
-        # e que 'sumario_executivo_per' e 'racional_sumario_per' não são None.
-        print("Atualizando para ano:", row['ano'], "Semestre:", row['semestre'])
-        params = {
-            'sumario_executivo_per': row['sumario_executivo_per'] or '',
-            'racional_sumario_per': row['racional_sumario_per'] or '',
-            'ano': str(row['ano']),
-            'semestre': row['semestre']
-        }
-        result = connection.execute(update_query, **params)
-        print(f"Linhas afetadas: {result.rowcount} para ano {row['ano']} e semestre {row['semestre']}")
-
-print("Atualização dos relatórios por período concluída.")
-
-
-
-from sqlalchemy import text
-
-# Query de update comparando o ano e o semestre (usando to_char para o ano)
-update_query = text(f"""
-    UPDATE rcm.rcm_kpmg_relatorios
-    SET 
-        sumario_executivo_per = :sumario_executivo_per,
-        racional_sumario_per = :racional_sumario_per
-    WHERE to_char(data_emissao::date, 'YYYY') = :ano
-      AND (
-          CASE 
-              WHEN EXTRACT(month FROM data_emissao::date) <= 6 THEN '1º Semestre'
-              ELSE '2º Semestre'
-          END
-      ) = :semestre
-""")
-
-# Supondo que o seu DataFrame df_gpt_period possua as colunas: 'ano', 'semestre',
-# 'sumario_executivo_per' e 'racional_sumario_per'
-with engine.begin() as connection:
-    for index, row in df_gpt_period.iterrows():
-        params = {
-            'sumario_executivo_per': row['sumario_executivo_per'],
-            'racional_sumario_per': row['racional_sumario_per'],
-            # Certifique-se de que a coluna 'ano' esteja no formato string se necessário,
-            # visto que to_char retorna string
-            'ano': str(row['ano']),
-            'semestre': row['semestre']
-        }
-        connection.execute(update_query, **params)
-        print(f"Registro atualizado para ano: {row['ano']} e semestre: {row['semestre']}")
-
-print("Atualização dos relatórios por período concluída.")
-
-
-
-Você receberá um agrupamento de relatórios de auditoria externa consolidados por data de emissão no campo {relatorios_periodo}. Sua tarefa é gerar dois atributos, utilizando formatação innerHTML com tags HTML, conforme descrito abaixo:
-
-1. **sumario_executivo_per**:
-   - Crie um sumário executivo curto e profissional, composto por poucas frases, que destaque os principais pontos dos relatórios consolidados, enfatizando os riscos relevantes e achados significativos, que realmente merecem ser citados para a alta administração do banco.
-   - Utilize elementos visuais (como <strong> para negrito, ícones, etc.) para evidenciar pontos importantes.
-   - Após essas frases, em uma nova linha, adicione uma frase curta em itálico (<em>) contendo parte do texto original da extração para facilitar a consulta do auditor.
-
-2. **racional_sumario_per**:
-   - Forneça uma explicação sucinta do raciocínio adotado para a seleção dos pontos destacados no sumário, contextualizando os critérios utilizados e a relevância dos pontos escolhidos.
-
-Retorne o resultado em formato JSON puro, sem qualquer marcação extra, conforme o exemplo abaixo:
-
-{
-  "sumario_executivo_per": "<p><strong>Principal ponto:</strong> [Texto resumido com destaques e ícones se aplicável].<br><em>[Texto original resumido da extração]</em></p>",
-  "racional_sumario_per": "[Explicação do raciocínio adotado para a elaboração do sumário]"
-}
-
-# Exemplo: df_gpt_period deve possuir as colunas: data_emissao, sumario_executivo_per, racional_sumario_per
-
-update_query = text(f"""
-    UPDATE rcm.rcm_kpmg_relatorios
-    SET 
-        sumario_executivo_per = :sumario_executivo_per,
-        racional_sumario_per = :racional_sumario_per
-    WHERE data_emissao = :data_emissao
-""")
-
-with engine.begin() as connection:
-    for index, row in df_gpt_period.iterrows():
-        params = {
-            'sumario_executivo_per': row['sumario_executivo_per'],
-            'racional_sumario_per': row['racional_sumario_per'],
-            'data_emissao': row['data_emissao']
-        }
-        connection.execute(update_query, **params)
-        print(f"Registro atualizado para data_emissao: {row['data_emissao']}")
-
-print("Atualização dos relatórios por período concluída.")
-
-
-
-
-SELECT 
-    EXTRACT(year FROM data_emissao::date) AS ano,
-    CASE 
-        WHEN EXTRACT(month FROM data_emissao::date) <= 6 THEN '1º Semestre'
-        ELSE '2º Semestre'
-    END AS semestre,
-    string_agg('relatorio: ' || relatorio_text_extract, ' ') AS relatorios_periodo
-FROM 
-    rcm.rcm_kpmg_relatorios
-WHERE 
-    sumario_executivo_per IS NULL
-GROUP BY 
-    EXTRACT(year FROM data_emissao::date),
-    CASE 
-        WHEN EXTRACT(month FROM data_emissao::date) <= 6 THEN '1º Semestre'
-        ELSE '2º Semestre'
-    END;
-
-
----------------------------------------------------------------------------
-UndefinedFunction                         Traceback (most recent call last)
-File ~/anaconda3/lib/python3.9/site-packages/sqlalchemy/engine/base.py:1905, in Connection._execute_context(self, dialect, constructor, statement, parameters, execution_options, *args, **kw)
-   1904     if not evt_handled:
--> 1905         self.dialect.do_execute(
-   1906             cursor, statement, parameters, context
-   1907         )
-   1909 if self._has_events or self.engine._has_events:
-
-File ~/anaconda3/lib/python3.9/site-packages/sqlalchemy/engine/default.py:736, in DefaultDialect.do_execute(self, cursor, statement, parameters, context)
-    735 def do_execute(self, cursor, statement, parameters, context=None):
---> 736     cursor.execute(statement, parameters)
-
-UndefinedFunction: function pg_catalog.date_part(unknown, text) does not exist
-LINE 4:     EXTRACT(year FROM data_emissao) AS ano,
-            ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
-
-
-The above exception was the direct cause of the following exception:
-
-ProgrammingError                          Traceback (most recent call last)
-Input In [71], in <cell line: 21>()
-      1 base_query = """
-      2 
-      3 SELECT 
-   (...)
-     19     END;
-     20 """
----> 21 df = pd.read_sql(base_query, engine)
-
-File ~/anaconda3/lib/python3.9/site-packages/pandas/io/sql.py:628, in read_sql(sql, con, index_col, coerce_float, params, parse_dates, columns, chunksize)
-    619     return pandas_sql.read_table(
-    620         sql,
-    621         index_col=index_col,
-   (...)
-    625         chunksize=chunksize,
-    626     )
-    627 else:
---> 628     return pandas_sql.read_query(
-    629         sql,
-    630         index_col=index_col,
-    631         params=params,
-    632         coerce_float=coerce_float,
-    633         parse_dates=parse_dates,
-    634         chunksize=chunksize,
-    635     )
-
-File ~/anaconda3/lib/python3.9/site-packages/pandas/io/sql.py:1579, in SQLDatabase.read_query(self, sql, index_col, coerce_float, parse_dates, params, chunksize, dtype)
-   1531 """
-   1532 Read SQL query into a DataFrame.
-   1533 
-   (...)
-   1575 
-   1576 """
-   1577 args = _convert_params(sql, params)
--> 1579 result = self.execute(*args)
-   1580 columns = result.keys()
-   1582 if chunksize is not None:
-
-File ~/anaconda3/lib/python3.9/site-packages/pandas/io/sql.py:1424, in SQLDatabase.execute(self, *args, **kwargs)
-   1422 def execute(self, *args, **kwargs):
-   1423     """Simple passthrough to SQLAlchemy connectable"""
--> 1424     return self.connectable.execution_options().execute(*args, **kwargs)
-
-File <string>:2, in execute(self, statement, *multiparams, **params)
-
-File ~/anaconda3/lib/python3.9/site-packages/sqlalchemy/util/deprecations.py:468, in _decorate_with_warning.<locals>.warned(fn, *args, **kwargs)
-    466 if not skip_warning:
-    467     _warn_with_version(message, version, wtype, stacklevel=3)
---> 468 return fn(*args, **kwargs)
-
-File ~/anaconda3/lib/python3.9/site-packages/sqlalchemy/engine/base.py:3262, in Engine.execute(self, statement, *multiparams, **params)
-   3244 """Executes the given construct and returns a
-   3245 :class:`_engine.CursorResult`.
-   3246 
-   (...)
-   3259 
-   3260 """
-   3261 connection = self.connect(close_with_result=True)
--> 3262 return connection.execute(statement, *multiparams, **params)
-
-File ~/anaconda3/lib/python3.9/site-packages/sqlalchemy/engine/base.py:1370, in Connection.execute(self, statement, *multiparams, **params)
-   1361 if isinstance(statement, util.string_types):
-   1362     util.warn_deprecated_20(
-   1363         "Passing a string to Connection.execute() is "
-   1364         "deprecated and will be removed in version 2.0.  Use the "
-   (...)
-   1367         "driver-level SQL string."
-   1368     )
--> 1370     return self._exec_driver_sql(
-   1371         statement,
-   1372         multiparams,
-   1373         params,
-   1374         _EMPTY_EXECUTION_OPTS,
-   1375         future=False,
-   1376     )
-   1378 try:
-   1379     meth = statement._execute_on_connection
-
-File ~/anaconda3/lib/python3.9/site-packages/sqlalchemy/engine/base.py:1674, in Connection._exec_driver_sql(self, statement, multiparams, params, execution_options, future)
-   1664         (
-   1665             statement,
-   1666             distilled_params,
-   (...)
-   1670             statement, distilled_parameters, execution_options
-   1671         )
-   1673 dialect = self.dialect
--> 1674 ret = self._execute_context(
-   1675     dialect,
-   1676     dialect.execution_ctx_cls._init_statement,
-   1677     statement,
-   1678     distilled_parameters,
-   1679     execution_options,
-   1680     statement,
-   1681     distilled_parameters,
-   1682 )
-   1684 if not future:
-   1685     if self._has_events or self.engine._has_events:
-
-File ~/anaconda3/lib/python3.9/site-packages/sqlalchemy/engine/base.py:1948, in Connection._execute_context(self, dialect, constructor, statement, parameters, execution_options, *args, **kw)
-   1945             branched.close()
-   1947 except BaseException as e:
--> 1948     self._handle_dbapi_exception(
-   1949         e, statement, parameters, cursor, context
-   1950     )
-   1952 return result
-
-File ~/anaconda3/lib/python3.9/site-packages/sqlalchemy/engine/base.py:2129, in Connection._handle_dbapi_exception(self, e, statement, parameters, cursor, context)
-   2127     util.raise_(newraise, with_traceback=exc_info[2], from_=e)
-   2128 elif should_wrap:
--> 2129     util.raise_(
-   2130         sqlalchemy_exception, with_traceback=exc_info[2], from_=e
-   2131     )
-   2132 else:
-   2133     util.raise_(exc_info[1], with_traceback=exc_info[2])
-
-File ~/anaconda3/lib/python3.9/site-packages/sqlalchemy/util/compat.py:211, in raise_(***failed resolving arguments***)
-    208     exception.__cause__ = replace_context
-    210 try:
---> 211     raise exception
-    212 finally:
-    213     # credit to
-    214     # https://cosmicpercolator.com/2016/01/13/exception-leaks-in-python-2-and-3/
-    215     # as the __traceback__ object creates a cycle
-    216     del exception, replace_context, from_, with_traceback
-
-File ~/anaconda3/lib/python3.9/site-packages/sqlalchemy/engine/base.py:1905, in Connection._execute_context(self, dialect, constructor, statement, parameters, execution_options, *args, **kw)
-   1903                 break
-   1904     if not evt_handled:
--> 1905         self.dialect.do_execute(
-   1906             cursor, statement, parameters, context
-   1907         )
-   1909 if self._has_events or self.engine._has_events:
-   1910     self.dispatch.after_cursor_execute(
-   1911         self,
-   1912         cursor,
-   (...)
-   1916         context.executemany,
-   1917     )
-
-File ~/anaconda3/lib/python3.9/site-packages/sqlalchemy/engine/default.py:736, in DefaultDialect.do_execute(self, cursor, statement, parameters, context)
-    735 def do_execute(self, cursor, statement, parameters, context=None):
---> 736     cursor.execute(statement, parameters)
-
-ProgrammingError: (psycopg2.errors.UndefinedFunction) function pg_catalog.date_part(unknown, text) does not exist
-LINE 4:     EXTRACT(year FROM data_emissao) AS ano,
-            ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
-
-[SQL: 
-
-SELECT 
-    EXTRACT(year FROM data_emissao) AS ano,
-    CASE 
-        WHEN EXTRACT(month FROM data_emissao) <= 6 THEN '1º Semestre'
-        ELSE '2º Semestre'
-    END AS semestre,
-    string_agg('relatorio: ' || relatorio_text_extract, ' ') AS relatorios_periodo
-FROM 
-    rcm.rcm_kpmg_relatorios
-WHERE 
-    sumario_executivo_per IS NULL
-GROUP BY 
-    EXTRACT(year FROM data_emissao),
-    CASE 
-        WHEN EXTRACT(month FROM data_emissao) <= 6 THEN '1º Semestre'
-        ELSE '2º Semestre'
-    END;
-]
-(Background on this error at: https://sqlalche.me/e/14/f405)
-
-SELECT 
-    EXTRACT(year FROM data_emissao) AS ano,
-    CASE 
-        WHEN EXTRACT(month FROM data_emissao) <= 6 THEN '1º Semestre'
-        ELSE '2º Semestre'
-    END AS semestre,
-    string_agg('relatorio: ' || relatorio_text_extract, ' ') AS relatorios_periodo
-FROM 
-    rcm.rcm_kpmg_relatorios
-WHERE 
-    sumario_executivo_per IS NULL
-GROUP BY 
-    EXTRACT(year FROM data_emissao),
-    CASE 
-        WHEN EXTRACT(month FROM data_emissao) <= 6 THEN '1º Semestre'
-        ELSE '2º Semestre'
-    END;
-
-
-SELECT 
-    data_emissao,
-    string_agg('relatorio: ' || relatorio_text_extract, ' ') AS relatorios_periodo
-FROM 
-    rcm.rcm_kpmg_relatorios
-WHERE 
-    sumario_executivo_per IS NULL
-GROUP BY 
-    data_emissao;
-
-Você receberá um agrupamento de relatórios de auditoria externa consolidados por data de emissão no campo {relatorios_periodo}. Sua tarefa é gerar dois atributos, utilizando formatação innerHTML com tags HTML, conforme descrito abaixo:
-
-1. **sumario_executivo_per**:
-   - Crie um sumário executivo curto e profissional, composto por poucas frases, que destaque os principais pontos dos relatórios consolidados, enfatizando os riscos relevantes e achados significativos, que realmente merecem ser citados para a alta administração do banco.
-   - Utilize elementos visuais (como <strong> para negrito, ícones, etc.) para evidenciar pontos importantes.
-   - Após essas frases, em uma nova linha, adicione uma frase curta em itálico (<em>) contendo parte do texto original da extração para facilitar a consulta do auditor.
-
-2. **racional_sumario_per**:
-   - Forneça uma explicação sucinta do raciocínio adotado para a seleção dos pontos destacados no sumário, contextualizando os critérios utilizados e a relevância dos pontos escolhidos.
-
-Retorne o resultado em formato JSON puro, sem qualquer marcação extra, conforme o exemplo abaixo:
-
-{
-  "sumario_executivo_per": "<p><strong>Principal ponto:</strong> [Texto resumido com destaques e ícones se aplicável].<br><em>[Texto original resumido da extração]</em></p>",
-  "racional_sumario_per": "[Explicação do raciocínio adotado para a elaboração do sumário]"
-}
-
-
-# Exemplo: df_gpt_period deve possuir as colunas: data_emissao, sumario_executivo_per, racional_sumario_per
-
-update_query = text(f"""
-    UPDATE rcm.rcm_kpmg_relatorios
-    SET 
-        sumario_executivo_per = :sumario_executivo_per,
-        racional_sumario_per = :racional_sumario_per
-    WHERE data_emissao = :data_emissao
-""")
-
-with engine.begin() as connection:
-    for index, row in df_gpt_period.iterrows():
-        params = {
-            'sumario_executivo_per': row['sumario_executivo_per'],
-            'racional_sumario_per': row['racional_sumario_per'],
-            'data_emissao': row['data_emissao']
-        }
-        connection.execute(update_query, **params)
-        print(f"Registro atualizado para data_emissao: {row['data_emissao']}")
-
-print("Atualização dos relatórios por período concluída.")
-
-
-
-
-
-
-
-# 1. Extrair dados agregados da tabela exterior.ptai_trabalhos_1, normalizando nm_rsco_objt
-base_query = """
-SELECT distinct relatorio, data_emissao, relatorio_text_extract
-FROM rcm.rcm_kpmg_relatorios where sumario_executivo_rel is null;
-"""
-df = pd.read_sql(base_query, engine)
-
-# Query de update utilizando as colunas relatorio e data_emissao como condição
-update_query = text(f"""
-    UPDATE {schema_name}.{table_name}
-    SET 
-        sumario_executivo = :sumario_executivo,
-        racional_sumario = :racional_sumario
-    WHERE relatorio = :relatorio
-      AND data_emissao = :data_emissao
-""")
-
-# Executa a atualização para cada registro presente no dataframe
-with engine.begin() as connection:
-    for index, row in df_gpt.iterrows():
-        params = {
-            'sumario_executivo': row['sumario_executivo'],
-            'racional_sumario': row['racional_sumario'],
-            'relatorio': row['relatorio'],
-            'data_emissao': row['data_emissao']
-        }
-        connection.execute(update_query, **params)
-        print(f"Registro atualizado para relatorio: {row['relatorio']} e data_emissao: {row['data_emissao']}.")
-
-print("Atualização concluída.")
-
-
-Você receberá um relatório de auditoria externa completo no campo {relatorio}. Sua tarefa é gerar dois atributos, utilizando formatação innerHTML com tags HTML, da seguinte forma:
-
-1. **sumario_executivo**:  
-   - Crie um sumário executivo curto, composto por poucas frases, que destaque os principais pontos do relatório, com ênfase nos riscos relevantes e achados significativos que realmente valem a pena ser citados para a alta administração do banco.  
-   - O texto deve ser profissional, como um resumo de auditoria, podendo utilizar elementos como **negrito** para destacar pontos importantes, ícones e outros elementos visuais que façam sentido para a apresentação.  
-   - Após essa frase ou conjunto de frases, em uma nova linha, adicione, em itálico, uma frase curta contendo o texto original da extração (ou parte dele) para facilitar a consulta pelo auditor.
-
-2. **racional_sumario**:  
-   - Forneça uma explicação sucinta do raciocínio adotado para a seleção dos pontos destacados no sumário. Essa explicação deve contextualizar os critérios utilizados e ajudar o auditor a entender a relevância dos pontos escolhidos.
-
-Retorne o resultado em formato JSON puro, sem qualquer marcação extra, seguindo o exemplo abaixo:
-
-{
-  "sumario_executivo": "<p><strong>Principal ponto:</strong> [Texto resumido com destaques e ícones se aplicável].<br><em>[Texto original resumido da extração]</em></p>",
-  "racional_sumario": "[Explicação do raciocínio adotado para a elaboração do sumário]"
-}
-
-
-
-import pandas as pd
-from sqlalchemy import create_engine, inspect, text
-
-# Supondo que a função 'postgres()' já esteja definida e retorne (conn, engine)
-conn, engine = postgres()
-
-# Nome da tabela e do schema
-table_name = "rcm_kpmg_relatorios"
-schema_name = "rcm"
-
-# Lista de colunas a serem criadas (coluna: tipo de dados)
-columns_to_add = {
-    'achou_constatacao': 'TEXT',
-    'achou_recomendacao': 'TEXT',
-    'dica_localizar_constatacao': 'TEXT',
-    'dica_localizar_recomendacao': 'TEXT',
-    'conf_implementacao': 'TEXT',
-    'racional': 'TEXT',
-    'resumo_constatacao': 'TEXT',
-    'resumo_recomendacao': 'TEXT'
-}
-
-# Cria um inspetor para verificar as colunas existentes
-inspector = inspect(engine)
-existing_columns = [col['name'] for col in inspector.get_columns(table_name, schema=schema_name)]
-
-# Abre uma conexão de transação para realizar os ALTER TABLE se necessário
-with engine.begin() as connection:
-    for col, data_type in columns_to_add.items():
-        if col not in existing_columns:
-            alter_sql = f"ALTER TABLE {schema_name}.{table_name} ADD COLUMN {col} {data_type};"
-            connection.execute(text(alter_sql))
-            print(f"Coluna '{col}' adicionada à tabela {schema_name}.{table_name}.")
-
-# Agora, para cada linha do DataFrame df_gpt, fazemos um UPDATE na tabela
-update_query = text(f"""
-    UPDATE {schema_name}.{table_name}
-    SET 
-        achou_constatacao = :achou_constatacao,
-        achou_recomendacao = :achou_recomendacao,
-        dica_localizar_constatacao = :dica_localizar_constatacao,
-        dica_localizar_recomendacao = :dica_localizar_recomendacao,
-        conf_implementacao = :conf_implementacao,
-        racional = :racional,
-        resumo_constatacao = :resumo_constatacao,
-        resumo_recomendacao = :resumo_recomendacao
-    WHERE id = :id
-""")
-
-# Realiza os updates para cada registro baseado na coluna 'id'
-with engine.begin() as connection:
-    for index, row in df_gpt.iterrows():
-        params = {
-            'id': row['id'],
-            'achou_constatacao': row['achou_constatacao'],
-            'achou_recomendacao': row['achou_recomendacao'],
-            'dica_localizar_constatacao': row['dica_localizar_constatacao'],
-            'dica_localizar_recomendacao': row['dica_localizar_recomendacao'],
-            'conf_implementacao': row['conf_implementacao'],
-            'racional': row['racional'],
-            'resumo_constatacao': row['resumo_constatacao'],
-            'resumo_recomendacao': row['resumo_recomendacao']
-        }
-        connection.execute(update_query, **params)
-        print(f"Registro com id {row['id']} atualizado.")
-
-print("Processamento concluído.")
-
-
-
-ok, agora tenho esse dataframe:
-
-df_gpt[['id', 'achou_constatacao', 'achou_recomendacao',
-       'dica_localizar_constatacao', 'dica_localizar_recomendacao',
-       'conf_implementacao', 'racional', 'resumo_constatacao',
-       'resumo_recomendacao']].head()
-
-já tenho minha conexao:
-
-conn, engine = postgres()
-base_query = """
-SELECT id, constatacoes, evidencias, recomendacao, relatorio_text_extract, previsao_implementacao, gpt_id
-FROM rcm.rcm_kpmg_relatorios where gpt_id is null;
-"""
-df = pd.read_sql(base_query, engine)
-
-antes fazia assim: 
-
-df_resultados.to_sql(
-                name=table_name,
-                con=engine,
-                schema=schema_name,
-                if_exists='append',  # ou 'append'
-                index=False
+@router.post("/apiptai/upload-rcm-excel-multiplos")
+async def upload_rcm_excel_multiplos(request: Request):
+    form = await request.form()
+
+    # Define a variável para coletar caracteres problemáticos
+    problematic_characters_df = set()
+
+
+    # (Coleta do excel e demais validações continuam iguais)
+    file_excel: UploadFile = form.get("file_excel")
+    if not file_excel:
+        raise HTTPException(status_code=400, detail="Arquivo Excel (file_excel) é obrigatório.")
+    
+    file_extension = file_excel.filename.lower().split('.')[-1]
+    if file_extension not in ["xlsx", "xls", "csv"]:
+        raise HTTPException(status_code=400, detail="O arquivo Excel deve ser .xlsx, .xls ou .csv")
+    
+    excel_bytes = await file_excel.read()
+    try:
+        if file_extension == "csv":
+            df = pd.read_csv(io.BytesIO(excel_bytes), encoding='ISO-8859-1', sep=';', on_bad_lines='skip')
+        else:
+            df = pd.read_excel(io.BytesIO(excel_bytes))
+        df.columns = df.columns.str.strip().str.upper()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Erro ao ler Excel: {str(e)}")
+
+    # Valida colunas obrigatórias
+    colunas_obrigatorias = [
+        "RELATORIO", "DATA_EMISSAO", "CONSTATACAO", "EVIDENCIAS", "RECOMENDACAO",
+        "INSTITUICAO_RESPONSAVEL", "PREFIXO_RESPONSAVEL", "INSTITUICAO_ASSUNTO_ELBB",
+        "PREVISAO_IMPLEMENTACAO", "MATRICULA_DO_GESTOR_RESPONSAVEL"
+    ]
+    for col in colunas_obrigatorias:
+        if col not in df.columns:
+            raise HTTPException(status_code=400, detail=f"Coluna '{col}' não encontrada no Excel.")
+
+    # Processa PDFs
+    pdf_keys = [key for key in form.keys() if key.startswith("file_pdf_")]
+    if len(pdf_keys) == 0:
+        raise HTTPException(status_code=400, detail="Nenhum PDF enviado (file_pdf_0, file_pdf_1, ...).")
+
+    pdf_dict: Dict[str, bytes] = {}
+    for key in pdf_keys:
+        pdf_upload: UploadFile = form[key]
+        if not pdf_upload.filename.lower().endswith(".pdf"):
+            raise HTTPException(status_code=400, detail=f"O arquivo {pdf_upload.filename} não é PDF.")
+        pdf_name_no_ext = extract_name(pdf_upload.filename.replace(".pdf", ""))
+        pdf_content = await pdf_upload.read()
+        pdf_dict[pdf_name_no_ext] = pdf_content
+
+    # Converte o DataFrame para registros (dicionários) e filtra linhas sem RELATORIO
+    df_records = df.to_dict("records")
+    grouped: Dict[tuple, List[Dict]] = {}
+    for row in df_records:
+        relatorio_raw = row.get("RELATORIO")
+        if pd.isna(relatorio_raw) or str(relatorio_raw).strip() == "":
+            continue
+
+        data_emissao_val = str(row["DATA_EMISSAO"]).strip()
+        relatorio_val = extract_name(str(relatorio_raw))
+        key = (data_emissao_val, relatorio_val)
+        if key not in grouped:
+            grouped[key] = []
+        grouped[key].append(row)
+
+    ids_inseridos_total = []
+    for (data_emissao_val, relatorio_val), rows in grouped.items():
+        # **Conversão do campo DATA_EMISSAO**  
+        try:
+            # Converte a string "DD/MM/YYYY" para um objeto date
+            data_obj = datetime.strptime(data_emissao_val, "%d/%m/%Y").date()
+            ano = data_obj.year
+            semestre = "1º Semestre" if data_obj.month <= 6 else "2º Semestre"
+        except Exception as e:
+            # Retorna o erro no JSON de resposta
+            return {
+                "status": "error",
+                "mensagem": f"Erro ao converter data_emissao '{data_emissao_val}': {str(e)}"
+            }
+        
+        # Apaga registros existentes com a mesma data_emissao e relatorio
+        delete_query = "DELETE FROM rcm.rcm_kpmg_relatorios WHERE data_emissao = $1 AND relatorio = $2"
+        await execute_query(delete_query, data_emissao_val, relatorio_val)
+
+        # Insere cada linha para essa combinação, incluindo os novos campos 'ano' e 'semestre'
+        for row in rows:
+            constatacoes = str(row["CONSTATACAO"]).strip().upper()
+            evidencias = str(row["EVIDENCIAS"]).strip().upper()
+            recomendacao = str(row["RECOMENDACAO"]).strip().upper()
+            instituicao_responsavel = str(row["INSTITUICAO_RESPONSAVEL"]).strip().upper()
+            prefixo_responsavel = str(row["PREFIXO_RESPONSAVEL"]).strip().upper()
+            instituicao_assunto_elbb = str(row["INSTITUICAO_ASSUNTO_ELBB"]).strip().upper()
+            previsao_implementacao = str(row["PREVISAO_IMPLEMENTACAO"]).strip().upper()
+            matricula_do_gestor_responsavel = str(row["MATRICULA_DO_GESTOR_RESPONSAVEL"]).strip().upper()
+
+            pdf_bytes = pdf_dict.get(relatorio_val)
+            if not pdf_bytes:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Falta PDF '{relatorio_val}.pdf' para o relatório '{relatorio_val}'."
+                )
+
+            rel_text = extrair_rel_kpmg_pdf(pdf_bytes)
+            rel_text, problematic_characters_pdf = remove_problematic_characters_from_string(rel_text)
+            problematic_characters_df.update(problematic_characters_pdf)
+
+            novo_id = await inserir_linha_rcm(
+                relatorio=relatorio_val,
+                data_emissao=data_emissao_val,  # Você pode também salvar data_obj.isoformat() se preferir
+                ano=ano,
+                semestre=semestre,
+                constatacoes=constatacoes,
+                evidencias=evidencias,
+                recomendacao=recomendacao,
+                instituicao_responsavel=instituicao_responsavel,
+                prefixo_responsavel=prefixo_responsavel,
+                instituicao_assunto_elbb=instituicao_assunto_elbb,
+                previsao_implementacao=previsao_implementacao,
+                matricula_do_gestor_responsavel=matricula_do_gestor_responsavel,
+                pdf_blob=pdf_bytes,
+                relatorio_text_extract=rel_text  # type: ignore
             )
-            logging.info(f"Processamento concluído. {len(resultados)} registros inseridos no banco de dados.")
+            if novo_id:
+                ids_inseridos_total.append(novo_id)
 
-agora eu que criar se nao exisitr as colunas 'achou_constatacao', 'achou_recomendacao',
-       'dica_localizar_constatacao', 'dica_localizar_recomendacao',
-       'conf_implementacao', 'racional', 'resumo_constatacao',
-       'resumo_recomendacao' em rcm.rcm_kpmg_relatorios e depois 
-fazer um update por id dos valores dessas colunas do dataframe na minha tabela postgres
+    return {
+        "status": "ok",
+        "mensagem": "Upload múltiplo concluído com sobrescrita por data_emissao e relatorio.",
+        "datas_processadas": list(grouped.keys()),
+        "ids_inseridos": ids_inseridos_total
+    }
+  ajusta aqui:
+
+
+async def inserir_linha_rcm(
+    relatorio: str,
+    data_emissao: str,
+    ano=str,
+    semestre=str,
+    constatacoes: str,
+    evidencias: str,
+    recomendacao: str,
+    instituicao_responsavel: str,
+    prefixo_responsavel: str,
+    instituicao_assunto_elbb: str,
+    previsao_implementacao: str,
+    matricula_do_gestor_responsavel: str,
+    pdf_blob: bytes,
+    relatorio_text_extract: str
+):
+    """
+    Insere uma linha na tabela rcm.rcm_kpmg_relatorios com todas as colunas, inclusive o texto extraído do PDF.
+    """
+    query = """
+    INSERT INTO rcm.rcm_kpmg_relatorios (
+      relatorio,
+      data_emissao,
+      constatacoes,
+      evidencias,
+      recomendacao,
+      instituicao_responsavel,
+      prefixo_responsavel,
+      instituicao_assunto_elbb,
+      previsao_implementacao,
+      matricula_do_gestor_responsavel,
+      pdf_file,
+      relatorio_text_extract
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+    RETURNING id;
+    """
+    result = await execute_query(
+        query,
+        relatorio,
+        data_emissao,
+        constatacoes,
+        evidencias,
+        recomendacao,
+        instituicao_responsavel,
+        prefixo_responsavel,
+        instituicao_assunto_elbb,
+        previsao_implementacao,
+        matricula_do_gestor_responsavel,
+        pdf_blob,
+        relatorio_text_extract,
+        return_one=True
+    )
+    if result:
+        return result.get("id")
+    return None
+ esta tudo como str, é isso mesmo?
