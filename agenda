@@ -1,3 +1,39 @@
+from sqlalchemy import text
+
+# Query de update comparando o ano e o semestre (usando to_char para o ano)
+update_query = text(f"""
+    UPDATE rcm.rcm_kpmg_relatorios
+    SET 
+        sumario_executivo_per = :sumario_executivo_per,
+        racional_sumario_per = :racional_sumario_per
+    WHERE to_char(data_emissao::date, 'YYYY') = :ano
+      AND (
+          CASE 
+              WHEN EXTRACT(month FROM data_emissao::date) <= 6 THEN '1º Semestre'
+              ELSE '2º Semestre'
+          END
+      ) = :semestre
+""")
+
+# Supondo que o seu DataFrame df_gpt_period possua as colunas: 'ano', 'semestre',
+# 'sumario_executivo_per' e 'racional_sumario_per'
+with engine.begin() as connection:
+    for index, row in df_gpt_period.iterrows():
+        params = {
+            'sumario_executivo_per': row['sumario_executivo_per'],
+            'racional_sumario_per': row['racional_sumario_per'],
+            # Certifique-se de que a coluna 'ano' esteja no formato string se necessário,
+            # visto que to_char retorna string
+            'ano': str(row['ano']),
+            'semestre': row['semestre']
+        }
+        connection.execute(update_query, **params)
+        print(f"Registro atualizado para ano: {row['ano']} e semestre: {row['semestre']}")
+
+print("Atualização dos relatórios por período concluída.")
+
+
+
 Você receberá um agrupamento de relatórios de auditoria externa consolidados por data de emissão no campo {relatorios_periodo}. Sua tarefa é gerar dois atributos, utilizando formatação innerHTML com tags HTML, conforme descrito abaixo:
 
 1. **sumario_executivo_per**:
