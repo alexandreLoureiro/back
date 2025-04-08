@@ -85,3 +85,120 @@ export class RcmKpmgConsolidadoComponent implements OnInit {
   }
 }
 
+
+<!-- Componente HTML para exibir relatórios KPMG consolidados -->
+<div class="container-fluid p-3">
+  <!-- Cabeçalho e seletor de período -->
+  <div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+      <div class="d-flex justify-content-between align-items-center">
+        <h4 class="mb-0">Relatórios de Auditoria Externa - Análise Consolidada</h4>
+        <div class="d-flex align-items-center">
+          <label for="periodoSelect" class="me-2 text-white">Período:</label>
+          <p-dropdown 
+            id="periodoSelect" 
+            [options]="periodos" 
+            [(ngModel)]="periodoSelecionado" 
+            (onChange)="onPeriodoChange()" 
+            placeholder="Selecione um período" 
+            styleClass="p-dropdown-sm">
+          </p-dropdown>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card-body" *ngIf="dados">
+      <!-- Sumário executivo do período (consolidado) -->
+      <div class="mb-4">
+        <h5 class="border-bottom pb-2 text-primary">Sumário Executivo do Período</h5>
+        <div class="p-3 bg-light rounded" [innerHTML]="dados.sumario_executivo_per"></div>
+        
+        <div class="mt-3">
+          <p-accordion>
+            <p-accordionTab header="Racional da Análise">
+              <pre class="p-2 bg-light">{{ dados.racional_sumario_per }}</pre>
+            </p-accordionTab>
+          </p-accordion>
+        </div>
+      </div>
+      
+      <!-- Lista de relatórios no período -->
+      <div>
+        <h5 class="border-bottom pb-2 text-primary">Análise por Relatório</h5>
+        
+        <p-table [value]="dados.relatorios_periodo" styleClass="p-datatable-sm" responsiveLayout="scroll">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Relatório</th>
+              <th>Sumário</th>
+              <th>Detalhes</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-relatorio>
+            <tr>
+              <td>{{ relatorio.relatorio }}</td>
+              <td>
+                <div [innerHTML]="relatorio.sumario_executivo_rel"></div>
+              </td>
+              <td>
+                <p-button 
+                  icon="pi pi-info-circle" 
+                  styleClass="p-button-rounded p-button-info p-button-sm"
+                  (onClick)="visualizarDetalhes(relatorio)">
+                </p-button>
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="3" class="text-center p-4">
+                Nenhum relatório encontrado para este período.
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+    </div>
+    
+    <div class="card-body d-flex justify-content-center" *ngIf="!dados">
+      <p-progressSpinner strokeWidth="4" animationDuration=".5s"></p-progressSpinner>
+    </div>
+  </div>
+  
+  <!-- Modal de detalhes -->
+  <p-dialog 
+    header="Detalhes do Relatório" 
+    [(visible)]="modalVisible" 
+    [modal]="true" 
+    [style]="{width: '80vw'}" 
+    [maximizable]="true">
+    
+    <div *ngIf="relatorioSelecionado">
+      <h5>{{ relatorioSelecionado.relatorio }}</h5>
+      
+      <div class="mb-3">
+        <h6 class="text-primary">Sumário Executivo</h6>
+        <div class="p-2 bg-light rounded" [innerHTML]="relatorioSelecionado.sumario_executivo_rel"></div>
+      </div>
+      
+      <div class="mb-3">
+        <h6 class="text-primary">Racional da Análise</h6>
+        <pre class="p-2 bg-light rounded">{{ relatorioSelecionado.racional_sumario_rel }}</pre>
+      </div>
+      
+      <div class="mt-3">
+        <p-button 
+          label="Chatbot de Auditoria" 
+          icon="pi pi-comments" 
+          styleClass="p-button-outlined"
+          (onClick)="abrirChatbot(relatorioSelecionado)">
+        </p-button>
+      </div>
+    </div>
+    
+    <ng-template pTemplate="footer">
+      <p-button icon="pi pi-times" label="Fechar" (onClick)="modalVisible=false" styleClass="p-button-text"></p-button>
+    </ng-template>
+  </p-dialog>
+</div>
+
