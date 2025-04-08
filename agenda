@@ -1,204 +1,55 @@
-elif data.get("agente") == 'rcmkpmg' and data.get("param1") == 'consolidado':
-    print('>>>>>> rcmkpmg consolidado <<<<<<')
-    query = f"""
-        SELECT DISTINCT
-            periodo_apuracao,
-            relatorios_periodo,
-            sumario_executivo_rel,
-            racional_sumario_rel,
-            sumario_executivo_per,
-            racional_sumario_per,
-            CONCAT(
-                'Com base nos relatórios de auditoria externa do período "', periodo_apuracao, '", 
-                estou à disposição para responder suas dúvidas sobre os pontos apresentados no sumário executivo.
-                Por favor, solicite qualquer informação sobre os achados de auditoria deste período.'
-            ) AS role_user,
-            CONCAT(
-                'Olá! Estou pronto para responder suas dúvidas sobre os relatórios de auditoria externa do período ', 
-                periodo_apuracao, '. Posso fornecer informações detalhadas sobre os pontos identificados no sumário executivo.
-                Como posso ajudar?'
-            ) AS role_assistant
-        FROM 
-            rcm.rcm_kpmg_relatorios 
-        WHERE 
-            periodo_apuracao = '{data.get("param2")}';
-    """
+[
+    {
+        "periodo_apuracao": "30.06.2024",
+        "relatorios_periodo": "nome relatorio
+        "sumario_executivo_rel": "<p><strong>Gestão de Acesso Privilegiado.....,
+        "racional_sumario_rel": "Os pontos destacados no sumário foram ....
+        "sumario_executivo_per": "<p><strong>Gestão de Acesso Privilegiado.....
+         "racional_sumario_per": "Os pontos destacados no sumário foram ....
+          }
+]
 
-// No seu component.ts
-export class RcmKpmgConsolidadoComponent implements OnInit {
-  dados: any;
-  sessionId: string = uuidv4(); // Supondo que você esteja usando uuid para gerar IDs de sessão
-  dynamicObject = {
-    agente: "rcmkpmg",
-    param1: "consolidado",
-    param2: "" // Será preenchido com o período selecionado
-  };
-  
-  periodos: string[] = []; // Lista de períodos disponíveis
-  periodoSelecionado: string = "";
-  
-  constructor(private servicoLLM: ServicoLLMService) { }
-  
-  ngOnInit() {
-    this.carregarPeriodos();
-  }
-  
-  carregarPeriodos() {
-    // Endpoint para carregar a lista de períodos disponíveis
-    this.servicoLLM.getPeriodosApuracao().subscribe({
-      next: (response) => {
-        this.periodos = response;
-        if (this.periodos.length > 0) {
-          this.periodoSelecionado = this.periodos[0];
-          this.carregarDadosConsolidados(this.periodoSelecionado);
-        }
-      },
-      error: (err) => {
-        this.showNotification('error', 'Erro', 'Erro ao carregar períodos de apuração');
-      }
-    });
-  }
-  
-  carregarDadosConsolidados(periodo: string) {
-    this.dynamicObject.param2 = periodo;
-    this.servicoLLM.servicosAgentes(this.dynamicObject).subscribe({
-      next: (response) => {
-        console.log('response: ', response);
-        this.dados = response[0];
-        this.showNotification('info', 'Dados carregados', `Análise consolidada do período ${periodo} carregada com sucesso`);
-        
+
+ this.servicoLLM.servicosAgentes(this.dynamicObject).subscribe({
+          next: (response) => {
+            console.log('response: ', response)
+            this.objetoAudDetalhes = response[0]; // Detalhes do trabalho
+            this.showNotification('info', 'Objeto auditoria selecionado', `Iniciando análise do trabalho ${this.dynamicObject['agente'] }`);
         // Reseta a sessão no backend
-        this.servicoLLM.resetSession(this.sessionId).subscribe();
-      },
-      error: (err) => {
-        this.showNotification('error', 'Erro', 'Erro ao carregar dados consolidados');
-      }
-    });
-  }
-  
-  showNotification(severity: string, summary: string, detail: string) {
-    // Implementação do seu serviço de notificação
-  }
-  
-  onPeriodoChange() {
-    this.carregarDadosConsolidados(this.periodoSelecionado);
-  }
-}
 
+response:  
+[{…}]
+0
+: 
+periodo_apuracao
+: 
+"30.06.2024"
+racional_sumario_per
+: 
+"Os pontos destacados no sumário foram selecionados com base na relevância e no impacto potencial sobre a governança, segurança da informação, compliance e resultados financeiros do Banco do Brasil e suas subsidiárias. Foram priorizados achados que envolvem riscos significativos, como falhas em controles internos, segurança cibernética, compliance regulatório e impactos financeiros diretos, considerando a criticidade para a alta administração e a necessidade de ações corretivas imediatas."
+racional_sumario_rel
+: 
+null
+relatorios_periodo
+: 
+"nome relatorio: CCI BB relatorio: KPMG Auditores 
+role_assistant
+: 
+"Olá! Estou pronto para responder suas dúvidas sobre os relatórios de auditoria externa do período 30.06.2024. Posso fornecer informações detalhadas sobre os pontos identificados no sumário executivo.\n                    Como posso ajudar?"
+role_user
+: 
+"Com base nos relatórios de auditoria externa do período \"30.06.2024\", \n                    estou à disposição para responder suas dúvidas sobre os pontos apresentados no sumário executivo.\n                    Por favor, solicite qualquer informação sobre os achados de auditoria deste período."
+sumario_executivo_per
+: 
+"<p><strong>Gestão de Acesso Privilegiado:</strong> Foram identificadas contas de acesso privilegiado no mainframe do Banco do Brasil atribuídas a colaboradores inativos ou fora da Diretoria de Tecnologia, representando um risco potencial à segurança da informação. <br><em>\"Identificamos quatro (4) contas de acesso... cujas chaves de acesso estão atreladas a colaboradores que não fazem parte da Diretoria de Tecnologia ou não estão mais ativos na Instituição.\"</em></p><p><strong>Controle de Depósitos Judiciais:</strong> No BB Leasing, 289 depósitos judiciais, totalizando R$ 9,875 milhões, não possuem extratos bancários que comprovem sua existência, além de processos judiciais já encerrados não terem sido baixados tempestivamente. <br><em>\"Observamos que a base operacional de depósitos judiciais... para os quais não foram localizados os extratos bancários que comprovassem a sua existência.\"</em></p><p><strong>Atualização de Ratings para Marcação a Mercado:</strong> No BB Banco de Investimento, os modelos de risco de crédito não responderam tempestivamente à deterioração da situação econômico-financeira de um emissor, gerando impacto no resultado de TVM. <br><em>\"Os modelos utilizados para atribuir o risco de crédito... não responderam tempestivamente às mudanças na situação econômico-financeira de um emissor.\"</em></p><p><strong>Conciliação de Obrigações por Repasses BNDES:</strong> Diferenças não conciliadas de R$ 566,329 mil foram identificadas entre os valores registrados pelo Banco do Brasil e os valores confirmados pelo BNDES. <br><em>\"Identificamos diferença não conciliada entre os valores registrados pela Instituição e os valores da resposta de circularização... no montante de R$ 566.329 mil a menor no Banco do Brasil.\"</em></p><p><strong>Arquivamento de Contratos de Consórcios:</strong> Na BB Consórcios, contratos de adesão de consorciados não contemplados e desistentes/excluídos não foram arquivados tempestivamente, gerando riscos de compliance. <br><em>\"Não foram identificados os contratos assinados com o termo de adesão ao consórcio.\"</em></p>"
+sumario_executivo_rel
+: 
+null
+[[Prototype]]
+: 
+Object
+length
+: 
+1
 
-<!-- Componente HTML para exibir relatórios KPMG consolidados -->
-<div class="container-fluid p-3">
-  <!-- Cabeçalho e seletor de período -->
-  <div class="card mb-4">
-    <div class="card-header bg-primary text-white">
-      <div class="d-flex justify-content-between align-items-center">
-        <h4 class="mb-0">Relatórios de Auditoria Externa - Análise Consolidada</h4>
-        <div class="d-flex align-items-center">
-          <label for="periodoSelect" class="me-2 text-white">Período:</label>
-          <p-dropdown 
-            id="periodoSelect" 
-            [options]="periodos" 
-            [(ngModel)]="periodoSelecionado" 
-            (onChange)="onPeriodoChange()" 
-            placeholder="Selecione um período" 
-            styleClass="p-dropdown-sm">
-          </p-dropdown>
-        </div>
-      </div>
-    </div>
-    
-    <div class="card-body" *ngIf="dados">
-      <!-- Sumário executivo do período (consolidado) -->
-      <div class="mb-4">
-        <h5 class="border-bottom pb-2 text-primary">Sumário Executivo do Período</h5>
-        <div class="p-3 bg-light rounded" [innerHTML]="dados.sumario_executivo_per"></div>
-        
-        <div class="mt-3">
-          <p-accordion>
-            <p-accordionTab header="Racional da Análise">
-              <pre class="p-2 bg-light">{{ dados.racional_sumario_per }}</pre>
-            </p-accordionTab>
-          </p-accordion>
-        </div>
-      </div>
-      
-      <!-- Lista de relatórios no período -->
-      <div>
-        <h5 class="border-bottom pb-2 text-primary">Análise por Relatório</h5>
-        
-        <p-table [value]="dados.relatorios_periodo" styleClass="p-datatable-sm" responsiveLayout="scroll">
-          <ng-template pTemplate="header">
-            <tr>
-              <th>Relatório</th>
-              <th>Sumário</th>
-              <th>Detalhes</th>
-            </tr>
-          </ng-template>
-          <ng-template pTemplate="body" let-relatorio>
-            <tr>
-              <td>{{ relatorio.relatorio }}</td>
-              <td>
-                <div [innerHTML]="relatorio.sumario_executivo_rel"></div>
-              </td>
-              <td>
-                <p-button 
-                  icon="pi pi-info-circle" 
-                  styleClass="p-button-rounded p-button-info p-button-sm"
-                  (onClick)="visualizarDetalhes(relatorio)">
-                </p-button>
-              </td>
-            </tr>
-          </ng-template>
-          <ng-template pTemplate="emptymessage">
-            <tr>
-              <td colspan="3" class="text-center p-4">
-                Nenhum relatório encontrado para este período.
-              </td>
-            </tr>
-          </ng-template>
-        </p-table>
-      </div>
-    </div>
-    
-    <div class="card-body d-flex justify-content-center" *ngIf="!dados">
-      <p-progressSpinner strokeWidth="4" animationDuration=".5s"></p-progressSpinner>
-    </div>
-  </div>
-  
-  <!-- Modal de detalhes -->
-  <p-dialog 
-    header="Detalhes do Relatório" 
-    [(visible)]="modalVisible" 
-    [modal]="true" 
-    [style]="{width: '80vw'}" 
-    [maximizable]="true">
-    
-    <div *ngIf="relatorioSelecionado">
-      <h5>{{ relatorioSelecionado.relatorio }}</h5>
-      
-      <div class="mb-3">
-        <h6 class="text-primary">Sumário Executivo</h6>
-        <div class="p-2 bg-light rounded" [innerHTML]="relatorioSelecionado.sumario_executivo_rel"></div>
-      </div>
-      
-      <div class="mb-3">
-        <h6 class="text-primary">Racional da Análise</h6>
-        <pre class="p-2 bg-light rounded">{{ relatorioSelecionado.racional_sumario_rel }}</pre>
-      </div>
-      
-      <div class="mt-3">
-        <p-button 
-          label="Chatbot de Auditoria" 
-          icon="pi pi-comments" 
-          styleClass="p-button-outlined"
-          (onClick)="abrirChatbot(relatorioSelecionado)">
-        </p-button>
-      </div>
-    </div>
-    
-    <ng-template pTemplate="footer">
-      <p-button icon="pi pi-times" label="Fechar" (onClick)="modalVisible=false" styleClass="p-button-text"></p-button>
-    </ng-template>
-  </p-dialog>
-</div>
-
+me dá só o html agora para usar com objetoAudDetalhes
