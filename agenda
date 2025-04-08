@@ -1,55 +1,105 @@
-[
-    {
-        "periodo_apuracao": "30.06.2024",
-        "relatorios_periodo": "nome relatorio
-        "sumario_executivo_rel": "<p><strong>Gestão de Acesso Privilegiado.....,
-        "racional_sumario_rel": "Os pontos destacados no sumário foram ....
-        "sumario_executivo_per": "<p><strong>Gestão de Acesso Privilegiado.....
-         "racional_sumario_per": "Os pontos destacados no sumário foram ....
-          }
-]
+<div class="container-fluid p-3">
+  <!-- Cabeçalho com informações do período -->
+  <div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+      <div class="d-flex justify-content-between align-items-center">
+        <h4 class="mb-0">Relatórios de Auditoria Externa - Período: {{objetoAudDetalhes?.periodo_apuracao}}</h4>
+      </div>
+    </div>
+    
+    <div class="card-body" *ngIf="objetoAudDetalhes">
+      <!-- Sumário executivo do período (consolidado) -->
+      <div class="mb-4">
+        <h5 class="border-bottom pb-2 text-primary">Sumário Executivo do Período</h5>
+        <div class="p-3 bg-light rounded" [innerHTML]="objetoAudDetalhes.sumario_executivo_per"></div>
+        
+        <div class="mt-3">
+          <p-accordion>
+            <p-accordionTab header="Racional da Análise">
+              <pre class="p-2 bg-light rounded">{{ objetoAudDetalhes.racional_sumario_per }}</pre>
+            </p-accordionTab>
+          </p-accordion>
+        </div>
+      </div>
+      
+      <!-- Lista de relatórios no período -->
+      <div class="mb-4">
+        <h5 class="border-bottom pb-2 text-primary">Relatórios Analisados</h5>
+        <div class="p-3 bg-light rounded">
+          <pre>{{ objetoAudDetalhes.relatorios_periodo }}</pre>
+        </div>
+      </div>
+      
+      <!-- Botão para iniciar conversa com o chatbot -->
+      <div class="d-flex justify-content-center mt-4">
+        <p-button 
+          label="Iniciar Conversa com Chatbot de Auditoria" 
+          icon="pi pi-comments" 
+          styleClass="p-button-lg"
+          (onClick)="iniciarChatbot()">
+        </p-button>
+      </div>
+    </div>
+    
+    <div class="card-body d-flex justify-content-center" *ngIf="!objetoAudDetalhes">
+      <p-progressSpinner strokeWidth="4" animationDuration=".5s"></p-progressSpinner>
+    </div>
+  </div>
+  
+  <!-- Chat interface (opcional - pode ser exibido quando iniciarChatbot() for chamado) -->
+  <div class="card" *ngIf="chatVisible">
+    <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Assistente de Auditoria</h5>
+      <button class="btn btn-sm btn-outline-light" (click)="chatVisible = false">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+    
+    <div class="card-body chat-container" style="height: 400px; overflow-y: auto;">
+      <!-- Mensagem inicial do assistente -->
+      <div class="chat-message assistant-message mb-3">
+        <div class="message-content p-3 rounded" [innerHTML]="objetoAudDetalhes.role_assistant"></div>
+      </div>
+      
+      <!-- Histórico de mensagens (dinâmico) -->
+      <div *ngFor="let msg of chatMessages" class="chat-message mb-3" [ngClass]="{'user-message': msg.role === 'user', 'assistant-message': msg.role === 'assistant'}">
+        <div class="message-content p-3 rounded" [innerHTML]="msg.content"></div>
+      </div>
+    </div>
+    
+    <div class="card-footer">
+      <div class="input-group">
+        <input 
+          type="text" 
+          class="form-control" 
+          placeholder="Digite sua pergunta sobre a auditoria..." 
+          [(ngModel)]="userMessage"
+          (keyup.enter)="enviarMensagem()">
+        <button class="btn btn-primary" (click)="enviarMensagem()">
+          <i class="pi pi-send"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
+<style>
+.chat-message {
+  display: flex;
+  margin-bottom: 10px;
+}
 
- this.servicoLLM.servicosAgentes(this.dynamicObject).subscribe({
-          next: (response) => {
-            console.log('response: ', response)
-            this.objetoAudDetalhes = response[0]; // Detalhes do trabalho
-            this.showNotification('info', 'Objeto auditoria selecionado', `Iniciando análise do trabalho ${this.dynamicObject['agente'] }`);
-        // Reseta a sessão no backend
+.user-message {
+  justify-content: flex-end;
+}
 
-response:  
-[{…}]
-0
-: 
-periodo_apuracao
-: 
-"30.06.2024"
-racional_sumario_per
-: 
-"Os pontos destacados no sumário foram selecionados com base na relevância e no impacto potencial sobre a governança, segurança da informação, compliance e resultados financeiros do Banco do Brasil e suas subsidiárias. Foram priorizados achados que envolvem riscos significativos, como falhas em controles internos, segurança cibernética, compliance regulatório e impactos financeiros diretos, considerando a criticidade para a alta administração e a necessidade de ações corretivas imediatas."
-racional_sumario_rel
-: 
-null
-relatorios_periodo
-: 
-"nome relatorio: CCI BB relatorio: KPMG Auditores 
-role_assistant
-: 
-"Olá! Estou pronto para responder suas dúvidas sobre os relatórios de auditoria externa do período 30.06.2024. Posso fornecer informações detalhadas sobre os pontos identificados no sumário executivo.\n                    Como posso ajudar?"
-role_user
-: 
-"Com base nos relatórios de auditoria externa do período \"30.06.2024\", \n                    estou à disposição para responder suas dúvidas sobre os pontos apresentados no sumário executivo.\n                    Por favor, solicite qualquer informação sobre os achados de auditoria deste período."
-sumario_executivo_per
-: 
-"<p><strong>Gestão de Acesso Privilegiado:</strong> Foram identificadas contas de acesso privilegiado no mainframe do Banco do Brasil atribuídas a colaboradores inativos ou fora da Diretoria de Tecnologia, representando um risco potencial à segurança da informação. <br><em>\"Identificamos quatro (4) contas de acesso... cujas chaves de acesso estão atreladas a colaboradores que não fazem parte da Diretoria de Tecnologia ou não estão mais ativos na Instituição.\"</em></p><p><strong>Controle de Depósitos Judiciais:</strong> No BB Leasing, 289 depósitos judiciais, totalizando R$ 9,875 milhões, não possuem extratos bancários que comprovem sua existência, além de processos judiciais já encerrados não terem sido baixados tempestivamente. <br><em>\"Observamos que a base operacional de depósitos judiciais... para os quais não foram localizados os extratos bancários que comprovassem a sua existência.\"</em></p><p><strong>Atualização de Ratings para Marcação a Mercado:</strong> No BB Banco de Investimento, os modelos de risco de crédito não responderam tempestivamente à deterioração da situação econômico-financeira de um emissor, gerando impacto no resultado de TVM. <br><em>\"Os modelos utilizados para atribuir o risco de crédito... não responderam tempestivamente às mudanças na situação econômico-financeira de um emissor.\"</em></p><p><strong>Conciliação de Obrigações por Repasses BNDES:</strong> Diferenças não conciliadas de R$ 566,329 mil foram identificadas entre os valores registrados pelo Banco do Brasil e os valores confirmados pelo BNDES. <br><em>\"Identificamos diferença não conciliada entre os valores registrados pela Instituição e os valores da resposta de circularização... no montante de R$ 566.329 mil a menor no Banco do Brasil.\"</em></p><p><strong>Arquivamento de Contratos de Consórcios:</strong> Na BB Consórcios, contratos de adesão de consorciados não contemplados e desistentes/excluídos não foram arquivados tempestivamente, gerando riscos de compliance. <br><em>\"Não foram identificados os contratos assinados com o termo de adesão ao consórcio.\"</em></p>"
-sumario_executivo_rel
-: 
-null
-[[Prototype]]
-: 
-Object
-length
-: 
-1
+.user-message .message-content {
+  background-color: #e3f2fd;
+  max-width: 80%;
+}
 
-me dá só o html agora para usar com objetoAudDetalhes
+.assistant-message .message-content {
+  background-color: #f5f5f5;
+  max-width: 80%;
+}
+</style>
