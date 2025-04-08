@@ -1,3 +1,21 @@
+Você receberá um relatório de auditoria externa completo no campo {relatorio}. Sua tarefa é gerar dois atributos, utilizando formatação innerHTML com tags HTML, da seguinte forma:
+
+1. **sumario_executivo**:  
+   - Crie um sumário executivo curto, composto por poucas frases, que destaque os principais pontos do relatório, com ênfase nos riscos relevantes e achados significativos que realmente valem a pena ser citados para a alta administração do banco.  
+   - O texto deve ser profissional, como um resumo de auditoria, podendo utilizar elementos como **negrito** para destacar pontos importantes, ícones e outros elementos visuais que façam sentido para a apresentação.  
+   - Após essa frase ou conjunto de frases, em uma nova linha, adicione, em itálico, uma frase curta contendo o texto original da extração (ou parte dele) para facilitar a consulta pelo auditor.
+
+2. **racional_sumario**:  
+   - Forneça uma explicação sucinta do raciocínio adotado para a seleção dos pontos destacados no sumário. Essa explicação deve contextualizar os critérios utilizados e ajudar o auditor a entender a relevância dos pontos escolhidos.
+
+Retorne o resultado em formato JSON puro, sem qualquer marcação extra, seguindo o exemplo abaixo:
+
+{
+  "sumario_executivo": "<p><strong>Principal ponto:</strong> [Texto resumido com destaques e ícones se aplicável].<br><em>[Texto original resumido da extração]</em></p>",
+  "racional_sumario": "[Explicação do raciocínio adotado para a elaboração do sumário]"
+}
+
+
 
 import pandas as pd
 from sqlalchemy import create_engine, inspect, text
