@@ -27,6 +27,135 @@ def extract_name_and_date(text: str) -> tuple:
     return nome, data_periodo
 
 
+# Processa PDFs
+pdf_keys = [key for key in form.keys() if key.startswith("file_pdf_")]
+if len(pdf_keys) == 0:
+    raise HTTPException(status_code=400, detail="Nenhum PDF enviado (file_pdf_0, file_pdf_1, ...).")
+
+pdf_dict: Dict[str, tuple] = {}  # Changed to store (pdf_bytes, data_periodo)
+for key in pdf_keys:
+    pdf_upload: UploadFile = form[key]
+    if not pdf_upload.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail=f"O arquivo {pdf_upload.filename} não é PDF.")
+    
+    # Extrair nome e data do arquivo
+    nome_pdf, data_periodo = extract_name_and_date(pdf_upload.filename.replace(".pdf", ""))
+    pdf_content = await pdf_upload.read()
+    pdf_dict[nome_pdf] = (pdf_content, data_periodo)  # Store both PDF content and period date
+
+
+
+ids_inseridos_total = []
+for (data_emissao_val, relatorio_val), rows in grouped.items():
+    # Apaga registros existentes com a mesma data_emissao e relatorio
+    delete_query = "DELETE FROM rcm.rcm_kpmg_relatorios WHERE data_emissao = $1 AND relatorio = $2"
+    await execute_query(delete_query, data_emissao_val, relatorio_val)
+
+    # Insere cada linha para essa combinação
+    for row in rows:
+        constatacoes = str(row["CONSTATACAO"]).strip().upper()
+        evidencias = str(row["EVIDENCIAS"]).strip().upper()
+        recomendacao = str(row["RECOMENDACAO"]).strip().upper()
+        instituicao_responsavel = str(row["INSTITUICAO_RESPONSAVEL"]).strip().upper()
+        prefixo_responsavel = str(row["PREFIXO_RESPONSAVEL"]).strip().upper()
+        instituicao_assunto_elbb = str(row["INSTITUICAO_ASSUNTO_ELBB"]).strip().upper()
+        previsao_implementacao = str(row["PREVISAO_IMPLEMENTACAO"]).strip().upper()
+        matricula_do_gestor_responsavel = str(row["MATRICULA_DO_GESTOR_RESPONSAVEL"]).strip().upper()
+
+        # Busca o PDF e o período de apuração associado ao relatório
+        pdf_info = pdf_dict.get(relatorio_val)
+        if not pdf_info:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Falta PDF '{relatorio_val}.pdf' para o relatório '{relatorio_val}'."
+            )
+        
+        pdf_bytes, periodo_apuracao = pdf_info
+
+        # Extrai o texto do PDF usando a função extrair_rel_kpmg_pdf
+        rel_text = extrair_rel_kpmg_pdf(pdf_bytes)
+        
+        # Remover caracteres problemáticos do texto extraído do PDF
+        rel_text, problematic_characters_pdf = remove_problematic_characters_from_string(rel_text)
+        problematic_characters_df.update(problematic_characters_pdf)
+
+        novo_id = await inserir_linha_rcm(
+            relatorio=relatorio_val,
+            data_emissao=data_emissao_val,
+            constatacoes=constatacoes,
+            evidencias=evidencias,
+            recomendacao=recomendacao,
+            instituicao_responsavel=instituicao_responsavel,
+            prefixo_responsavel=prefixo_responsavel,
+            instituicao_assunto_elbb=instituicao_assunto_elbb,
+            previsao_implementacao=previsao_implementacao,
+            matricula_do_gestor_responsavel=matricula_do_gestor_responsavel,
+            pdf_blob=pdf_bytes,
+            relatorio_text_extract=rel_text,  # type: ignore
+            periodo_apuracao=periodo_apuracao  # Add the new field
+        )
+        if novo_id:
+            ids_inseridos_total.append(novo_id)
+
+
+async def inserir_linha_rcm(
+    relatorio: str,
+    data_emissao: str,
+    constatacoes: str,
+    evidencias: str,
+    recomendacao: str,
+    instituicao_responsavel: str,
+    prefixo_responsavel: str,
+    instituicao_assunto_elbb: str,
+    previsao_implementacao: str,
+    matricula_do_gestor_responsavel: str,
+    pdf_blob: bytes,
+    relatorio_text_extract: str,
+    periodo_apuracao: str = ""  # Add period parameter with default empty string
+):
+    """
+    Insere uma linha na tabela rcm.rcm_kpmg_relatorios com todas as colunas, inclusive o texto extraído do PDF.
+    """
+    query = """
+    INSERT INTO rcm.rcm_kpmg_relatorios (
+      relatorio,
+      data_emissao,
+      constatacoes,
+      evidencias,
+      recomendacao,
+      instituicao_responsavel,
+      prefixo_responsavel,
+      instituicao_assunto_elbb,
+      previsao_implementacao,
+      matricula_do_gestor_responsavel,
+      pdf_file,
+      relatorio_text_extract,
+      periodo_apuracao
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+    RETURNING id;
+    """
+    result = await execute_query(
+        query,
+        relatorio,
+        data_emissao,
+        constatacoes,
+        evidencias,
+        recomendacao,
+        instituicao_responsavel,
+        prefixo_responsavel,
+        instituicao_assunto_elbb,
+        previsao_implementacao,
+        matricula_do_gestor_responsavel,
+        pdf_blob,
+        relatorio_text_extract,
+        periodo_apuracao,
+        return_one=True
+    )
+    if result:
+        return result.get("id")
+    return None
+
+
 
 
 
