@@ -1,3 +1,38 @@
+def extract_name_and_date(text: str) -> tuple:
+    """
+    Extrai a parte do nome e a data do texto.
+    São considerados separadores: hífen (-), en dash (–), em dash (—) e o caractere \u0096.
+    Remove acentos, faz trim e converte para uppercase.
+    Retorna uma tupla (nome, data_periodo)
+    """
+    parts = re.split(r"[-–—\u0096]", text)
+    print('parts ', parts)
+    
+    # Nome é a primeira parte
+    nome = remove_accents(parts[0].strip().upper())
+    
+    # Data é a segunda parte se existir
+    data_periodo = ""
+    if len(parts) > 1:
+        # Extrai só a data, removendo espaços
+        data_raw = parts[1].strip()
+        # Tenta extrair a data no formato DD/MM/YYYY ou DD.MM.YYYY
+        date_match = re.search(r'(\d{2}[/\.]\d{2}[/\.]\d{4})', data_raw)
+        if date_match:
+            data_periodo = date_match.group(1)
+        else:
+            # Se não encontrar no formato esperado, usa o texto inteiro da segunda parte
+            data_periodo = remove_accents(data_raw.upper())
+    
+    return nome, data_periodo
+
+
+
+
+
+
+
+
 
 def extrair_rel_kpmg_pdf(pdf_bytes: bytes) -> str:
     pdf_stream = io.BytesIO(pdf_bytes)
