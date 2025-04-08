@@ -20,3 +20,4 @@ prompt = f""" Você receberá um relatório de auditoria externa: {relatorio}
         [REMOVER]:
         ```json
        ```
+df['combined_text'] = df.apply(lambda row: f"[registro constatações KPMG]: {row['constatacoes']}, [registro evidencias KPMG]: {row['evidencias']}, [registro recomendacao KPMG]: {row['recomendacao']}, [relatório auditoria externa]: {row['relatorio_text_extract']}", axis=1)
