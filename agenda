@@ -1,3 +1,83 @@
+
+ERROR TypeError: Cannot read properties of undefined (reading '0')
+    at ChatgeralComponent_p_panel_6_div_10_Template (chatgeral.component.html:102:17)
+    at executeTemplate (core.mjs:12039:5)
+    at refreshView (core.mjs:13640:7)
+    at detectChangesInView (core.mjs:13852:5)
+    at detectChangesInViewIfAttached (core.mjs:13814:3)
+    at detectChangesInEmbeddedViews (core.mjs:13772:7)
+    at refreshView (core.mjs:13668:5)
+    at detectChangesInView (core.mjs:13852:5)
+    at detectChangesInViewIfAttached (core.mjs:13814:3)
+    at detectChangesInEmbeddedViews (core.mjs:13772:7)
+main.ts:14 ERROR TypeError: Cannot read properties of undefined (reading '0')
+    at ChatgeralComponent_p_panel_6_div_10_Template (chatgeral.component.html:102:17)
+    at executeTemplate (core.mjs:12039:5)
+    at refreshView (core.mjs:13640:7)
+    at detectChangesInView (core.mjs:13852:5)
+    at detectChangesInViewIfAttached (core.mjs:13814:3)
+    at detectChangesInEmbeddedViews (core.mjs:13772:7)
+    at refreshView (core.mjs:13668:5)
+    at detectChangesInView (core.mjs:13852:5)
+    at detectChangesInViewIfAttached (core.mjs:13814:3)
+    at detectChangesInEmbeddedViews (core.mjs:13772:7)
+chatgeral.component.ts:173 ERROR TypeError: Cannot read properties of undefined (reading '0')
+    at ChatgeralComponent_p_panel_6_div_10_Template (chatgeral.component.html:102:17)
+    at executeTemplate (core.mjs:12039:5)
+    at refreshView (core.mjs:13640:7)
+    at detectChangesInView (core.mjs:13852:5)
+    at detectChangesInViewIfAttached (core.mjs:13814:3)
+    at detectChangesInEmbeddedViews (core.mjs:13772:7)
+    at refreshView (core.mjs:13668:5)
+    at detectChangesInView (core.mjs:13852:5)
+    at detectChangesInViewIfAttached (core.mjs:13814:3)
+    at detectChangesInEmbeddedViews (core.mjs:13772:7)
+chatgeral.component.ts:204 response:  
+(4) [{…}, {…}, {…}, {…}]
+chatgeral.component.ts:202 ERROR Error: NG02200: Cannot find a differ supporting object '[object Object]' of type 'object'. NgFor only supports binding to Iterables, such as Arrays. Did you mean to use the keyvalue pipe? Find more at https://angular.dev/errors/NG02200
+    at _NgForOf.ngDoCheck (common.mjs:3472:19)
+    at callHookInternal (core.mjs:4125:10)
+    at callHook (core.mjs:4152:5)
+    at callHooks (core.mjs:4109:9)
+    at executeInitAndCheckHooks (core.mjs:4064:5)
+    at selectIndexInternal (core.mjs:11968:9)
+    at Module.ɵɵadvance (core.mjs:11952:3)
+    at ChatgeralComponent_p_panel_6_div_10_Template (chatgeral.component.html:141:22)
+    at executeTemplate (core.mjs:12039:5)
+    at refreshView (core.mjs:13640:7)
+﻿
+
+Third-party cookie phaseout warnings in Network and Application
+The Network and Application panels now show you warnings next to cookies affected by the third-party cookie restrictions from Tracking Protection.
+Improved debugging in the Network panel
+The Network panel now always shows the request's failure reason in the Status column and the Copy submenu is now better organized.
+Breadcrumbs in Performance
+The Performance panel gets customizable breadcrumbs to help you set, track, and jump between zoom levels.
+
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names |  Raw size
+main.js             | main  | 490.54 kB | 
+Application bundle generation complete. [0.832 seconds]
+Component update sent to client(s).
+Component update failed: NG02200: Cannot find a differ supporting object '[object Object]' of type 'object'. NgFor only supports binding to Iterables, such as Arrays. Did you mean to use the keyvalue pipe? Find more at https://angular.dev/errors/NG02200
+Error: NG02200: Cannot find a differ supporting object '[object Object]' of type 'object'. NgFor only supports binding to Iterables, such as Arrays. Did you mean to use the keyvalue pipe? Find more at https://angular.dev/errors/NG02200
+    at _NgForOf.ngDoCheck (https://mefis.aud.bb.com.br:4200/@fs/usr/src/app/.angular/cache/19.2.4/appLLM/vite/deps/chunk-WVQGOQJK.js?v=ef4808ef:2400:19)
+    at callHookInternal (https://mefis.aud.bb.com.br:4200/@fs/usr/src/app/.angular/cache/19.2.4/appLLM/vite/deps/chunk-RREJXEU2.js?v=ef4808ef:4165:10)
+    at callHook (https://mefis.aud.bb.com.br:4200/@fs/usr/src/app/.angular/cache/19.2.4/appLLM/vite/deps/chunk-RREJXEU2.js?v=ef4808ef:4183:5)
+    at callHooks (https://mefis.aud.bb.com.br:4200/@fs/usr/src/app/.angular/cache/19.2.4/appLLM/vite/deps/chunk-RREJXEU2.js?v=ef4808ef:4154:9)
+    at executeInitAndCheckHooks (https://mefis.aud.bb.com.br:4200/@fs/usr/src/app/.angular/cache/19.2.4/appLLM/vite/deps/chunk-RREJXEU2.js?v=ef4808ef:4123:5)
+    at selectIndexInternal (https://mefis.aud.bb.com.br:4200/@fs/usr/src/app/.angular/cache/19.2.4/appLLM/vite/deps/chunk-RREJXEU2.js?v=ef4808ef:8946:9)
+    at Module.ɵɵadvance (https://mefis.aud.bb.com.br:4200/@fs/usr/src/app/.angular/cache/19.2.4/appLLM/vite/deps/chunk-RREJXEU2.js?v=ef4808ef:8932:3)
+    at ChatgeralComponent_p_panel_6_div_10_Template (https://mefis.aud.bb.com.br:4200/@ng/component?c=src%2Fapp%2Fchatgeral%2Fchatgeral.component.ts%40ChatgeralComponent&t=1744144370560:225:19)
+    at executeTemplate (https://mefis.aud.bb.com.br:4200/@fs/usr/src/app/.angular/cache/19.2.4/appLLM/vite/deps/chunk-RREJXEU2.js?v=ef4808ef:8999:5)
+    at refreshView (https://mefis.aud.bb.com.br:4200/@fs/usr/src/app/.angular/cache/19.2.4/appLLM/vite/deps/chunk-RREJXEU2.js?v=ef4808ef:10050:7)
+Please consider reporting the error at https://github.com/angular/angular-cli/issues
+Page reload sent to client(s).
+
+      
+      
+    
+
 <div *ngIf="dynamicObject['agente'] === 'rcmkpmg' && dynamicObject['param1'] === 'consolidado'">
   <div class="container mt-4">
     <!-- Cabeçalho -->
