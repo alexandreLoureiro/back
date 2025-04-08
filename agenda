@@ -1,3 +1,28 @@
+# Query de update utilizando as colunas relatorio e data_emissao como condição
+update_query = text(f"""
+    UPDATE {schema_name}.{table_name}
+    SET 
+        sumario_executivo = :sumario_executivo,
+        racional_sumario = :racional_sumario
+    WHERE relatorio = :relatorio
+      AND data_emissao = :data_emissao
+""")
+
+# Executa a atualização para cada registro presente no dataframe
+with engine.begin() as connection:
+    for index, row in df_gpt.iterrows():
+        params = {
+            'sumario_executivo': row['sumario_executivo'],
+            'racional_sumario': row['racional_sumario'],
+            'relatorio': row['relatorio'],
+            'data_emissao': row['data_emissao']
+        }
+        connection.execute(update_query, **params)
+        print(f"Registro atualizado para relatorio: {row['relatorio']} e data_emissao: {row['data_emissao']}.")
+
+print("Atualização concluída.")
+
+
 Você receberá um relatório de auditoria externa completo no campo {relatorio}. Sua tarefa é gerar dois atributos, utilizando formatação innerHTML com tags HTML, da seguinte forma:
 
 1. **sumario_executivo**:  
