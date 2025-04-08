@@ -1,33 +1,71 @@
-SELECT 
-    periodo_apuracao,
-    string_agg('relatorio: ' || relatorio_text_extract, ' ') AS relatorios_periodo
-FROM 
-    rcm.rcm_kpmg_relatorios
-WHERE 
-    sumario_executivo_per IS NULL
-GROUP BY 
-    periodo_apuracao;
+pegando essa mesma logica abaixo
+elif data.get("agente") == 'rcmkpmg' and data.get("param1") == 'individual':
+        print('>>>>>> rcmkpmg <<<<<<')
+        query = f"""
+            SELECT 
+                relatorio_text_extract, 
+                "relatorio", 
+                "constatacoes", 
+                "evidencias", 
+                "recomendacao", 
+                "prefixo_responsavel", 
+                "instituicao_assunto_elbb", 
+                "previsao_implementacao", 
+                "matricula_do_gestor_responsavel",
+                CONCAT(
+                    'Você receberá um relatório de auditoria externa: ', relatorio_text_extract,
+                    '\n\nQuero que você analise com bastante critério se nesse relatório há o registro da seguinte constatação: ', constatacoes, 
+                    ' e da seguinte recomendação: ', recomendacao, 
+                    '\nCaso encontre a constatação ou a recomendação, informe a página ou forneça uma dica de onde está para facilitar a visualização do auditor.', 
+                    '\nVerifique também se a data de implementação na constatação é ', previsao_implementacao, 
+                    '\n\n**Atenção: Todas as informações utilizadas devem ser rigorosamente obtidas dos dados fornecidos, sem criar, complementar ou inserir informações extras.**',
+                    '\n\n**Análise de Conformidade entre Relatório KPMG e Relatório Final de Auditoria**',
+                    '\nNúmero e nome do relatório: ', relatorio
+                ) AS role_user,
+                CONCAT(
+                    'Olá! Estou pronto para responder suas dúvidas sobre o relatório de auditoria externa. ',
+                    'Por favor, forneça informações rigorosamente obtidas dos dados fornecidos, sem criar, complementar ou inserir informações extras.'
+                ) AS role_assistant
+            FROM 
+                rcm.rcm_kpmg_relatorios 
+            WHERE 
+                id = {int(data.get("param2"))};
+        """
 
-from sqlalchemy import text
+só que dessa vez quero distinto pelas colunas periodo_apuracao, relatorios_periodo, sumario_executivo_rel, racional_sumario_rel, sumario_executivo_per, racional_sumario_per 
 
-# Query de update usando o campo periodo_apuracao
-update_query = text("""
-    UPDATE rcm.rcm_kpmg_relatorios
-    SET 
-        sumario_executivo_per = :sumario_executivo_per,
-        racional_sumario_per = :racional_sumario_per
-    WHERE periodo_apuracao = :periodo_apuracao
-""")
+na orientacao tem que ser algo como: com base nos relatorios de auditoria externa do período 'relatorios_periodo', quero que vc atue como um chat em que o auditor 
+ira solicitar iinformacoes sobre os pontos que vc gerou sumario_executivo_rel, racional_sumario_rel, sumario_executivo_per, racional_sumario_per, perceba que todos tem o racional 
+que vc chegou nessa informação, então ao ser questionado pondere esses pontos.
 
-# Exemplo: iterando sobre o DataFrame df_gpt_period para atualizar cada registro
-with engine.begin() as connection:
-    for index, row in df_gpt_period.iterrows():
-        params = {
-            'sumario_executivo_per': row['sumario_executivo_per'] or '',
-            'racional_sumario_per': row['racional_sumario_per'] or '',
-            'periodo_apuracao': row['periodo_apuracao']
-        }
-        result = connection.execute(update_query, **params)
-        print(f"Registro atualizado para periodo_apuracao: {row['periodo_apuracao']} - Linhas afetadas: {result.rowcount}")
+para esse caso o parametro elif data.get("agente") == 'rcmkpmg' and data.get("param1") == 'individual': será como :
 
-print("Atualização dos relatórios por período concluída.")
+elif data.get("agente") == 'rcmkpmg' and data.get("param1") == 'consolidado':
+
+quem vai fazer essa chamada é uma aplicacao angular, ja tenho tenho todas as regras de chamada, 
+
+que é assim que chamo: this.servicoLLM.servicosAgentes(this.dynamicObject).subscribe({
+          next: (response) => {
+            console.log('response: ', response)
+            this.objetoAudDetalhes = response[0]; // Detalhes do trabalho
+            this.showNotification('info', 'Objeto auditoria selecionado', `Iniciando análise do trabalho ${this.dynamicObject['agente'] }`);
+        // Reseta a sessão no backend
+        this.servicoLLM.resetSession(this.sessionId).subscribe({
+no pyload vou passar: {agente: "rcmkpmg", param1: "consolidado", param2: dinamico periodo_apuracao}
+agente
+: 
+"rcmkpmg"
+param1
+: 
+"consolidado"
+param2
+: 
+dinamico
+
+com essa informacao quero mostrar na minha tela sei lá pode ser um ng for, lembrese que estou usando primeng e bootstrap
+
+de forma bem bacana linha por linha o sumario_executivo_rel - tem que ser innerhtml
+e racional_sumario_rel, acho que esse nao precisa ser inner, nao tem tag html
+
+acho que no cabecario pode ficar sumario_executivo_per[0] tem que ser inner, ele é consolidado do sumário de todos os relatorios
+o racional[0], nao precisa ser inner 
