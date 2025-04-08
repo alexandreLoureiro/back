@@ -1,59 +1,32 @@
-prompt = f""" Você receberá um relatório de auditoria externa: {relatorio}
+ok, agora tenho esse dataframe:
 
-    quero que voce analise se nesse relatorio tem o registro dessa constatacao: {conf_constatacoes} e esta recomendação {conf_recomendacao}    
-    caso encontre a constatacao ou a recomendação informe a página ou de uma dica de onde está para facilitar a visualizção do funcionário     
-    informar se a data de implementação na constatacao é {conf_implementacao}    
-    
-    2. **Retornar o resultado no seguinte formato JSON:**
-    
-          {{
-                "achou_constatacao": "Sim/Não",
-                "achou_recomendacao": "Sim/Não",
-                "dica_localizar_constatacao": "caso encontre a constatacao ou a recomendação informe a página ou de uma dica de onde está para facilitar a visualizção do funcionário",
-                "dica_localizar_recomendacao": "caso encontre a constatacao ou a recomendação informe a página ou de uma dica de onde está para facilitar a visualizção do funcionário",
-                "conf_implementacao": "Correta, sim ou não",
-                "racional": "Racional por que considera que o achado foi regularizado durante o trabalho, incluindo a declaração explícita do auditor ou explicação do porquê não foi encontrado",
-                "resumo_constatacao": "Resumo da constatacao",
-                "resumo_recomendacao": "Resumo da recomendacao"
-            }}
-        OBS.: Envie o JSON em formato puro sem vestígios de markdown, remove a marcação abaixo:
-        [REMOVER]:
-        ```json
-       ```
-df['combined_text'] = df.apply(lambda row: f"[registro constatações KPMG]: {row['constatacoes']}, [registro evidencias KPMG]: {row['evidencias']}, [registro recomendacao KPMG]: {row['recomendacao']}, [previsão para implementação]: {row['previsao_implementacao']}, [relatório auditoria externa]: {row['relatorio_text_extract']}", axis=1)
+df_gpt[['id', 'achou_constatacao', 'achou_recomendacao',
+       'dica_localizar_constatacao', 'dica_localizar_recomendacao',
+       'conf_implementacao', 'racional', 'resumo_constatacao',
+       'resumo_recomendacao']].head()
 
+já tenho minha conexao:
 
-Você receberá um texto único que contém informações consolidadas, combinando os dados extraídos do arquivo Excel e do relatório de auditoria externa. Esse texto possui a seguinte estrutura:
-[registro constatações KPMG]: <valor>, 
-[registro evidencias KPMG]: <valor>, 
-[registro recomendacao KPMG]: <valor>, 
-[previsão para implementação]: <valor>, 
-[relatório auditoria externa]: <texto extraído do relatório PDF>.
+conn, engine = postgres()
+base_query = """
+SELECT id, constatacoes, evidencias, recomendacao, relatorio_text_extract, previsao_implementacao, gpt_id
+FROM rcm.rcm_kpmg_relatorios where gpt_id is null;
+"""
+df = pd.read_sql(base_query, engine)
 
-Sua tarefa é:
+antes fazia assim: 
 
-1. Analisar o relatório contido na seção [relatório auditoria externa] e verificar se:
-   - A constatação informada corresponde a: {conf_constatacoes}.
-   - A recomendação informada corresponde a: {conf_recomendacao}.
-   - A data de implementação presente na constatação confirma: {conf_implementacao}.
+df_resultados.to_sql(
+                name=table_name,
+                con=engine,
+                schema=schema_name,
+                if_exists='append',  # ou 'append'
+                index=False
+            )
+            logging.info(f"Processamento concluído. {len(resultados)} registros inseridos no banco de dados.")
 
-2. Caso algum dos itens (constatação ou recomendação) seja encontrado:
-   - Informe a página ou forneça uma dica (exemplo: “seção X”, “parágrafo Y”) que facilite a localização pelo auditor.
-   
-3. Gere resumos para a constatação e para a recomendação, e forneça um racional explicando:
-   - Por que o achado foi considerado regular ou se houve inconsistência na informação.
-   - Caso a informação não seja encontrada, explique o motivo ou a evidência que levou à conclusão.
-
-4. Retorne o resultado no seguinte formato JSON (a resposta deve estar em JSON puro, sem qualquer formatação markdown ou trechos de código extra):
-
-{
-  "achou_constatacao": "Sim/Não",
-  "achou_recomendacao": "Sim/Não",
-  "dica_localizar_constatacao": "Indique a página ou dê uma dica para localizar a constatação",
-  "dica_localizar_recomendacao": "Indique a página ou dê uma dica para localizar a recomendação",
-  "conf_implementacao": "Correta/Sim/Não",
-  "racional": "Explique de forma detalhada o motivo do achado, incluindo declarações do auditor ou justifique se não foi encontrado",
-  "resumo_constatacao": "Resumo conciso da constatação",
-  "resumo_recomendacao": "Resumo conciso da recomendação"
-}
-
+agora eu que criar se nao exisitr as colunas 'achou_constatacao', 'achou_recomendacao',
+       'dica_localizar_constatacao', 'dica_localizar_recomendacao',
+       'conf_implementacao', 'racional', 'resumo_constatacao',
+       'resumo_recomendacao' em rcm.rcm_kpmg_relatorios e depois 
+fazer um update por id dos valores dessas colunas do dataframe na minha tabela postgres
