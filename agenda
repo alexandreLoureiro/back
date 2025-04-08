@@ -1,3 +1,66 @@
+async def inserir_linha_rcm(
+    relatorio: str,
+    data_emissao: str,
+    ano: str,
+    semestre: str,
+    constatacoes: str,
+    evidencias: str,
+    recomendacao: str,
+    instituicao_responsavel: str,
+    prefixo_responsavel: str,
+    instituicao_assunto_elbb: str,
+    previsao_implementacao: str,
+    matricula_do_gestor_responsavel: str,
+    pdf_blob: bytes,
+    relatorio_text_extract: str
+):
+    """
+    Insere uma linha na tabela rcm.rcm_kpmg_relatorios com todas as colunas, incluindo os novos campos 'ano' e 'semestre'
+    e o texto extraído do PDF.
+    """
+    query = """
+    INSERT INTO rcm.rcm_kpmg_relatorios (
+      relatorio,
+      data_emissao,
+      ano,
+      semestre,
+      constatacoes,
+      evidencias,
+      recomendacao,
+      instituicao_responsavel,
+      prefixo_responsavel,
+      instituicao_assunto_elbb,
+      previsao_implementacao,
+      matricula_do_gestor_responsavel,
+      pdf_file,
+      relatorio_text_extract
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+    RETURNING id;
+    """
+    result = await execute_query(
+        query,
+        relatorio,
+        data_emissao,
+        ano,
+        semestre,
+        constatacoes,
+        evidencias,
+        recomendacao,
+        instituicao_responsavel,
+        prefixo_responsavel,
+        instituicao_assunto_elbb,
+        previsao_implementacao,
+        matricula_do_gestor_responsavel,
+        pdf_blob,
+        relatorio_text_extract,
+        return_one=True
+    )
+    if result:
+        return result.get("id")
+    return None
+
+
+
 @router.post("/apiptai/upload-rcm-excel-multiplos")
 async def upload_rcm_excel_multiplos(request: Request):
     form = await request.form()
