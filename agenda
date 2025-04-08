@@ -1,3 +1,10 @@
+# 1. Extrair dados agregados da tabela exterior.ptai_trabalhos_1, normalizando nm_rsco_objt
+base_query = """
+SELECT distinct relatorio, data_emissao, relatorio_text_extract
+FROM rcm.rcm_kpmg_relatorios where sumario_executivo_rel is null;
+"""
+df = pd.read_sql(base_query, engine)
+
 # Query de update utilizando as colunas relatorio e data_emissao como condição
 update_query = text(f"""
     UPDATE {schema_name}.{table_name}
