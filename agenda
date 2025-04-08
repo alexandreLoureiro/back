@@ -1,3 +1,24 @@
+Initial chunk files | Names |  Raw size
+main.js             | main  | 490.83 kB | 
+Application bundle generation complete. [1.260 seconds]
+Component update sent to client(s).
+Page reload sent to client(s).
+Component update failed: NG02200: Cannot find a differ supporting object '[object Object]' of type 'object'. NgFor only supports binding to Iterables, such as Arrays. Did you mean to use the keyvalue pipe? Find more at https://angular.dev/errors/NG02200
+Error: NG02200: Cannot find a differ supporting object '[object Object]' of type 'object'. NgFor only supports binding to Iterables, such as Arrays. Did you mean to use the keyvalue pipe? Find more at https://angular.dev/errors/NG02200
+    at _NgForOf.ngDoCheck (https://mefis.aud.bb.com.br:4200/@fs/usr/src/app/.angular/cache/19.2.4/appLLM/vite/deps/chunk-WVQGOQJK.js?v=ef4808ef:2400:19)
+    at callHookInternal (https://mefis.aud.bb.com.br:4200/@fs/usr/src/app/.angular/cache/19.2.4/appLLM/vite/deps/chunk-RREJXEU2.js?v=ef4808ef:4165:10)
+    at callHook (https://mefis.aud.bb.com.br:4200/@fs/usr/src/app/.angular/cache/19.2.4/appLLM/vite/deps/chunk-RREJXEU2.js?v=ef4808ef:4183:5)
+    at callHooks (https://mefis.aud.bb.com.br:4200/@fs/usr/src/app/.angular/cache/19.2.4/appLLM/vite/deps/chunk-RREJXEU2.js?v=ef4808ef:4154:9)
+    at executeInitAndCheckHooks (https://mefis.aud.bb.com.br:4200/@fs/usr/src/app/.angular/cache/19.2.4/appLLM/vite/deps/chunk-RREJXEU2.js?v=ef4808ef:4123:5)
+    at selectIndexInternal (https://mefis.aud.bb.com.br:4200/@fs/usr/src/app/.angular/cache/19.2.4/appLLM/vite/deps/chunk-RREJXEU2.js?v=ef4808ef:8946:9)
+    at Module.ɵɵadvance (https://mefis.aud.bb.com.br:4200/@fs/usr/src/app/.angular/cache/19.2.4/appLLM/vite/deps/chunk-RREJXEU2.js?v=ef4808ef:8932:3)
+    at ChatgeralComponent_p_panel_6_div_10_Template (https://mefis.aud.bb.com.br:4200/@ng/component?c=src%2Fapp%2Fchatgeral%2Fchatgeral.component.ts%40ChatgeralComponent&t=1744140187755:229:19)
+    at executeTemplate (https://mefis.aud.bb.com.br:4200/@fs/usr/src/app/.angular/cache/19.2.4/appLLM/vite/deps/chunk-RREJXEU2.js?v=ef4808ef:8999:5)
+    at refreshView (https://mefis.aud.bb.com.br:4200/@fs/usr/src/app/.angular/cache/19.2.4/appLLM/vite/deps/chunk-RREJXEU2.js?v=ef4808ef:10050:7)
+Please consider reporting the error at https://github.com/angular/angular-cli/issues
+
+
+
 <div class="container mt-4">
   <!-- Cabeçalho -->
   <div class="row mb-4">
