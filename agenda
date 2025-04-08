@@ -1,3 +1,194 @@
+---------------------------------------------------------------------------
+UndefinedFunction                         Traceback (most recent call last)
+File ~/anaconda3/lib/python3.9/site-packages/sqlalchemy/engine/base.py:1905, in Connection._execute_context(self, dialect, constructor, statement, parameters, execution_options, *args, **kw)
+   1904     if not evt_handled:
+-> 1905         self.dialect.do_execute(
+   1906             cursor, statement, parameters, context
+   1907         )
+   1909 if self._has_events or self.engine._has_events:
+
+File ~/anaconda3/lib/python3.9/site-packages/sqlalchemy/engine/default.py:736, in DefaultDialect.do_execute(self, cursor, statement, parameters, context)
+    735 def do_execute(self, cursor, statement, parameters, context=None):
+--> 736     cursor.execute(statement, parameters)
+
+UndefinedFunction: function pg_catalog.date_part(unknown, text) does not exist
+LINE 4:     EXTRACT(year FROM data_emissao) AS ano,
+            ^
+HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+
+
+The above exception was the direct cause of the following exception:
+
+ProgrammingError                          Traceback (most recent call last)
+Input In [71], in <cell line: 21>()
+      1 base_query = """
+      2 
+      3 SELECT 
+   (...)
+     19     END;
+     20 """
+---> 21 df = pd.read_sql(base_query, engine)
+
+File ~/anaconda3/lib/python3.9/site-packages/pandas/io/sql.py:628, in read_sql(sql, con, index_col, coerce_float, params, parse_dates, columns, chunksize)
+    619     return pandas_sql.read_table(
+    620         sql,
+    621         index_col=index_col,
+   (...)
+    625         chunksize=chunksize,
+    626     )
+    627 else:
+--> 628     return pandas_sql.read_query(
+    629         sql,
+    630         index_col=index_col,
+    631         params=params,
+    632         coerce_float=coerce_float,
+    633         parse_dates=parse_dates,
+    634         chunksize=chunksize,
+    635     )
+
+File ~/anaconda3/lib/python3.9/site-packages/pandas/io/sql.py:1579, in SQLDatabase.read_query(self, sql, index_col, coerce_float, parse_dates, params, chunksize, dtype)
+   1531 """
+   1532 Read SQL query into a DataFrame.
+   1533 
+   (...)
+   1575 
+   1576 """
+   1577 args = _convert_params(sql, params)
+-> 1579 result = self.execute(*args)
+   1580 columns = result.keys()
+   1582 if chunksize is not None:
+
+File ~/anaconda3/lib/python3.9/site-packages/pandas/io/sql.py:1424, in SQLDatabase.execute(self, *args, **kwargs)
+   1422 def execute(self, *args, **kwargs):
+   1423     """Simple passthrough to SQLAlchemy connectable"""
+-> 1424     return self.connectable.execution_options().execute(*args, **kwargs)
+
+File <string>:2, in execute(self, statement, *multiparams, **params)
+
+File ~/anaconda3/lib/python3.9/site-packages/sqlalchemy/util/deprecations.py:468, in _decorate_with_warning.<locals>.warned(fn, *args, **kwargs)
+    466 if not skip_warning:
+    467     _warn_with_version(message, version, wtype, stacklevel=3)
+--> 468 return fn(*args, **kwargs)
+
+File ~/anaconda3/lib/python3.9/site-packages/sqlalchemy/engine/base.py:3262, in Engine.execute(self, statement, *multiparams, **params)
+   3244 """Executes the given construct and returns a
+   3245 :class:`_engine.CursorResult`.
+   3246 
+   (...)
+   3259 
+   3260 """
+   3261 connection = self.connect(close_with_result=True)
+-> 3262 return connection.execute(statement, *multiparams, **params)
+
+File ~/anaconda3/lib/python3.9/site-packages/sqlalchemy/engine/base.py:1370, in Connection.execute(self, statement, *multiparams, **params)
+   1361 if isinstance(statement, util.string_types):
+   1362     util.warn_deprecated_20(
+   1363         "Passing a string to Connection.execute() is "
+   1364         "deprecated and will be removed in version 2.0.  Use the "
+   (...)
+   1367         "driver-level SQL string."
+   1368     )
+-> 1370     return self._exec_driver_sql(
+   1371         statement,
+   1372         multiparams,
+   1373         params,
+   1374         _EMPTY_EXECUTION_OPTS,
+   1375         future=False,
+   1376     )
+   1378 try:
+   1379     meth = statement._execute_on_connection
+
+File ~/anaconda3/lib/python3.9/site-packages/sqlalchemy/engine/base.py:1674, in Connection._exec_driver_sql(self, statement, multiparams, params, execution_options, future)
+   1664         (
+   1665             statement,
+   1666             distilled_params,
+   (...)
+   1670             statement, distilled_parameters, execution_options
+   1671         )
+   1673 dialect = self.dialect
+-> 1674 ret = self._execute_context(
+   1675     dialect,
+   1676     dialect.execution_ctx_cls._init_statement,
+   1677     statement,
+   1678     distilled_parameters,
+   1679     execution_options,
+   1680     statement,
+   1681     distilled_parameters,
+   1682 )
+   1684 if not future:
+   1685     if self._has_events or self.engine._has_events:
+
+File ~/anaconda3/lib/python3.9/site-packages/sqlalchemy/engine/base.py:1948, in Connection._execute_context(self, dialect, constructor, statement, parameters, execution_options, *args, **kw)
+   1945             branched.close()
+   1947 except BaseException as e:
+-> 1948     self._handle_dbapi_exception(
+   1949         e, statement, parameters, cursor, context
+   1950     )
+   1952 return result
+
+File ~/anaconda3/lib/python3.9/site-packages/sqlalchemy/engine/base.py:2129, in Connection._handle_dbapi_exception(self, e, statement, parameters, cursor, context)
+   2127     util.raise_(newraise, with_traceback=exc_info[2], from_=e)
+   2128 elif should_wrap:
+-> 2129     util.raise_(
+   2130         sqlalchemy_exception, with_traceback=exc_info[2], from_=e
+   2131     )
+   2132 else:
+   2133     util.raise_(exc_info[1], with_traceback=exc_info[2])
+
+File ~/anaconda3/lib/python3.9/site-packages/sqlalchemy/util/compat.py:211, in raise_(***failed resolving arguments***)
+    208     exception.__cause__ = replace_context
+    210 try:
+--> 211     raise exception
+    212 finally:
+    213     # credit to
+    214     # https://cosmicpercolator.com/2016/01/13/exception-leaks-in-python-2-and-3/
+    215     # as the __traceback__ object creates a cycle
+    216     del exception, replace_context, from_, with_traceback
+
+File ~/anaconda3/lib/python3.9/site-packages/sqlalchemy/engine/base.py:1905, in Connection._execute_context(self, dialect, constructor, statement, parameters, execution_options, *args, **kw)
+   1903                 break
+   1904     if not evt_handled:
+-> 1905         self.dialect.do_execute(
+   1906             cursor, statement, parameters, context
+   1907         )
+   1909 if self._has_events or self.engine._has_events:
+   1910     self.dispatch.after_cursor_execute(
+   1911         self,
+   1912         cursor,
+   (...)
+   1916         context.executemany,
+   1917     )
+
+File ~/anaconda3/lib/python3.9/site-packages/sqlalchemy/engine/default.py:736, in DefaultDialect.do_execute(self, cursor, statement, parameters, context)
+    735 def do_execute(self, cursor, statement, parameters, context=None):
+--> 736     cursor.execute(statement, parameters)
+
+ProgrammingError: (psycopg2.errors.UndefinedFunction) function pg_catalog.date_part(unknown, text) does not exist
+LINE 4:     EXTRACT(year FROM data_emissao) AS ano,
+            ^
+HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+
+[SQL: 
+
+SELECT 
+    EXTRACT(year FROM data_emissao) AS ano,
+    CASE 
+        WHEN EXTRACT(month FROM data_emissao) <= 6 THEN '1º Semestre'
+        ELSE '2º Semestre'
+    END AS semestre,
+    string_agg('relatorio: ' || relatorio_text_extract, ' ') AS relatorios_periodo
+FROM 
+    rcm.rcm_kpmg_relatorios
+WHERE 
+    sumario_executivo_per IS NULL
+GROUP BY 
+    EXTRACT(year FROM data_emissao),
+    CASE 
+        WHEN EXTRACT(month FROM data_emissao) <= 6 THEN '1º Semestre'
+        ELSE '2º Semestre'
+    END;
+]
+(Background on this error at: https://sqlalche.me/e/14/f405)
 
 SELECT 
     EXTRACT(year FROM data_emissao) AS ano,
