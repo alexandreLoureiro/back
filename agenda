@@ -1,254 +1,60 @@
-async def inserir_linha_rcm(
-    relatorio: str,
-    data_emissao: str,
-    ano: str,
-    semestre: str,
-    constatacoes: str,
-    evidencias: str,
-    recomendacao: str,
-    instituicao_responsavel: str,
-    prefixo_responsavel: str,
-    instituicao_assunto_elbb: str,
-    previsao_implementacao: str,
-    matricula_do_gestor_responsavel: str,
-    pdf_blob: bytes,
-    relatorio_text_extract: str
-):
-    """
-    Insere uma linha na tabela rcm.rcm_kpmg_relatorios com todas as colunas, incluindo os novos campos 'ano' e 'semestre'
-    e o texto extraído do PDF.
-    """
-    query = """
-    INSERT INTO rcm.rcm_kpmg_relatorios (
-      relatorio,
-      data_emissao,
-      ano,
-      semestre,
-      constatacoes,
-      evidencias,
-      recomendacao,
-      instituicao_responsavel,
-      prefixo_responsavel,
-      instituicao_assunto_elbb,
-      previsao_implementacao,
-      matricula_do_gestor_responsavel,
-      pdf_file,
-      relatorio_text_extract
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-    RETURNING id;
-    """
-    result = await execute_query(
-        query,
-        relatorio,
-        data_emissao,
-        ano,
-        semestre,
-        constatacoes,
-        evidencias,
-        recomendacao,
-        instituicao_responsavel,
-        prefixo_responsavel,
-        instituicao_assunto_elbb,
-        previsao_implementacao,
-        matricula_do_gestor_responsavel,
-        pdf_blob,
-        relatorio_text_extract,
-        return_one=True
-    )
-    if result:
-        return result.get("id")
-    return None
-
-
-
-@router.post("/apiptai/upload-rcm-excel-multiplos")
-async def upload_rcm_excel_multiplos(request: Request):
-    form = await request.form()
-
-    # Define a variável para coletar caracteres problemáticos
-    problematic_characters_df = set()
-
-
-    # (Coleta do excel e demais validações continuam iguais)
-    file_excel: UploadFile = form.get("file_excel")
-    if not file_excel:
-        raise HTTPException(status_code=400, detail="Arquivo Excel (file_excel) é obrigatório.")
-    
-    file_extension = file_excel.filename.lower().split('.')[-1]
-    if file_extension not in ["xlsx", "xls", "csv"]:
-        raise HTTPException(status_code=400, detail="O arquivo Excel deve ser .xlsx, .xls ou .csv")
-    
-    excel_bytes = await file_excel.read()
-    try:
-        if file_extension == "csv":
-            df = pd.read_csv(io.BytesIO(excel_bytes), encoding='ISO-8859-1', sep=';', on_bad_lines='skip')
-        else:
-            df = pd.read_excel(io.BytesIO(excel_bytes))
-        df.columns = df.columns.str.strip().str.upper()
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Erro ao ler Excel: {str(e)}")
-
-    # Valida colunas obrigatórias
-    colunas_obrigatorias = [
-        "RELATORIO", "DATA_EMISSAO", "CONSTATACAO", "EVIDENCIAS", "RECOMENDACAO",
-        "INSTITUICAO_RESPONSAVEL", "PREFIXO_RESPONSAVEL", "INSTITUICAO_ASSUNTO_ELBB",
-        "PREVISAO_IMPLEMENTACAO", "MATRICULA_DO_GESTOR_RESPONSAVEL"
-    ]
-    for col in colunas_obrigatorias:
-        if col not in df.columns:
-            raise HTTPException(status_code=400, detail=f"Coluna '{col}' não encontrada no Excel.")
-
-    # Processa PDFs
-    pdf_keys = [key for key in form.keys() if key.startswith("file_pdf_")]
-    if len(pdf_keys) == 0:
-        raise HTTPException(status_code=400, detail="Nenhum PDF enviado (file_pdf_0, file_pdf_1, ...).")
-
-    pdf_dict: Dict[str, bytes] = {}
-    for key in pdf_keys:
-        pdf_upload: UploadFile = form[key]
-        if not pdf_upload.filename.lower().endswith(".pdf"):
-            raise HTTPException(status_code=400, detail=f"O arquivo {pdf_upload.filename} não é PDF.")
-        pdf_name_no_ext = extract_name(pdf_upload.filename.replace(".pdf", ""))
-        pdf_content = await pdf_upload.read()
-        pdf_dict[pdf_name_no_ext] = pdf_content
-
-    # Converte o DataFrame para registros (dicionários) e filtra linhas sem RELATORIO
-    df_records = df.to_dict("records")
-    grouped: Dict[tuple, List[Dict]] = {}
-    for row in df_records:
-        relatorio_raw = row.get("RELATORIO")
-        if pd.isna(relatorio_raw) or str(relatorio_raw).strip() == "":
-            continue
-
-        data_emissao_val = str(row["DATA_EMISSAO"]).strip()
-        relatorio_val = extract_name(str(relatorio_raw))
-        key = (data_emissao_val, relatorio_val)
-        if key not in grouped:
-            grouped[key] = []
-        grouped[key].append(row)
-
-    ids_inseridos_total = []
-    for (data_emissao_val, relatorio_val), rows in grouped.items():
-        # **Conversão do campo DATA_EMISSAO**  
-        try:
-            # Converte a string "DD/MM/YYYY" para um objeto date
-            data_obj = datetime.strptime(data_emissao_val, "%d/%m/%Y").date()
-            ano = data_obj.year
-            semestre = "1º Semestre" if data_obj.month <= 6 else "2º Semestre"
-        except Exception as e:
-            # Retorna o erro no JSON de resposta
-            return {
-                "status": "error",
-                "mensagem": f"Erro ao converter data_emissao '{data_emissao_val}': {str(e)}"
-            }
-        
-        # Apaga registros existentes com a mesma data_emissao e relatorio
-        delete_query = "DELETE FROM rcm.rcm_kpmg_relatorios WHERE data_emissao = $1 AND relatorio = $2"
-        await execute_query(delete_query, data_emissao_val, relatorio_val)
-
-        # Insere cada linha para essa combinação, incluindo os novos campos 'ano' e 'semestre'
-        for row in rows:
-            constatacoes = str(row["CONSTATACAO"]).strip().upper()
-            evidencias = str(row["EVIDENCIAS"]).strip().upper()
-            recomendacao = str(row["RECOMENDACAO"]).strip().upper()
-            instituicao_responsavel = str(row["INSTITUICAO_RESPONSAVEL"]).strip().upper()
-            prefixo_responsavel = str(row["PREFIXO_RESPONSAVEL"]).strip().upper()
-            instituicao_assunto_elbb = str(row["INSTITUICAO_ASSUNTO_ELBB"]).strip().upper()
-            previsao_implementacao = str(row["PREVISAO_IMPLEMENTACAO"]).strip().upper()
-            matricula_do_gestor_responsavel = str(row["MATRICULA_DO_GESTOR_RESPONSAVEL"]).strip().upper()
-
-            pdf_bytes = pdf_dict.get(relatorio_val)
-            if not pdf_bytes:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Falta PDF '{relatorio_val}.pdf' para o relatório '{relatorio_val}'."
-                )
-
-            rel_text = extrair_rel_kpmg_pdf(pdf_bytes)
-            rel_text, problematic_characters_pdf = remove_problematic_characters_from_string(rel_text)
-            problematic_characters_df.update(problematic_characters_pdf)
-
-            novo_id = await inserir_linha_rcm(
-                relatorio=relatorio_val,
-                data_emissao=data_emissao_val,  # Você pode também salvar data_obj.isoformat() se preferir
-                ano=ano,
-                semestre=semestre,
-                constatacoes=constatacoes,
-                evidencias=evidencias,
-                recomendacao=recomendacao,
-                instituicao_responsavel=instituicao_responsavel,
-                prefixo_responsavel=prefixo_responsavel,
-                instituicao_assunto_elbb=instituicao_assunto_elbb,
-                previsao_implementacao=previsao_implementacao,
-                matricula_do_gestor_responsavel=matricula_do_gestor_responsavel,
-                pdf_blob=pdf_bytes,
-                relatorio_text_extract=rel_text  # type: ignore
-            )
-            if novo_id:
-                ids_inseridos_total.append(novo_id)
-
-    return {
-        "status": "ok",
-        "mensagem": "Upload múltiplo concluído com sobrescrita por data_emissao e relatorio.",
-        "datas_processadas": list(grouped.keys()),
-        "ids_inseridos": ids_inseridos_total
-    }
-  ajusta aqui:
-
-
-async def inserir_linha_rcm(
-    relatorio: str,
-    data_emissao: str,
-    ano=str,
-    semestre=str,
-    constatacoes: str,
-    evidencias: str,
-    recomendacao: str,
-    instituicao_responsavel: str,
-    prefixo_responsavel: str,
-    instituicao_assunto_elbb: str,
-    previsao_implementacao: str,
-    matricula_do_gestor_responsavel: str,
-    pdf_blob: bytes,
-    relatorio_text_extract: str
-):
-    """
-    Insere uma linha na tabela rcm.rcm_kpmg_relatorios com todas as colunas, inclusive o texto extraído do PDF.
-    """
-    query = """
-    INSERT INTO rcm.rcm_kpmg_relatorios (
-      relatorio,
-      data_emissao,
-      constatacoes,
-      evidencias,
-      recomendacao,
-      instituicao_responsavel,
-      prefixo_responsavel,
-      instituicao_assunto_elbb,
-      previsao_implementacao,
-      matricula_do_gestor_responsavel,
-      pdf_file,
-      relatorio_text_extract
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-    RETURNING id;
-    """
-    result = await execute_query(
-        query,
-        relatorio,
-        data_emissao,
-        constatacoes,
-        evidencias,
-        recomendacao,
-        instituicao_responsavel,
-        prefixo_responsavel,
-        instituicao_assunto_elbb,
-        previsao_implementacao,
-        matricula_do_gestor_responsavel,
-        pdf_blob,
-        relatorio_text_extract,
-        return_one=True
-    )
-    if result:
-        return result.get("id")
-    return None
- esta tudo como str, é isso mesmo?
+INFO:infra.sqlalchemy.dao.listen_to_db_notifications:Conectado ao PostgreSQL para escutar notificações.
+INFO:infra.sqlalchemy.dao.listen_to_db_notifications:Listener registrado para o canal 'row_changed'.
+parts  ['CCI BB ', ' 30.06.2024 ', ' Relatório sobre o sistema de controles internos BB ', ' Res. 4.910 e BCB 130']
+parts  ['CCI BB BI ', ' 30.06.2024 ', ' Relatório sobre o sistema de controles internos ', ' Res. 4.910 e BCB 130']
+parts  ['CCI BB Consórcios ', ' 30.06.2024 ', ' Relatório sobre sistema controle interno BACEN ', ' Res. 4.910 e BCB 260']
+parts  ['CCI BB Leasing ', ' 30.06.2024 ', ' BCB 130 062024']
+parts  ['CCI BB ', ' 30/06/2024']
+parts  ['CCI BB ', ' 30/06/2024']
+parts  ['CCI BB ', ' 30/06/2024']
+parts  ['CCI BB BI ', ' 30/06/2024']
+parts  ['CCI BB BI ', ' 30/06/2024']
+parts  ['CCI BB Consórcios ', ' 30/06/2024']
+parts  ['CCI BB Consórcios ', ' 30/06/2024']
+parts  ['CCI BB Leasing ', ' 30/06/2024']
+INFO:     192.168.203.129:37364 - "POST /apiptai/upload-rcm-excel-multiplos HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.9/site-packages/uvicorn/protocols/http/h11_impl.py", line 403, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+  File "/usr/local/lib/python3.9/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.9/site-packages/fastapi/applications.py", line 1054, in __call__
+    await super().__call__(scope, receive, send)
+  File "/usr/local/lib/python3.9/site-packages/starlette/applications.py", line 112, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/usr/local/lib/python3.9/site-packages/starlette/middleware/errors.py", line 187, in __call__
+    raise exc
+  File "/usr/local/lib/python3.9/site-packages/starlette/middleware/errors.py", line 165, in __call__
+    await self.app(scope, receive, _send)
+  File "/usr/local/lib/python3.9/site-packages/starlette/middleware/cors.py", line 93, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "/usr/local/lib/python3.9/site-packages/starlette/middleware/cors.py", line 144, in simple_response
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.9/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/usr/local/lib/python3.9/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.9/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.9/site-packages/starlette/routing.py", line 714, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/usr/local/lib/python3.9/site-packages/starlette/routing.py", line 734, in app
+    await route.handle(scope, receive, send)
+  File "/usr/local/lib/python3.9/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.9/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/usr/local/lib/python3.9/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.9/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.9/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+  File "/usr/local/lib/python3.9/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+  File "/usr/local/lib/python3.9/site-packages/fastapi/routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+  File "/app/routers/rotas_upload.py", line 336, in upload_rcm_excel_multiplos
+    novo_id = await inserir_linha_rcm(
+TypeError: inserir_linha_rcm() got an unexpected keyword argument 'ano'
