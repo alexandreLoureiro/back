@@ -1,5 +1,41 @@
 from sqlalchemy import text
 
+# Query de update que utiliza a conversão de data para extrair ano e semestre
+update_query = text("""
+    UPDATE rcm.rcm_kpmg_relatorios
+    SET 
+        sumario_executivo_per = :sumario_executivo_per,
+        racional_sumario_per = :racional_sumario_per
+    WHERE to_char(data_emissao::date, 'YYYY') = :ano
+      AND (
+          CASE 
+              WHEN EXTRACT(month FROM data_emissao::date) <= 6 THEN '1º Semestre'
+              ELSE '2º Semestre'
+          END
+      ) = :semestre
+""")
+
+# Iteração para atualizar cada grupo (ano e semestre) com os valores gerados
+with engine.begin() as connection:
+    for index, row in df_gpt_period.iterrows():
+        # Certifique-se de que as colunas 'ano' e 'semestre' estão definidas no DataFrame
+        # e que 'sumario_executivo_per' e 'racional_sumario_per' não são None.
+        print("Atualizando para ano:", row['ano'], "Semestre:", row['semestre'])
+        params = {
+            'sumario_executivo_per': row['sumario_executivo_per'] or '',
+            'racional_sumario_per': row['racional_sumario_per'] or '',
+            'ano': str(row['ano']),
+            'semestre': row['semestre']
+        }
+        result = connection.execute(update_query, **params)
+        print(f"Linhas afetadas: {result.rowcount} para ano {row['ano']} e semestre {row['semestre']}")
+
+print("Atualização dos relatórios por período concluída.")
+
+
+
+from sqlalchemy import text
+
 # Query de update comparando o ano e o semestre (usando to_char para o ano)
 update_query = text(f"""
     UPDATE rcm.rcm_kpmg_relatorios
