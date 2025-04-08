@@ -1,3 +1,28 @@
+ File "/usr/local/lib/python3.9/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.9/site-packages/starlette/routing.py", line 714, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/usr/local/lib/python3.9/site-packages/starlette/routing.py", line 734, in app
+    await route.handle(scope, receive, send)
+  File "/usr/local/lib/python3.9/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.9/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/usr/local/lib/python3.9/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.9/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.9/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+  File "/usr/local/lib/python3.9/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+  File "/usr/local/lib/python3.9/site-packages/fastapi/routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+  File "/app/routers/rotas_upload.py", line 336, in upload_rcm_excel_multiplos
+    novo_id = await inserir_linha_rcm(
+TypeError: inserir_linha_rcm() got an unexpected keyword argument 'ano'
+
+
 from sqlalchemy import text
 
 # Query de update ajustada para datas no formato "DD/MM/YYYY"
