@@ -1,58 +1,39 @@
 def gera_prompt(dados_aud):
     prompt = f"""
-    Você receberá um texto único que contém informações consolidadas, combinando os dados extraídos do arquivo Excel e do
-    relatório de auditoria externa. Esse texto possui a seguinte estrutura:
+    Você receberá um texto único que contém informações consolidadas, combinando os dados extraídos do arquivo Excel e do relatório de auditoria externa. Esse texto possui a seguinte estrutura:
     [registro constatações KPMG], 
-    [registro evidencias KPMG], 
-    [registro recomendacao KPMG], 
+    [registro evidências KPMG], 
+    [registro recomendação KPMG], 
     [previsão para implementação], 
     [nome do relatório],
     [relatório auditoria externa]
 
-Sua tarefa é:
+    Sua tarefa é:
 
-1. Analisar o relatório contido na seção [relatório auditoria externa] e verificar se:
-   - A constatação informada corresponde a: [registro constatações KPMG].
-   - A evidencia informada corresponde a: [registro evidencias KPMG].
-   - A recomendação informada corresponde a: [registro evidencias KPMG].
-   - A data de implementação presente na constatação confirma:  [previsão para implementação].
+    1. Analisar o relatório contido na seção [relatório auditoria externa] e identificar se:
+       - A constatação informada corresponde a: [registro constatações KPMG].
+       - A evidência informada corresponde a: [registro evidências KPMG].
+       - A recomendação informada corresponde a: [registro recomendação KPMG].
+       - A data de implementação presente na constatação confirma: [previsão para implementação].
 
-2. Caso algum dos itens (constatação ou recomendação) seja encontrado:
-   - Informe a página ou forneça uma dica (exemplo: “seção X”, “parágrafo Y”) que facilite a localização pelo auditor.
-   
-3. Gere resumos para a constatação e para a recomendação, e forneça um racional explicando:
-   - Por que o achado foi considerado regular ou se houve inconsistência na informação.
-   - Caso a informação não seja encontrada, explique o motivo ou a evidência que levou à conclusão.
+    2. Quando algum dos itens (constatação ou recomendação) for encontrado, indique onde o auditor poderá localizá-lo (exemplo: “seção X” ou “parágrafo Y”). Utilize itálico para transcrever trechos originais e facilitar a conferência.
 
-4. Em formato de tag html gere um relatório com as conferencias realizadas, esse relatório tem que ser amigável, se tiver 
-tabelas faça com uso de tag html, pode colocar cores, a ideia é que o auditor consiga verificar facialmente os pontos de 
-conferência descritos no item 1, que é o encaminhato da planilha pela KPMG
-Comece com o nome do relatório, coluna nome do relatório, exemplo (CCI BB BI, CCI BB CONSORCIOS), quando achar por exemplo
-a constatação, evidencia, recomendação e data de implementação, transcrever em italico em uma pequena frase o texto original
-colocar em qual pagina o auditor pode encontrar, em suma aqui é para ficar fácil de ler, com cores, tabelas tudo com 
-tag ahtml, só coloque informações realmente encontradas
+    3. Gere resumos concisos para a constatação e para a recomendação, acompanhados de um racional explicativo que detalhe os motivos da sua verificação (conforme informação encontrada ou a falta dela).
 
-   
-        **Dados da auditoria externa (KPMG) e os respectivos relatório:**
-        {dados_aud}
+    4. Crie um relatório de conferência em HTML, organizando os dados de forma clara e amigável, utilizando elementos como tabelas, cores e formatações que tornem a visualização simples para o auditor. O relatório deve iniciar com o nome do relatório (por exemplo, “CCI BB BI” ou “CCI BB CONSORCIOS”) e conter somente as informações efetivamente encontradas.
 
-5. Retorne o resultado no seguinte formato JSON (a resposta deve estar em JSON puro, sem qualquer formatação markdown ou trechos de código extra):
+    5. Retorne o resultado no seguinte formato JSON (a resposta deve estar em JSON puro, sem qualquer formatação markdown ou trechos de código extra), contendo apenas o atributo "conferencia", conforme o exemplo abaixo:
 
         {{
-          "conferencia": "com uso de tag html, aqui tem o relatório de conferencia entre o que a KPMG encaminhou e o que estava no relatório",
-          "achou_constatacao": "Sim/Não",
-          "achou_recomendacao": "Sim/Não",
-          "dica_localizar_constatacao": "Indique a página ou dê uma dica para localizar a constatação",
-          "dica_localizar_recomendacao": "Indique a página ou dê uma dica para localizar a recomendação",
-          "conf_implementacao": "Correta/Sim/Não",
-          "racional": "Explique de forma detalhada o motivo do achado, incluindo declarações do auditor ou justifique se não foi encontrado",
-          "resumo_constatacao": "Resumo conciso da constatação",
-          "resumo_recomendacao": "Resumo conciso da recomendação"
+          "conferencia": "<html> ... </html>"
         }}
+
+    **Regras Finais Importantes:**
+    - Utilize somente as informações extraídas do texto original, evitando inserções genéricas.
+    - O JSON final não deve exceder 3.500 tokens.
+    - Concentre-se em retornar unicamente o atributo "conferencia", que posteriormente será salvo no banco de dados (Postgres, latin1) e exibido via innerHTML.
     
-        
-        **Regras Finais Importantes:**
-        - Evite texto “genérico” que não conste da documentação original.
-        - O JSON não deve ultrapassar 3.500 tokens no total.
-    """ 
+    **Dados da auditoria externa (KPMG) e do relatório:**
+    {dados_aud}
+    """
     return prompt
