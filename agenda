@@ -4,7 +4,7 @@ CCI BB Elo - 31.12.2024.pdf
 
 Banco do Brasil - Layout CCI 30.12.2024 - teste.xlsx
 
-quando rodo o script abaixo aparece o erro:
+quando rodo o script abaixo aparece o erro e nao salva no protgres a linha com o relatorio CCI FUNPROGER:
 
 INFO:infra.sqlalchemy.dao.listen_to_db_notifications:Conectado ao PostgreSQL para escutar notificações.
 INFO:infra.sqlalchemy.dao.listen_to_db_notifications:Listener registrado para o canal 'row_changed'.
