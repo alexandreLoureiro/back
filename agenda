@@ -101,6 +101,30 @@ previsao_implementacao = sanitize_for_latin1(previsao_implementacao)
 matricula_do_gestor_responsavel = sanitize_for_latin1(matricula_do_gestor_responsavel)
 periodo_apuracao = sanitize_for_latin1(periodo_apuracao)
 
+# Aplicar sanitize_for_latin1 em todos os campos de texto
+rel_text = sanitize_for_latin1(rel_text)
+
+novo_id = await inserir_linha_rcm(
+    relatorio=sanitize_for_latin1(relatorio_val),
+    data_emissao=sanitize_for_latin1(data_emissao_val),
+    constatacoes=sanitize_for_latin1(constatacoes),
+    evidencias=sanitize_for_latin1(evidencias),
+    recomendacao=sanitize_for_latin1(recomendacao),
+    instituicao_responsavel=sanitize_for_latin1(instituicao_responsavel),
+    prefixo_responsavel=sanitize_for_latin1(prefixo_responsavel),
+    instituicao_assunto_elbb=sanitize_for_latin1(instituicao_assunto_elbb),
+    previsao_implementacao=sanitize_for_latin1(previsao_implementacao),
+    matricula_do_gestor_responsavel=sanitize_for_latin1(matricula_do_gestor_responsavel),
+    pdf_blob=pdf_bytes,  # Não aplicamos em pdf_blob porque é bytes, não texto
+    relatorio_text_extract=rel_text,  # Já aplicamos acima
+    periodo_apuracao=sanitize_for_latin1(periodo_apuracao)
+)
+if novo_id:
+    ids_inseridos_total.append(novo_id)
+
+
+
+
 
 
 
