@@ -1,3 +1,108 @@
+import unicodedata
+
+def clean_text(text: str) -> str:
+    """
+    Limpa o texto:
+      - Substitui en dash (–) e em dash (—) por hífen simples (-).
+      - Remove acentos utilizando normalização NFD.
+      - Elimina espaços em branco excedentes.
+    """
+    # Substituir os traços especiais pelo hífen simples
+    text = text.replace("–", "-").replace("—", "-")
+    
+    # Normaliza removendo acentos
+    nfkd_form = unicodedata.normalize('NFD', text)
+    text = ''.join([c for c in nfkd_form if not unicodedata.combining(c)])
+    
+    return text.strip()
+
+# Exemplo de como utilizar a função clean_text na extração do texto do PDF:
+def extrair_rel_kpmg_pdf(pdf_bytes: bytes) -> str:
+    import io
+    from PyPDF2 import PdfReader  # Certifique-se de ter PyPDF2 instalado
+    
+    pdf_stream = io.BytesIO(pdf_bytes)
+    reader = PdfReader(pdf_stream)
+    texto = ""
+    for page in reader.pages:
+        page_text = page.extract_text()
+        if page_text:
+            texto += page_text + "\n"
+    
+    return clean_text(texto.strip())  # Chama clean_text para limpar o texto extraído
+
+# Exemplo de utilização dentro do seu endpoint (antes de inserir no banco de dados):
+# Supondo que você já obteve o conteúdo do PDF e extraiu o texto:
+pdf_bytes = b"conteudo do pdf em bytes"  # Exemplo de conteúdo PDF
+rel_text = extrair_rel_kpmg_pdf(pdf_bytes)
+# rel_text agora já está limpo e compatível com LATIN1, pois clean_text foi chamada na extração.
+
+# Processamento do relatório extraído do PDF:
+rel_text = extrair_rel_kpmg_pdf(pdf_bytes)
+rel_text = clean_text(rel_text)  # Limpa novamente se necessário
+
+# Você também pode aplicar a limpeza em outros campos antes de realizar a inserção:
+relatorio_val = clean_text(extract_name(str(relatorio_raw)))
+
+claude
+
+def extract_name_and_date(text: str) -> tuple:
+    """
+    Extrai a parte do nome e a data do texto.
+    São considerados separadores: hífen (-), en dash (–), em dash (—) e o caractere \u0096.
+    Remove acentos, faz trim e converte para uppercase.
+    Retorna uma tupla (nome, data_periodo)
+    """
+    parts = re.split(r"[-–—\u0096]", text)
+    print('parts ', parts)
+    
+    # Nome é a primeira parte
+    nome = remove_accents(parts[0].strip().upper())
+    
+    # Data é a segunda parte se existir
+    data_periodo = ""
+    if len(parts) > 1:
+        # Extrai só a data, removendo espaços
+        data_raw = parts[1].strip()
+        # Tenta extrair a data no formato DD/MM/YYYY ou DD.MM.YYYY
+        date_match = re.search(r'(\d{2}[/\.]\d{2}[/\.]\d{4})', data_raw)
+        if date_match:
+            data_periodo = date_match.group(1)
+        else:
+            # Se não encontrar no formato esperado, usa o texto inteiro da segunda parte
+            data_periodo = remove_accents(data_raw.upper())
+    
+    return nome, data_periodo
+
+def sanitize_for_latin1(text):
+    if not isinstance(text, str):
+        return text
+    
+    # Substitui caracteres conhecidos problemáticos
+    text = text.replace('\u2013', '-')  # en dash → hífen
+    text = text.replace('\u2014', '-')  # em dash → hífen
+    text = text.replace('\u2015', '-')  # barra horizontal → hífen
+    text = text.replace('\u2212', '-')  # sinal de menos → hífen
+    
+    # Então faz sanitização geral para Latin-1
+    return text.encode('latin-1', 'ignore').decode('latin-1')
+
+# Dentro da função upload_rcm_excel_multiplos, antes de chamar inserir_linha_rcm
+rel_text = sanitize_for_latin1(rel_text)
+relatorio_val = sanitize_for_latin1(relatorio_val)
+data_emissao_val = sanitize_for_latin1(data_emissao_val)
+constatacoes = sanitize_for_latin1(constatacoes)
+evidencias = sanitize_for_latin1(evidencias)
+recomendacao = sanitize_for_latin1(recomendacao)
+instituicao_responsavel = sanitize_for_latin1(instituicao_responsavel)
+prefixo_responsavel = sanitize_for_latin1(prefixo_responsavel)
+instituicao_assunto_elbb = sanitize_for_latin1(instituicao_assunto_elbb)
+previsao_implementacao = sanitize_for_latin1(previsao_implementacao)
+matricula_do_gestor_responsavel = sanitize_for_latin1(matricula_do_gestor_responsavel)
+periodo_apuracao = sanitize_for_latin1(periodo_apuracao)
+
+
+
 
 CCI FUNPROGER - 31.12.2024.pdf
 CCI BB Elo - 31.12.2024.pdf
