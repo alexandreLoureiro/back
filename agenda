@@ -1,39 +1,325 @@
-def gera_prompt(dados_aud):
-    prompt = f"""
-    Você receberá um texto único que contém informações consolidadas, combinando os dados extraídos do arquivo Excel e do relatório de auditoria externa. Esse texto possui a seguinte estrutura:
-    [registro constatações KPMG], 
-    [registro evidências KPMG], 
-    [registro recomendação KPMG], 
-    [previsão para implementação], 
-    [nome do relatório],
-    [relatório auditoria externa]
 
-    Sua tarefa é:
+CCI FUNPROGER - 31.12.2024.pdf
+CCI BB Elo - 31.12.2024.pdf
 
-    1. Analisar o relatório contido na seção [relatório auditoria externa] e identificar se:
-       - A constatação informada corresponde a: [registro constatações KPMG].
-       - A evidência informada corresponde a: [registro evidências KPMG].
-       - A recomendação informada corresponde a: [registro recomendação KPMG].
-       - A data de implementação presente na constatação confirma: [previsão para implementação].
+Banco do Brasil - Layout CCI 30.12.2024 - teste.xlsx
 
-    2. Quando algum dos itens (constatação ou recomendação) for encontrado, indique onde o auditor poderá localizá-lo (exemplo: “seção X” ou “parágrafo Y”). Utilize itálico para transcrever trechos originais e facilitar a conferência.
 
-    3. Gere resumos concisos para a constatação e para a recomendação, acompanhados de um racional explicativo que detalhe os motivos da sua verificação (conforme informação encontrada ou a falta dela).
+def extrair_rel_kpmg_pdf(pdf_bytes: bytes) -> str:
+    pdf_stream = io.BytesIO(pdf_bytes)
+    reader = PdfReader(pdf_stream)
+    texto = ""
+    for page in reader.pages:
+        # Use page.extract_text(), que pode retornar None se não conseguir extrair
+        page_text = page.extract_text()
+        if page_text:
+            texto += page_text + "\n"
+    return texto.strip()
 
-    4. Crie um relatório de conferência em HTML, organizando os dados de forma clara e amigável, utilizando elementos como tabelas, cores e formatações que tornem a visualização simples para o auditor. O relatório deve iniciar com o nome do relatório (por exemplo, “CCI BB BI” ou “CCI BB CONSORCIOS”) e conter somente as informações efetivamente encontradas.
-
-    5. Retorne o resultado no seguinte formato JSON (a resposta deve estar em JSON puro, sem qualquer formatação markdown ou trechos de código extra), contendo apenas o atributo "conferencia", conforme o exemplo abaixo:
-
-        {{
-          "conferencia": "<html> ... </html>"
-        }}
-
-    **Regras Finais Importantes:**
-    - Utilize somente as informações extraídas do texto original, evitando inserções genéricas.
-    - O JSON final não deve exceder 3.500 tokens.
-    - Concentre-se em retornar unicamente o atributo "conferencia", que posteriormente será salvo no banco de dados (Postgres, latin1) e exibido via innerHTML.
+def remove_problematic_characters_from_string(text):
+    problematic_characters = set()
+    def remove_and_collect(x):
+        if isinstance(x, str):
+            encoded = x.encode('latin-1', 'ignore')
+            decoded = encoded.decode('latin-1')
+            for original_char, encoded_char in zip(x, decoded):
+                if original_char != encoded_char:
+                    problematic_characters.add(original_char)
+            return decoded
+        return x
     
-    **Dados da auditoria externa (KPMG) e do relatório:**
-    {dados_aud}
+    cleaned_text = remove_and_collect(text)
+    return cleaned_text, problematic_characters
+
+def remove_problematic_characters_from_dataframe(df):
+    problematic_characters = set()
+    def remove_and_collect(x):
+        if isinstance(x, str):
+            encoded = x.encode('latin-1', 'ignore')
+            decoded = encoded.decode('latin-1')
+            for original_char, encoded_char in zip(x, decoded):
+                if original_char != encoded_char:
+                    problematic_characters.add(original_char)
+            return decoded
+        return x
+    
+    df_cleaned = df.applymap(remove_and_collect)
+    return df_cleaned, problematic_characters
+
+def remove_accents(input_str: str) -> str:
+    nfkd_form = unicodedata.normalize('NFD', input_str)
+    return ''.join([c for c in nfkd_form if not unicodedata.combining(c)])
+
+def extract_name(text: str) -> str:
     """
-    return prompt
+    Extrai a parte do nome até o primeiro caractere separador.
+    São considerados: hífen (-), en dash (–), em dash (—) e o caractere \u0096.
+    Em seguida, remove acentos, faz trim e converte para uppercase.
+    """
+    parts = re.split(r"[-–—\u0096]", text)
+    print('parts ', parts)
+    return remove_accents(parts[0].strip().upper())
+
+def extract_name_and_date(text: str) -> tuple:
+    """
+    Extrai a parte do nome e a data do texto.
+    São considerados separadores: hífen (-), en dash (–), em dash (—) e o caractere \u0096.
+    Remove acentos, faz trim e converte para uppercase.
+    Retorna uma tupla (nome, data_periodo)
+    """
+    parts = re.split(r"[-–—\u0096]", text)
+    print('parts ', parts)
+    
+    # Nome é a primeira parte
+    nome = remove_accents(parts[0].strip().upper())
+    
+    # Data é a segunda parte se existir
+    data_periodo = ""
+    if len(parts) > 1:
+        # Extrai só a data, removendo espaços
+        data_raw = parts[1].strip()
+        # Tenta extrair a data no formato DD/MM/YYYY ou DD.MM.YYYY
+        date_match = re.search(r'(\d{2}[/\.]\d{2}[/\.]\d{4})', data_raw)
+        if date_match:
+            data_periodo = date_match.group(1)
+        else:
+            # Se não encontrar no formato esperado, usa o texto inteiro da segunda parte
+            data_periodo = remove_accents(data_raw.upper())
+    
+    return nome, data_periodo
+
+@router.post("/apiptai/upload-rcm-excel-multiplos")
+async def upload_rcm_excel_multiplos(request: Request):
+    form = await request.form()
+
+    # Define a variável para coletar caracteres problemáticos
+    problematic_characters_df = set()
+
+    # Pega o Excel
+    file_excel: UploadFile = form.get("file_excel")
+    if not file_excel:
+        raise HTTPException(status_code=400, detail="Arquivo Excel (file_excel) é obrigatório.")
+    
+    file_extension = file_excel.filename.lower().split('.')[-1]
+    if file_extension not in ["xlsx", "xls", "csv"]:
+        raise HTTPException(status_code=400, detail="O arquivo Excel deve ser .xlsx, .xls ou .csv")
+    
+    excel_bytes = await file_excel.read()
+    try:
+        if file_extension == "csv":
+            # Ajuste a codificação e delimitador conforme seu arquivo CSV
+            df = pd.read_csv(io.BytesIO(excel_bytes), encoding='ISO-8859-1', sep=';', on_bad_lines='skip')
+        else:
+            df = pd.read_excel(io.BytesIO(excel_bytes))
+        # Normaliza as colunas: remove espaços e converte para maiúsculas
+        df.columns = df.columns.str.strip().str.upper()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Erro ao ler Excel: {str(e)}")
+
+    # Valida colunas obrigatórias
+    colunas_obrigatorias = [
+        "RELATORIO", "DATA_EMISSAO", "CONSTATACAO", "EVIDENCIAS", "RECOMENDACAO",
+        "INSTITUICAO_RESPONSAVEL", "PREFIXO_RESPONSAVEL", "INSTITUICAO_ASSUNTO_ELBB",
+        "PREVISAO_IMPLEMENTACAO", "MATRICULA_DO_GESTOR_RESPONSAVEL"
+    ]
+    for col in colunas_obrigatorias:
+        if col not in df.columns:
+            raise HTTPException(status_code=400, detail=f"Coluna '{col}' não encontrada no Excel.")
+
+    # Processa PDFs
+    pdf_keys = [key for key in form.keys() if key.startswith("file_pdf_")]
+    if len(pdf_keys) == 0:
+        raise HTTPException(status_code=400, detail="Nenhum PDF enviado (file_pdf_0, file_pdf_1, ...).")
+
+    pdf_dict: Dict[str, tuple] = {}  # Changed to store (pdf_bytes, data_periodo)
+    for key in pdf_keys:
+        pdf_upload: UploadFile = form[key]
+        if not pdf_upload.filename.lower().endswith(".pdf"):
+            raise HTTPException(status_code=400, detail=f"O arquivo {pdf_upload.filename} não é PDF.")
+        
+        # Extrair nome e data do arquivo
+        nome_pdf, data_periodo = extract_name_and_date(pdf_upload.filename.replace(".pdf", ""))
+        pdf_content = await pdf_upload.read()
+        pdf_dict[nome_pdf] = (pdf_content, data_periodo)  # Store both PDF content and period date
+
+    # Converte o DataFrame para registros (dicionários) e filtra linhas sem RELATORIO
+    df_records = df.to_dict("records")
+    grouped: Dict[tuple, List[Dict]] = {}
+    for row in df_records:
+        # Pula a linha se RELATORIO for NaN ou vazio
+        relatorio_raw = row.get("RELATORIO")
+        if pd.isna(relatorio_raw) or str(relatorio_raw).strip() == "":
+            continue
+
+        data_emissao = str(row["DATA_EMISSAO"]).strip().upper()
+        relatorio_val = extract_name(str(relatorio_raw))
+        key = (data_emissao, relatorio_val)
+        if key not in grouped:
+            grouped[key] = []
+        grouped[key].append(row)
+
+    ids_inseridos_total = []
+    for (data_emissao_val, relatorio_val), rows in grouped.items():
+        # Apaga registros existentes com a mesma data_emissao e relatorio
+        delete_query = "DELETE FROM rcm.rcm_kpmg_relatorios WHERE data_emissao = $1 AND relatorio = $2"
+        await execute_query(delete_query, data_emissao_val, relatorio_val)
+
+        # Insere cada linha para essa combinação
+        for row in rows:
+            constatacoes = str(row["CONSTATACAO"]).strip().upper()
+            evidencias = str(row["EVIDENCIAS"]).strip().upper()
+            recomendacao = str(row["RECOMENDACAO"]).strip().upper()
+            instituicao_responsavel = str(row["INSTITUICAO_RESPONSAVEL"]).strip().upper()
+            prefixo_responsavel = str(row["PREFIXO_RESPONSAVEL"]).strip().upper()
+            instituicao_assunto_elbb = str(row["INSTITUICAO_ASSUNTO_ELBB"]).strip().upper()
+            previsao_implementacao = str(row["PREVISAO_IMPLEMENTACAO"]).strip().upper()
+            matricula_do_gestor_responsavel = str(row["MATRICULA_DO_GESTOR_RESPONSAVEL"]).strip().upper()
+
+            # Busca o PDF e o período de apuração associado ao relatório
+            pdf_info = pdf_dict.get(relatorio_val)
+            if not pdf_info:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Falta PDF '{relatorio_val}.pdf' para o relatório '{relatorio_val}'."
+                )
+            
+            pdf_bytes, periodo_apuracao = pdf_info
+
+            # Extrai o texto do PDF usando a função extrair_rel_kpmg_pdf
+            rel_text = extrair_rel_kpmg_pdf(pdf_bytes)
+            
+            # Remover caracteres problemáticos do texto extraído do PDF
+            rel_text, problematic_characters_pdf = remove_problematic_characters_from_string(rel_text)
+            problematic_characters_df.update(problematic_characters_pdf)
+
+            novo_id = await inserir_linha_rcm(
+                relatorio=relatorio_val,
+                data_emissao=data_emissao_val,
+                constatacoes=constatacoes,
+                evidencias=evidencias,
+                recomendacao=recomendacao,
+                instituicao_responsavel=instituicao_responsavel,
+                prefixo_responsavel=prefixo_responsavel,
+                instituicao_assunto_elbb=instituicao_assunto_elbb,
+                previsao_implementacao=previsao_implementacao,
+                matricula_do_gestor_responsavel=matricula_do_gestor_responsavel,
+                pdf_blob=pdf_bytes,
+                relatorio_text_extract=rel_text,  # type: ignore
+                periodo_apuracao=periodo_apuracao  # Add the new field
+            )
+            if novo_id:
+                ids_inseridos_total.append(novo_id)
+    
+    return {
+        "status": "ok",
+        "mensagem": "Upload múltiplo concluído com sobrescrita por data_emissao e relatorio.",
+        "datas_processadas": list(grouped.keys()),
+        "ids_inseridos": ids_inseridos_total
+    }
+
+
+import json
+from typing import List, Dict
+from infra.sqlalchemy.config.database_pool import pool, execute_query # Importe o pool de database.py
+from infra.sqlalchemy.repositorios.aux_txt_rcm import obter_textos
+from infra.sqlalchemy.dao.apigpt import processar_texto_gpt_rcm_ae
+import logging
+logger = logging.getLogger(__name__)
+import asyncio
+
+import datetime
+
+async def inserir_linha_rcm(
+    relatorio: str,
+    data_emissao: str,
+    constatacoes: str,
+    evidencias: str,
+    recomendacao: str,
+    instituicao_responsavel: str,
+    prefixo_responsavel: str,
+    instituicao_assunto_elbb: str,
+    previsao_implementacao: str,
+    matricula_do_gestor_responsavel: str,
+    pdf_blob: bytes,
+    relatorio_text_extract: str,
+    periodo_apuracao: str = ""  # Add period parameter with default empty string
+):
+    """
+    Insere uma linha na tabela rcm.rcm_kpmg_relatorios com todas as colunas, inclusive o texto extraído do PDF.
+    """
+    query = """
+    INSERT INTO rcm.rcm_kpmg_relatorios (
+      relatorio,
+      data_emissao,
+      constatacoes,
+      evidencias,
+      recomendacao,
+      instituicao_responsavel,
+      prefixo_responsavel,
+      instituicao_assunto_elbb,
+      previsao_implementacao,
+      matricula_do_gestor_responsavel,
+      pdf_file,
+      relatorio_text_extract,
+      periodo_apuracao,
+      status_gpt
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+    RETURNING id;
+    """
+    result = await execute_query(
+        query,
+        relatorio,
+        data_emissao,
+        constatacoes,
+        evidencias,
+        recomendacao,
+        instituicao_responsavel,
+        prefixo_responsavel,
+        instituicao_assunto_elbb,
+        previsao_implementacao,
+        matricula_do_gestor_responsavel,
+        pdf_blob,
+        relatorio_text_extract,
+        periodo_apuracao,
+        'pendente',  # Valor padrão para status_gpt
+        return_one=True
+    )
+    if result:
+        return result.get("id")
+    return None
+
+async def inserir_relatorio_rcm(
+    nome: str,
+    data_str: str,  # Recebe como string (ex.: '2024-09-20 00:00:00' ou '30-06-2025')
+    constatacoes: str,
+    recomendacoes: str,
+    pdf_blob: bytes
+):
+    """
+    Insere um relatório RCM no schema rcm, armazenando também o PDF como blob (bytea).
+    Agora, a coluna 'data' da tabela rcm.rcm_kpmg_relatorios é do tipo TEXT, não date.
+    """
+
+    query = """
+    INSERT INTO rcm.rcm_kpmg_relatorios (nome, data, constatacoes, recomendacoes, pdf_file)
+    VALUES ($1, $2, $3, $4, $5)
+    RETURNING id;
+    """
+    # Observe que na coluna 'data' estamos passando $2 (data_str) diretamente,
+    # sem TO_DATE ou cast de data.
+
+    result = await execute_query(
+        query,
+        nome,
+        data_str,  # inserido como texto na coluna 'data'
+        constatacoes,
+        recomendacoes,
+        pdf_blob,
+        return_one=True
+    )
+
+    if result:
+        return result.get('id')
+    return None
+
+
