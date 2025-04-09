@@ -1,266 +1,58 @@
+def gera_prompt(dados_aud):
+    prompt = f"""
+    Você receberá um texto único que contém informações consolidadas, combinando os dados extraídos do arquivo Excel e do
+    relatório de auditoria externa. Esse texto possui a seguinte estrutura:
+    [registro constatações KPMG], 
+    [registro evidencias KPMG], 
+    [registro recomendacao KPMG], 
+    [previsão para implementação], 
+    [nome do relatório],
+    [relatório auditoria externa]
 
-ERROR TypeError: Cannot read properties of undefined (reading '0')
-    at ChatgeralComponent_p_panel_6_div_10_Template (chatgeral.component.html:102:17)
-    at executeTemplate (core.mjs:12039:5)
-    at refreshView (core.mjs:13640:7)
-    at detectChangesInView (core.mjs:13852:5)
-    at detectChangesInViewIfAttached (core.mjs:13814:3)
-    at detectChangesInEmbeddedViews (core.mjs:13772:7)
-    at refreshView (core.mjs:13668:5)
-    at detectChangesInView (core.mjs:13852:5)
-    at detectChangesInViewIfAttached (core.mjs:13814:3)
-    at detectChangesInEmbeddedViews (core.mjs:13772:7)
-main.ts:14 ERROR TypeError: Cannot read properties of undefined (reading '0')
-    at ChatgeralComponent_p_panel_6_div_10_Template (chatgeral.component.html:102:17)
-    at executeTemplate (core.mjs:12039:5)
-    at refreshView (core.mjs:13640:7)
-    at detectChangesInView (core.mjs:13852:5)
-    at detectChangesInViewIfAttached (core.mjs:13814:3)
-    at detectChangesInEmbeddedViews (core.mjs:13772:7)
-    at refreshView (core.mjs:13668:5)
-    at detectChangesInView (core.mjs:13852:5)
-    at detectChangesInViewIfAttached (core.mjs:13814:3)
-    at detectChangesInEmbeddedViews (core.mjs:13772:7)
-chatgeral.component.ts:173 ERROR TypeError: Cannot read properties of undefined (reading '0')
-    at ChatgeralComponent_p_panel_6_div_10_Template (chatgeral.component.html:102:17)
-    at executeTemplate (core.mjs:12039:5)
-    at refreshView (core.mjs:13640:7)
-    at detectChangesInView (core.mjs:13852:5)
-    at detectChangesInViewIfAttached (core.mjs:13814:3)
-    at detectChangesInEmbeddedViews (core.mjs:13772:7)
-    at refreshView (core.mjs:13668:5)
-    at detectChangesInView (core.mjs:13852:5)
-    at detectChangesInViewIfAttached (core.mjs:13814:3)
-    at detectChangesInEmbeddedViews (core.mjs:13772:7)
-chatgeral.component.ts:204 response:  
-(4) [{…}, {…}, {…}, {…}]
-chatgeral.component.ts:202 ERROR Error: NG02200: Cannot find a differ supporting object '[object Object]' of type 'object'. NgFor only supports binding to Iterables, such as Arrays. Did you mean to use the keyvalue pipe? Find more at https://angular.dev/errors/NG02200
-    at _NgForOf.ngDoCheck (common.mjs:3472:19)
-    at callHookInternal (core.mjs:4125:10)
-    at callHook (core.mjs:4152:5)
-    at callHooks (core.mjs:4109:9)
-    at executeInitAndCheckHooks (core.mjs:4064:5)
-    at selectIndexInternal (core.mjs:11968:9)
-    at Module.ɵɵadvance (core.mjs:11952:3)
-    at ChatgeralComponent_p_panel_6_div_10_Template (chatgeral.component.html:141:22)
-    at executeTemplate (core.mjs:12039:5)
-    at refreshView (core.mjs:13640:7)
-﻿
+Sua tarefa é:
 
-Third-party cookie phaseout warnings in Network and Application
-The Network and Application panels now show you warnings next to cookies affected by the third-party cookie restrictions from Tracking Protection.
-Improved debugging in the Network panel
-The Network panel now always shows the request's failure reason in the Status column and the Copy submenu is now better organized.
-Breadcrumbs in Performance
-The Performance panel gets customizable breadcrumbs to help you set, track, and jump between zoom levels.
+1. Analisar o relatório contido na seção [relatório auditoria externa] e verificar se:
+   - A constatação informada corresponde a: [registro constatações KPMG].
+   - A evidencia informada corresponde a: [registro evidencias KPMG].
+   - A recomendação informada corresponde a: [registro evidencias KPMG].
+   - A data de implementação presente na constatação confirma:  [previsão para implementação].
 
-✔ Changes detected. Rebuilding...
-Initial chunk files | Names |  Raw size
-main.js             | main  | 490.54 kB | 
-Application bundle generation complete. [0.832 seconds]
-Component update sent to client(s).
-Component update failed: NG02200: Cannot find a differ supporting object '[object Object]' of type 'object'. NgFor only supports binding to Iterables, such as Arrays. Did you mean to use the keyvalue pipe? Find more at https://angular.dev/errors/NG02200
-Error: NG02200: Cannot find a differ supporting object '[object Object]' of type 'object'. NgFor only supports binding to Iterables, such as Arrays. Did you mean to use the keyvalue pipe? Find more at https://angular.dev/errors/NG02200
-    at _NgForOf.ngDoCheck (https://mefis.aud.bb.com.br:4200/@fs/usr/src/app/.angular/cache/19.2.4/appLLM/vite/deps/chunk-WVQGOQJK.js?v=ef4808ef:2400:19)
-    at callHookInternal (https://mefis.aud.bb.com.br:4200/@fs/usr/src/app/.angular/cache/19.2.4/appLLM/vite/deps/chunk-RREJXEU2.js?v=ef4808ef:4165:10)
-    at callHook (https://mefis.aud.bb.com.br:4200/@fs/usr/src/app/.angular/cache/19.2.4/appLLM/vite/deps/chunk-RREJXEU2.js?v=ef4808ef:4183:5)
-    at callHooks (https://mefis.aud.bb.com.br:4200/@fs/usr/src/app/.angular/cache/19.2.4/appLLM/vite/deps/chunk-RREJXEU2.js?v=ef4808ef:4154:9)
-    at executeInitAndCheckHooks (https://mefis.aud.bb.com.br:4200/@fs/usr/src/app/.angular/cache/19.2.4/appLLM/vite/deps/chunk-RREJXEU2.js?v=ef4808ef:4123:5)
-    at selectIndexInternal (https://mefis.aud.bb.com.br:4200/@fs/usr/src/app/.angular/cache/19.2.4/appLLM/vite/deps/chunk-RREJXEU2.js?v=ef4808ef:8946:9)
-    at Module.ɵɵadvance (https://mefis.aud.bb.com.br:4200/@fs/usr/src/app/.angular/cache/19.2.4/appLLM/vite/deps/chunk-RREJXEU2.js?v=ef4808ef:8932:3)
-    at ChatgeralComponent_p_panel_6_div_10_Template (https://mefis.aud.bb.com.br:4200/@ng/component?c=src%2Fapp%2Fchatgeral%2Fchatgeral.component.ts%40ChatgeralComponent&t=1744144370560:225:19)
-    at executeTemplate (https://mefis.aud.bb.com.br:4200/@fs/usr/src/app/.angular/cache/19.2.4/appLLM/vite/deps/chunk-RREJXEU2.js?v=ef4808ef:8999:5)
-    at refreshView (https://mefis.aud.bb.com.br:4200/@fs/usr/src/app/.angular/cache/19.2.4/appLLM/vite/deps/chunk-RREJXEU2.js?v=ef4808ef:10050:7)
-Please consider reporting the error at https://github.com/angular/angular-cli/issues
-Page reload sent to client(s).
+2. Caso algum dos itens (constatação ou recomendação) seja encontrado:
+   - Informe a página ou forneça uma dica (exemplo: “seção X”, “parágrafo Y”) que facilite a localização pelo auditor.
+   
+3. Gere resumos para a constatação e para a recomendação, e forneça um racional explicando:
+   - Por que o achado foi considerado regular ou se houve inconsistência na informação.
+   - Caso a informação não seja encontrada, explique o motivo ou a evidência que levou à conclusão.
 
-      
-      
+4. Em formato de tag html gere um relatório com as conferencias realizadas, esse relatório tem que ser amigável, se tiver 
+tabelas faça com uso de tag html, pode colocar cores, a ideia é que o auditor consiga verificar facialmente os pontos de 
+conferência descritos no item 1, que é o encaminhato da planilha pela KPMG
+Comece com o nome do relatório, coluna nome do relatório, exemplo (CCI BB BI, CCI BB CONSORCIOS), quando achar por exemplo
+a constatação, evidencia, recomendação e data de implementação, transcrever em italico em uma pequena frase o texto original
+colocar em qual pagina o auditor pode encontrar, em suma aqui é para ficar fácil de ler, com cores, tabelas tudo com 
+tag ahtml, só coloque informações realmente encontradas
+
+   
+        **Dados da auditoria externa (KPMG) e os respectivos relatório:**
+        {dados_aud}
+
+5. Retorne o resultado no seguinte formato JSON (a resposta deve estar em JSON puro, sem qualquer formatação markdown ou trechos de código extra):
+
+        {{
+          "conferencia": "com uso de tag html, aqui tem o relatório de conferencia entre o que a KPMG encaminhou e o que estava no relatório",
+          "achou_constatacao": "Sim/Não",
+          "achou_recomendacao": "Sim/Não",
+          "dica_localizar_constatacao": "Indique a página ou dê uma dica para localizar a constatação",
+          "dica_localizar_recomendacao": "Indique a página ou dê uma dica para localizar a recomendação",
+          "conf_implementacao": "Correta/Sim/Não",
+          "racional": "Explique de forma detalhada o motivo do achado, incluindo declarações do auditor ou justifique se não foi encontrado",
+          "resumo_constatacao": "Resumo conciso da constatação",
+          "resumo_recomendacao": "Resumo conciso da recomendação"
+        }}
     
-
-<div *ngIf="dynamicObject['agente'] === 'rcmkpmg' && dynamicObject['param1'] === 'consolidado'">
-  <div class="container mt-4">
-    <!-- Cabeçalho -->
-    <div class="row mb-4">
-      <div class="col">
-        <h2 class="text-primary">
-          Relatório de Auditoria - {{ objetoAudDetalhes[0]?.periodo_apuracao }}
-        </h2>
-      </div>
-    </div>
-
-    <!-- Sumários Individuais dos Relatórios -->
-    <div class="card mb-4">
-      <div class="card-header bg-light">
-        <h4 class="mb-0">Sumários dos Relatórios Individuais</h4>
-      </div>
-      <div class="card-body">
-        <div *ngFor="let item of objetoAudDetalhes" class="mb-3">
-          <div class="card">
-            <div class="card-body">
-              <div>
-                <h5>Sumário Executivo</h5>
-                <!-- Renderiza como innerHTML -->
-                <div [innerHTML]="item.sumario_executivo_rel"></div>
-              </div>
-              <div class="mt-3">
-                <h5>Racional do Sumário</h5>
-                <!-- Racional como texto simples -->
-                <p>{{ item.racional_sumario_rel }}</p>
-              </div>
-            </div>
-          </div>
-          <hr>
-        </div>
-      </div>
-    </div>
-
-    <!-- Sumário Consolidado do Período (apenas um, do primeiro item) -->
-    <div class="card">
-      <div class="card-header bg-light">
-        <h4 class="mb-0">Sumário do Período Consolidado</h4>
-      </div>
-      <div class="card-body">
-        <div>
-          <h5>Sumário Executivo do Período</h5>
-          <div [innerHTML]="objetoAudDetalhes[0]?.sumario_executivo_per"></div>
-        </div>
-        <div class="mt-3">
-          <h5>Racional do Sumário do Período</h5>
-          <p>{{ objetoAudDetalhes[0]?.racional_sumario_per }}</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Barra de Ações -->
-    <div class="d-flex justify-content-end mt-4">
-      <button pButton type="button" label="Voltar" icon="pi pi-arrow-left" class="p-button-outlined p-button-secondary mr-2"></button>
-      <button pButton type="button" label="Exportar" icon="pi pi-download" class="p-button-primary"></button>
-    </div>
-  </div>
-</div>
-
-
-
-
-estou usando esse html
-
-<div *ngIf="dynamicObject['agente'] =='rcmkpmg' && dynamicObject['param1'] =='consolidado' ">
-        <br>
         
-        <div class="container mt-4">
-          <!-- Cabeçalho -->
-          <div class="row mb-4">
-            <div class="col">
-              <h2 class="text-primary">Relatório de Auditoria - {{ objetoAudDetalhes?.periodo_apuracao }}</h2>
-            </div>
-          </div>
-        
-          <!-- Sumários dos Relatórios - Sem usar ngFor já que temos apenas um item -->
-          <div class="card mb-4">
-            <div class="card-header bg-light">
-              <h4 class="mb-0">Sumários dos Relatórios</h4>
-            </div>
-            <div class="card-body">
-              <div class="row" style="margin-bottom: 2rem;">
-                <div class="col-12">
-                  <div class="p-card">
-                    <div class="p-card-title text-primary">
-                      <i class="pi pi-file-pdf mr-2"></i> Relatório de Auditoria
-                    </div>
-                    <div class="p-card-body">
-                      <div class="p-card-content">
-                        <div class="mb-3">
-                          <h5>Sumário Executivo</h5>
-                          <div [innerHTML]="objetoAudDetalhes.sumario_executivo_rel"></div>
-                        </div>
-                        <div class="mt-3">
-                          <h5>Racional do Sumário</h5>
-                          <p>{{ objetoAudDetalhes.racional_sumario_rel }}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        
-          <!-- Sumário do Período -->
-          <div class="card">
-            <div class="card-header bg-light">
-              <h4 class="mb-0">Sumário do Período</h4>
-            </div>
-            <div class="card-body">
-              <div class="p-card">
-                <div class="p-card-body">
-                  <div class="p-card-content">
-                    <div class="mb-3">
-                      <h5>Sumário Executivo do Período</h5>
-                      <div [innerHTML]="objetoAudDetalhes.sumario_executivo_per"></div>
-                    </div>
-                    <div class="mt-3">
-                      <h5>Racional do Sumário do Período</h5>
-                      <p>{{ objetoAudDetalhes.racional_sumario_per }}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        
-        </div>
-
-        
-      </div>
-só que preciso que seja feito uma iteracao apenas para  <h5>Sumário Executivo</h5>
-                          <div [innerHTML]="objetoAudDetalhes.sumario_executivo_rel"></div>
-                        </div>
-                        <div class="mt-3">
-                          <h5>Racional do Sumário</h5>
-                          <p>{{ objetoAudDetalhes.racional_sumario_rel }}</p>, 
-os demais repetem basta aepnas 1
-
-
-[
-    {
-        "periodo_apuracao": "30.06.2024",
-        "relatorios_periodo": "nome relatorio: CCI BB relatorio: KPMG...
-         "sumario_executivo_rel": "<p><strong>CCI BB BI:</strong> O rela....
-         "racional_sumario_rel": "Os pontos destacados no sumário....
-         "sumario_executivo_per": "<p><strong>Gestão de Acesso Privilegiado:</strong> Foram identificadas contas de acesso privilegiado no mainframe do Banco do Brasil atribuídas a colaboradores inativos ou fora da Diretoria de Tecnologia, representando um risco potencial à segurança da informação. <br><em>\"Identificamos quatro (4) contas de acesso... cujas chaves de acesso estão atreladas a colaboradores que não fazem parte da Diretoria de Tecnologia ou não estão mais ativos na Instituição.\"</em></p><p><strong>Controle de Depósitos Judiciais:</strong> No BB Leasing, 289 depósitos judiciais, totalizando R$ 9,875 milhões, não possuem extratos bancários que comprovem sua existência, além de processos judiciais já encerrados não terem sido baixados tempestivamente. <br><em>\"Observamos que a base operacional de depósitos judiciais... para os quais não foram localizados os extratos bancários que comprovassem a sua existência.\"</em></p><p><strong>Atualização de Ratings para Marcação a Mercado:</strong> No BB Banco de Investimento, os modelos de risco de crédito não responderam tempestivamente à deterioração da situação econômico-financeira de um emissor, gerando impacto no resultado de TVM. <br><em>\"Os modelos utilizados para atribuir o risco de crédito... não responderam tempestivamente às mudanças na situação econômico-financeira de um emissor.\"</em></p><p><strong>Conciliação de Obrigações por Repasses BNDES:</strong> Diferenças não conciliadas de R$ 566,329 mil foram identificadas entre os valores registrados pelo Banco do Brasil e os valores confirmados pelo BNDES. <br><em>\"Identificamos diferença não conciliada entre os valores registrados pela Instituição e os valores da resposta de circularização... no montante de R$ 566.329 mil a menor no Banco do Brasil.\"</em></p><p><strong>Arquivamento de Contratos de Consórcios:</strong> Na BB Consórcios, contratos de adesão de consorciados não contemplados e desistentes/excluídos não foram arquivados tempestivamente, gerando riscos de compliance. <br><em>\"Não foram identificados os contratos assinados com o termo de adesão ao consórcio.\"</em></p>",
-        "racional_sumario_per": "Os pontos destacados no sumário.....
-         "role_user": "Com base nos relatórios de auditoria externa \"nome relatorio: CCI BB ....
-         "role_assistant": "Olá! Estou pronto para responder suas dúvidas sobre os relatórios ....
-},
-    {
-         "periodo_apuracao": "30.06.2024",
-        "relatorios_periodo": "nome relatorio: CCI BB relatorio: KPMG...
-         "sumario_executivo_rel": "<p><strong>CCI BB BI:</strong> O rela....
-         "racional_sumario_rel": "Os pontos destacados no sumário....
-         "sumario_executivo_per": "<p><strong>Gestão de Acesso Privilegiado:</strong> Foram identificadas contas de acesso privilegiado no mainframe do Banco do Brasil atribuídas a colaboradores inativos ou fora da Diretoria de Tecnologia, representando um risco potencial à segurança da informação. <br><em>\"Identificamos quatro (4) contas de acesso... cujas chaves de acesso estão atreladas a colaboradores que não fazem parte da Diretoria de Tecnologia ou não estão mais ativos na Instituição.\"</em></p><p><strong>Controle de Depósitos Judiciais:</strong> No BB Leasing, 289 depósitos judiciais, totalizando R$ 9,875 milhões, não possuem extratos bancários que comprovem sua existência, além de processos judiciais já encerrados não terem sido baixados tempestivamente. <br><em>\"Observamos que a base operacional de depósitos judiciais... para os quais não foram localizados os extratos bancários que comprovassem a sua existência.\"</em></p><p><strong>Atualização de Ratings para Marcação a Mercado:</strong> No BB Banco de Investimento, os modelos de risco de crédito não responderam tempestivamente à deterioração da situação econômico-financeira de um emissor, gerando impacto no resultado de TVM. <br><em>\"Os modelos utilizados para atribuir o risco de crédito... não responderam tempestivamente às mudanças na situação econômico-financeira de um emissor.\"</em></p><p><strong>Conciliação de Obrigações por Repasses BNDES:</strong> Diferenças não conciliadas de R$ 566,329 mil foram identificadas entre os valores registrados pelo Banco do Brasil e os valores confirmados pelo BNDES. <br><em>\"Identificamos diferença não conciliada entre os valores registrados pela Instituição e os valores da resposta de circularização... no montante de R$ 566.329 mil a menor no Banco do Brasil.\"</em></p><p><strong>Arquivamento de Contratos de Consórcios:</strong> Na BB Consórcios, contratos de adesão de consorciados não contemplados e desistentes/excluídos não foram arquivados tempestivamente, gerando riscos de compliance. <br><em>\"Não foram identificados os contratos assinados com o termo de adesão ao consórcio.\"</em></p>",
-        "racional_sumario_per": "Os pontos destacados no sumário.....
-         "role_user": "Com base nos relatórios de auditoria externa \"nome relatorio: CCI BB ....
-         "role_assistant": "Olá! Estou pronto para responder suas dúvidas sobre os relatórios ....
-},
-    {
-         "periodo_apuracao": "30.06.2024",
-        "relatorios_periodo": "nome relatorio: CCI BB relatorio: KPMG...
-         "sumario_executivo_rel": "<p><strong>CCI BB BI:</strong> O rela....
-         "racional_sumario_rel": "Os pontos destacados no sumário....
-         "sumario_executivo_per": "<p><strong>Gestão de Acesso Privilegiado:</strong> Foram identificadas contas de acesso privilegiado no mainframe do Banco do Brasil atribuídas a colaboradores inativos ou fora da Diretoria de Tecnologia, representando um risco potencial à segurança da informação. <br><em>\"Identificamos quatro (4) contas de acesso... cujas chaves de acesso estão atreladas a colaboradores que não fazem parte da Diretoria de Tecnologia ou não estão mais ativos na Instituição.\"</em></p><p><strong>Controle de Depósitos Judiciais:</strong> No BB Leasing, 289 depósitos judiciais, totalizando R$ 9,875 milhões, não possuem extratos bancários que comprovem sua existência, além de processos judiciais já encerrados não terem sido baixados tempestivamente. <br><em>\"Observamos que a base operacional de depósitos judiciais... para os quais não foram localizados os extratos bancários que comprovassem a sua existência.\"</em></p><p><strong>Atualização de Ratings para Marcação a Mercado:</strong> No BB Banco de Investimento, os modelos de risco de crédito não responderam tempestivamente à deterioração da situação econômico-financeira de um emissor, gerando impacto no resultado de TVM. <br><em>\"Os modelos utilizados para atribuir o risco de crédito... não responderam tempestivamente às mudanças na situação econômico-financeira de um emissor.\"</em></p><p><strong>Conciliação de Obrigações por Repasses BNDES:</strong> Diferenças não conciliadas de R$ 566,329 mil foram identificadas entre os valores registrados pelo Banco do Brasil e os valores confirmados pelo BNDES. <br><em>\"Identificamos diferença não conciliada entre os valores registrados pela Instituição e os valores da resposta de circularização... no montante de R$ 566.329 mil a menor no Banco do Brasil.\"</em></p><p><strong>Arquivamento de Contratos de Consórcios:</strong> Na BB Consórcios, contratos de adesão de consorciados não contemplados e desistentes/excluídos não foram arquivados tempestivamente, gerando riscos de compliance. <br><em>\"Não foram identificados os contratos assinados com o termo de adesão ao consórcio.\"</em></p>",
-        "racional_sumario_per": "Os pontos destacados no sumário.....
-         "role_user": "Com base nos relatórios de auditoria externa \"nome relatorio: CCI BB ....
-         "role_assistant": "Olá! Estou pronto para responder suas dúvidas sobre os relatórios ....
-},
-    {
-        "periodo_apuracao": "30.06.2024",
-        "relatorios_periodo": "nome relatorio: CCI BB relatorio: KPMG...
-         "sumario_executivo_rel": "<p><strong>CCI BB BI:</strong> O rela....
-         "racional_sumario_rel": "Os pontos destacados no sumário....
-         "sumario_executivo_per": "<p><strong>Gestão de Acesso Privilegiado:</strong> Foram identificadas contas de acesso privilegiado no mainframe do Banco do Brasil atribuídas a colaboradores inativos ou fora da Diretoria de Tecnologia, representando um risco potencial à segurança da informação. <br><em>\"Identificamos quatro (4) contas de acesso... cujas chaves de acesso estão atreladas a colaboradores que não fazem parte da Diretoria de Tecnologia ou não estão mais ativos na Instituição.\"</em></p><p><strong>Controle de Depósitos Judiciais:</strong> No BB Leasing, 289 depósitos judiciais, totalizando R$ 9,875 milhões, não possuem extratos bancários que comprovem sua existência, além de processos judiciais já encerrados não terem sido baixados tempestivamente. <br><em>\"Observamos que a base operacional de depósitos judiciais... para os quais não foram localizados os extratos bancários que comprovassem a sua existência.\"</em></p><p><strong>Atualização de Ratings para Marcação a Mercado:</strong> No BB Banco de Investimento, os modelos de risco de crédito não responderam tempestivamente à deterioração da situação econômico-financeira de um emissor, gerando impacto no resultado de TVM. <br><em>\"Os modelos utilizados para atribuir o risco de crédito... não responderam tempestivamente às mudanças na situação econômico-financeira de um emissor.\"</em></p><p><strong>Conciliação de Obrigações por Repasses BNDES:</strong> Diferenças não conciliadas de R$ 566,329 mil foram identificadas entre os valores registrados pelo Banco do Brasil e os valores confirmados pelo BNDES. <br><em>\"Identificamos diferença não conciliada entre os valores registrados pela Instituição e os valores da resposta de circularização... no montante de R$ 566.329 mil a menor no Banco do Brasil.\"</em></p><p><strong>Arquivamento de Contratos de Consórcios:</strong> Na BB Consórcios, contratos de adesão de consorciados não contemplados e desistentes/excluídos não foram arquivados tempestivamente, gerando riscos de compliance. <br><em>\"Não foram identificados os contratos assinados com o termo de adesão ao consórcio.\"</em></p>",
-        "racional_sumario_per": "Os pontos destacados no sumário.....
-         "role_user": "Com base nos relatórios de auditoria externa \"nome relatorio: CCI BB ....
-         "role_assistant": "Olá! Estou pronto para responder suas dúvidas sobre os relatórios .... 
-}
-]
+        **Regras Finais Importantes:**
+        - Evite texto “genérico” que não conste da documentação original.
+        - O JSON não deve ultrapassar 3.500 tokens no total.
+    """ 
+    return prompt
