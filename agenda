@@ -4,6 +4,18 @@ CCI BB Elo - 31.12.2024.pdf
 
 Banco do Brasil - Layout CCI 30.12.2024 - teste.xlsx
 
+quando rodo o script abaixo aparece o erro:
+
+INFO:infra.sqlalchemy.dao.listen_to_db_notifications:Conectado ao PostgreSQL para escutar notificações.
+INFO:infra.sqlalchemy.dao.listen_to_db_notifications:Listener registrado para o canal 'row_changed'.
+ERROR:infra.sqlalchemy.config.database_pool:Erro ao realizar a consulta: character with byte sequence 0xe2 0x80 0x93 in encoding "UTF8" has no equivalent in encoding "LATIN1"
+parts  ['CCI BB Elo ', ' 31.12.2024']
+parts  ['CCI FUNPROGER ', ' 31.12.2024']
+parts  ['CCI BB Elo ', ' 31.12.2024']
+parts  ['CCI FUNPROGER ', ' 31.12.2024']
+INFO:     192.168.203.129:55870 - "POST /apiptai/upload-rcm-excel-multiplos HTTP/1.1" 200 OK
+INFO:     192.168.203.129:55880 - "GET /apiptai/listar_rcm_relatorios HTTP/1.1" 200 OK
+
 
 def extrair_rel_kpmg_pdf(pdf_bytes: bytes) -> str:
     pdf_stream = io.BytesIO(pdf_bytes)
