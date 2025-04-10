@@ -1,136 +1,245 @@
-CREATE OR REPLACE FUNCTION notify_status_gpt_change() 
-RETURNS trigger AS $$
-DECLARE
-    payload JSON;
-BEGIN
-    -- Verifica se a coluna status_gpt foi alterada
-    IF NEW.status_gpt IS DISTINCT FROM OLD.status_gpt THEN
-        -- Monta o JSON com os campos desejados
-        payload := json_build_object(
-            'id', NEW.id,
-            'relatorio', NEW.relatorio,
-            'periodo_apuracao', NEW.periodo_apuracao,
-            'data_emissao', NEW.data_emissao
-        );
-        -- Envia a notificação para um canal específico (você pode escolher o nome do canal)
-        PERFORM pg_notify('rcm_kpmg_status_changed', payload::text);
-    END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+estou passando esse contrudo para o script abaixo
 
-CREATE TRIGGER trg_notify_status_gpt_change
-AFTER UPDATE OF status_gpt ON rcm.rcm_kpmg_relatorios
-FOR EACH ROW
-EXECUTE FUNCTION notify_status_gpt_change();
+ RELATORIO 	 DATA_EMISSAO 	 CONSTATACAO 	 EVIDENCIAS 	 RECOMENDACAO 	 INSTITUICAO_RESPONSAVEL 	 PREFIXO_RESPONSAVEL 	 INSTITUICAO_ASSUNTO_ELBB 	 PREVISAO_IMPLEMENTACAO 	 MATRICULA_DO_GESTOR_RESPONSAVEL 	 NOME_DO_GESTOR_RESPONSAVEL 
+teste – 31/12/2026	04/04/2025	Melhorias na formalização, inclusive com o parecer jurídico, acerca da não consideração dos limites de cartão de crédito no cálculo da perda esperada	De acordo com a Res. CMN 4.966/21, o Banco considera os limites de cartão de crédito não utilizados como compromissos de crédito canceláveis e, portanto, não os inclui no cálculo da perda esperada. Esse pressuposto é baseado na avaliação da Administração da capacidade do Banco de monitorar individualmente os instrumentos financeiros e a situação financeira dos clientes, permitindo o cancelamento, bloqueio ou suspensão imediata dos limites de crédito em caso de redução da capacidade financeira do cliente. Para suportar esse argumento, o Banco realizou alterações nas cláusulas gerais do contrato de cartões de crédito no final do exercício fiscal de 2024, e elaborou notas técnicas e pareceres jurídicos corroborando estes entendimentos. Os referidos documentos não abordam de forma clara se as alterações são aplicáveis a todos os cartões de crédito anteriormente contratados e não somente para as novas contratações, e se a comunicação realizada por meio da disponibilização dos contratos vigentes nos canais oficiais do Banco do Brasilé suficiente e não há necessidade de aceite individualizado pelos clientes.Adicionalmente, pPara o cálculo da perda esperada segundo o IFRS 9 em 31/12/24, os limites de cartão de crédito não utilizados continuam sendo considerados como parte da exposição do cliente.		1		1			
 
-import asyncio
-import asyncpg
-import json
-import logging
-from infra.sqlalchemy.config.database_pool import get_connection
-from routers.rotas_geral import manager  # Certifique-se de que o manager está importado corretamente
 
-logger = logging.getLogger(__name__)
+os dados da linha recomendacao aparece nan
 
-async def listen_to_db_notifications():
-    while True:
-        try:
-            conn = await get_connection()
-            logger.info("Conectado ao PostgreSQL para escutar notificações.")
+como meu banco é latin um e faço um tratamento achei que poderia ser isso, mas simpliesmente aparece nan tem ideia do que pode ser?
+
+a ideia é de remover apenas os caracteres que não sao aceitos em latin1 mas nao remover todo o texto
+
+
+def extrair_rel_kpmg_pdf(pdf_bytes: bytes) -> str:
+    pdf_stream = io.BytesIO(pdf_bytes)
+    reader = PdfReader(pdf_stream)
+    texto = ""
+    for page in reader.pages:
+        # Use page.extract_text(), que pode retornar None se não conseguir extrair
+        page_text = page.extract_text()
+        if page_text:
+            texto += page_text + "\n"
+    return texto.strip()
+
+def remove_problematic_characters_from_string(text):
+    problematic_characters = set()
+    def remove_and_collect(x):
+        if isinstance(x, str):
+            encoded = x.encode('latin-1', 'ignore')
+            decoded = encoded.decode('latin-1')
+            for original_char, encoded_char in zip(x, decoded):
+                if original_char != encoded_char:
+                    problematic_characters.add(original_char)
+            return decoded
+        return x
+    
+    cleaned_text = remove_and_collect(text)
+    return cleaned_text, problematic_characters
+
+def remove_problematic_characters_from_dataframe(df):
+    problematic_characters = set()
+    def remove_and_collect(x):
+        if isinstance(x, str):
+            encoded = x.encode('latin-1', 'ignore')
+            decoded = encoded.decode('latin-1')
+            for original_char, encoded_char in zip(x, decoded):
+                if original_char != encoded_char:
+                    problematic_characters.add(original_char)
+            return decoded
+        return x
+    
+    df_cleaned = df.applymap(remove_and_collect)
+    return df_cleaned, problematic_characters
+
+def remove_accents(input_str: str) -> str:
+    nfkd_form = unicodedata.normalize('NFD', input_str)
+    return ''.join([c for c in nfkd_form if not unicodedata.combining(c)])
+
+def extract_name(text: str) -> str:
+    """
+    Extrai a parte do nome até o primeiro caractere separador.
+    São considerados: hífen (-), en dash (–), em dash (—) e o caractere \u0096.
+    Em seguida, remove acentos, faz trim e converte para uppercase.
+    """
+    parts = re.split(r"[-–—\u0096]", text)
+    print('parts ', parts)
+    return remove_accents(parts[0].strip().upper())
+
+def extract_name_and_date(text: str) -> tuple:
+    """
+    Extrai a parte do nome e a data do texto.
+    São considerados separadores: hífen (-), en dash (–), em dash (—) e o caractere \u0096.
+    Remove acentos, faz trim e converte para uppercase.
+    Retorna uma tupla (nome, data_periodo)
+    """
+    parts = re.split(r"[-–—\u0096]", text)
+    print('parts ', parts)
+    
+    # Nome é a primeira parte
+    nome = remove_accents(parts[0].strip().upper())
+    
+    # Data é a segunda parte se existir
+    data_periodo = ""
+    if len(parts) > 1:
+        # Extrai só a data, removendo espaços
+        data_raw = parts[1].strip()
+        # Tenta extrair a data no formato DD/MM/YYYY ou DD.MM.YYYY
+        date_match = re.search(r'(\d{2}[/\.]\d{2}[/\.]\d{4})', data_raw)
+        if date_match:
+            data_periodo = date_match.group(1)
+        else:
+            # Se não encontrar no formato esperado, usa o texto inteiro da segunda parte
+            data_periodo = remove_accents(data_raw.upper())
+    
+    return nome, data_periodo
+
+def sanitize_for_latin1(text):
+    if not isinstance(text, str):
+        return text
+    
+    # Substitui caracteres conhecidos problemáticos
+    text = text.replace('\u2013', '-')  # en dash → hífen
+    text = text.replace('\u2014', '-')  # em dash → hífen
+    text = text.replace('\u2015', '-')  # barra horizontal → hífen
+    text = text.replace('\u2212', '-')  # sinal de menos → hífen
+    
+    # Então faz sanitização geral para Latin-1
+    return text.encode('latin-1', 'ignore').decode('latin-1')
+
+@router.post("/apiptai/upload-rcm-excel-multiplos")
+async def upload_rcm_excel_multiplos(request: Request):
+    form = await request.form()
+
+    # Define a variável para coletar caracteres problemáticos
+    problematic_characters_df = set()
+
+    # Pega o Excel
+    file_excel: UploadFile = form.get("file_excel")
+    if not file_excel:
+        raise HTTPException(status_code=400, detail="Arquivo Excel (file_excel) é obrigatório.")
+    
+    file_extension = file_excel.filename.lower().split('.')[-1]
+    if file_extension not in ["xlsx", "xls", "csv"]:
+        raise HTTPException(status_code=400, detail="O arquivo Excel deve ser .xlsx, .xls ou .csv")
+    
+    excel_bytes = await file_excel.read()
+    try:
+        if file_extension == "csv":
+            # Ajuste a codificação e delimitador conforme seu arquivo CSV
+            df = pd.read_csv(io.BytesIO(excel_bytes), encoding='ISO-8859-1', sep=';', on_bad_lines='skip')
+        else:
+            df = pd.read_excel(io.BytesIO(excel_bytes))
+        # Normaliza as colunas: remove espaços e converte para maiúsculas
+        df.columns = df.columns.str.strip().str.upper()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Erro ao ler Excel: {str(e)}")
+
+    # Valida colunas obrigatórias
+    colunas_obrigatorias = [
+        "RELATORIO", "DATA_EMISSAO", "CONSTATACAO", "EVIDENCIAS", "RECOMENDACAO",
+        "INSTITUICAO_RESPONSAVEL", "PREFIXO_RESPONSAVEL", "INSTITUICAO_ASSUNTO_ELBB",
+        "PREVISAO_IMPLEMENTACAO", "MATRICULA_DO_GESTOR_RESPONSAVEL"
+    ]
+    for col in colunas_obrigatorias:
+        if col not in df.columns:
+            raise HTTPException(status_code=400, detail=f"Coluna '{col}' não encontrada no Excel.")
+
+    # Processa PDFs
+    pdf_keys = [key for key in form.keys() if key.startswith("file_pdf_")]
+    if len(pdf_keys) == 0:
+        raise HTTPException(status_code=400, detail="Nenhum PDF enviado (file_pdf_0, file_pdf_1, ...).")
+
+    pdf_dict: Dict[str, tuple] = {}  # Changed to store (pdf_bytes, data_periodo)
+    for key in pdf_keys:
+        pdf_upload: UploadFile = form[key]
+        if not pdf_upload.filename.lower().endswith(".pdf"):
+            raise HTTPException(status_code=400, detail=f"O arquivo {pdf_upload.filename} não é PDF.")
+        
+        # Extrair nome e data do arquivo
+        nome_pdf, data_periodo = extract_name_and_date(pdf_upload.filename.replace(".pdf", ""))
+        pdf_content = await pdf_upload.read()
+        pdf_dict[nome_pdf] = (pdf_content, data_periodo)  # Store both PDF content and period date
+
+    # Converte o DataFrame para registros (dicionários) e filtra linhas sem RELATORIO
+    df_records = df.to_dict("records")
+    grouped: Dict[tuple, List[Dict]] = {}
+    for row in df_records:
+        # Pula a linha se RELATORIO for NaN ou vazio
+        relatorio_raw = row.get("RELATORIO")
+        if pd.isna(relatorio_raw) or str(relatorio_raw).strip() == "":
+            continue
+
+        data_emissao = str(row["DATA_EMISSAO"]).strip().upper()
+        relatorio_val = extract_name(str(relatorio_raw))
+        key = (data_emissao, relatorio_val)
+        if key not in grouped:
+            grouped[key] = []
+        grouped[key].append(row)
+
+    ids_inseridos_total = []
+    for (data_emissao_val, relatorio_val), rows in grouped.items():
+        # Apaga registros existentes com a mesma data_emissao e relatorio
+        delete_query = "DELETE FROM rcm.rcm_kpmg_relatorios WHERE data_emissao = $1 AND relatorio = $2"
+        await execute_query(delete_query, data_emissao_val, relatorio_val)
+
+        # Insere cada linha para essa combinação
+        for row in rows:
+            constatacoes = str(row["CONSTATACAO"]).strip().upper()
+            evidencias = str(row["EVIDENCIAS"]).strip().upper()
+            recomendacao = str(row["RECOMENDACAO"]).strip().upper()
+            instituicao_responsavel = str(row["INSTITUICAO_RESPONSAVEL"]).strip().upper()
+            prefixo_responsavel = str(row["PREFIXO_RESPONSAVEL"]).strip().upper()
+            instituicao_assunto_elbb = str(row["INSTITUICAO_ASSUNTO_ELBB"]).strip().upper()
+            previsao_implementacao = str(row["PREVISAO_IMPLEMENTACAO"]).strip().upper()
+            matricula_do_gestor_responsavel = str(row["MATRICULA_DO_GESTOR_RESPONSAVEL"]).strip().upper()
+
+            # Busca o PDF e o período de apuração associado ao relatório
+            pdf_info = pdf_dict.get(relatorio_val)
+            if not pdf_info:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Falta PDF '{relatorio_val}.pdf' para o relatório '{relatorio_val}'."
+                )
             
-            def notification_handler(connection, pid, channel, payload):
-                logger.info(f"Notificação recebida no canal {channel}: {payload}")
-                try:
-                    data = json.loads(payload)
-                    # Extraindo os campos enviados pela trigger nova
-                    id_relatorio = data.get("id")
-                    relatorio = data.get("relatorio")
-                    periodo_apuracao = data.get("periodo_apuracao")
-                    data_emissao = data.get("data_emissao")
-                    
-                    # Se o campo id estiver presente, envia a mensagem
-                    if id_relatorio is not None:
-                        message = (
-                            f"Relatório '{relatorio}' (ID: {id_relatorio}) alterado. "
-                            f"Período de Apuração: {periodo_apuracao}, Data de Emissão: {data_emissao}."
-                        )
-                        asyncio.create_task(manager.broadcast(message))
-                except Exception as e:
-                    logger.error("Erro ao processar payload: %s", e)
+            pdf_bytes, periodo_apuracao = pdf_info
+
+            # Extrai o texto do PDF usando a função extrair_rel_kpmg_pdf
+            rel_text = extrair_rel_kpmg_pdf(pdf_bytes)
             
-            # Alterar o canal para o novo utilizado pela trigger, por exemplo:
-            await conn.add_listener('rcm_kpmg_status_changed', notification_handler)
-            logger.info("Listener registrado para o canal 'rcm_kpmg_status_changed'.")
+            # Remover caracteres problemáticos do texto extraído do PDF
+            rel_text, problematic_characters_pdf = remove_problematic_characters_from_string(rel_text)
+            problematic_characters_df.update(problematic_characters_pdf)
+
             
-            # Loop de keep-alive: executa uma query simples a cada segundo
-            while True:
-                await asyncio.sleep(1)
-                try:
-                    await conn.execute("SELECT 1")
-                except Exception as e:
-                    logger.error("Erro no keep-alive da conexão: %s", e)
-                    break  # Sai do loop interno para reconectar
-        except Exception as e:
-            logger.error(f"Erro na conexão de notificações: {e}")
-        logger.info("Tentando reconectar em 5 segundos...")
-        await asyncio.sleep(5)
+            # Imprime o conteúdo original e o modificado da coluna "RECOMENDACAO"
+            print(f"Original RECOMENDACAO: {row['RECOMENDACAO']}")
+            recomendacao_modificado = sanitize_for_latin1(recomendacao)
+            print(f"Modificado RECOMENDACAO: {recomendacao_modificado}")
 
 
+            novo_id = await inserir_linha_rcm(
+                relatorio=sanitize_for_latin1(relatorio_val),
+                data_emissao=sanitize_for_latin1(data_emissao_val),
+                constatacoes=sanitize_for_latin1(constatacoes),
+                evidencias=sanitize_for_latin1(evidencias),
+                recomendacao=sanitize_for_latin1(recomendacao),
+                instituicao_responsavel=sanitize_for_latin1(instituicao_responsavel),
+                prefixo_responsavel=sanitize_for_latin1(prefixo_responsavel),
+                instituicao_assunto_elbb=sanitize_for_latin1(instituicao_assunto_elbb),
+                previsao_implementacao=sanitize_for_latin1(previsao_implementacao),
+                matricula_do_gestor_responsavel=sanitize_for_latin1(matricula_do_gestor_responsavel),
+                pdf_blob=pdf_bytes,  # Não aplicamos em pdf_blob porque é bytes, não texto
+                relatorio_text_extract=rel_text,  # Já aplicamos acima
+                periodo_apuracao=sanitize_for_latin1(periodo_apuracao)
+            )
+            if novo_id:
+                ids_inseridos_total.append(novo_id)
+    
+    return {
+        "status": "ok",
+        "mensagem": "Upload múltiplo concluído com sobrescrita por data_emissao e relatorio.",
+        "datas_processadas": list(grouped.keys()),
+        "ids_inseridos": ids_inseridos_total
+    }
 
-
-eu tenho essa implementacao de websocket no fastapi: import asyncio
-import asyncpg
-import json
-import logging
-from infra.sqlalchemy.config.database_pool import get_connection
-from routers.rotas_geral import manager  # Certifique-se de que o manager está importado corretamente
-
-logger = logging.getLogger(__name__)
-
-async def listen_to_db_notifications():
-    while True:
-        try:
-            conn = await get_connection()
-            logger.info("Conectado ao PostgreSQL para escutar notificações.")
-            
-            def notification_handler(connection, pid, channel, payload):
-                logger.info(f"Notificação recebida no canal {channel}: {payload}")
-                try:
-                    data = json.loads(payload)
-                    nr_trabalho = data.get("nr_trabalho")
-                    alerta_evt_risco = data.get("alerta_evt_risco")
-                    if nr_trabalho is not None and alerta_evt_risco:
-                        message = f"Produto {nr_trabalho} alterado. Alerta: {alerta_evt_risco}"
-                        asyncio.create_task(manager.broadcast(message))
-                except Exception as e:
-                    logger.error("Erro ao processar payload: %s", e)
-            
-            await conn.add_listener('row_changed', notification_handler)
-            logger.info("Listener registrado para o canal 'row_changed'.")
-            
-            # Loop de keep-alive: executa uma query simples a cada segundo
-            while True:
-                await asyncio.sleep(1)
-                try:
-                    await conn.execute("SELECT 1")
-                except Exception as e:
-                    logger.error("Erro no keep-alive da conexão: %s", e)
-                    break  # Sai do loop interno para reconectar
-        except Exception as e:
-            logger.error(f"Erro na conexão de notificações: {e}")
-        logger.info("Tentando reconectar em 5 segundos...")
-        await asyncio.sleep(5) na epoca tinha criado essa triguer: 
- DECLARE
-     payload JSON;
- BEGIN
-     -- Se o valor de alerta_evt_risco mudou, envia a notificação
-     IF NEW.alerta_evt_risco IS DISTINCT FROM OLD.alerta_evt_risco THEN
-         payload := json_build_object(
-             'nr_trabalho', NEW.nr_trabalho,
-             'alerta_evt_risco', NEW.alerta_evt_risco
-         );
-         PERFORM pg_notify('row_changed', payload::text);
-     END IF;
-     RETURN NEW;
- END; só que agora preciso criar uma triguer nesse esquema e pega essa tabela: rcm.rcm_kpmg_relatorios , o que eu quero é que sempre que a coluna status_gpt tiver alteração eu receba a mensagem com o campo id, relatorio, periodo_apuracao e data_emissao, nao preciso mais ver ficar ouvindo a triger anterior, como faço/
