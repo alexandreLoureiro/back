@@ -70,3 +70,434 @@ CCI BB – 31/12/2024	04/04/2025	Melhorias na formalização sobre a adoção do
 CCI BB – 31/12/2024	04/04/2025	Aplicação da taxa efetiva de juros das operações de crédito no cálculo das perdas esperadas sobre toda a carteira atendendo, inclusive às ações acordadas no Plano de Implementação firmado junto com Banco Central do Brasil	"A norma IFRS 9, em seu item B5.5.47, menciona que as perdas de crédito esperadas sobre compromissos de empréstimo devem ser descontadas utilizando-se a taxa de juros efetiva, ou uma aproximação dela. Em contraste, a Resolução CMN 4.966/21 exige que se utilize exclusivamente a taxa de juros efetiva do contrato, sem a possibilidade de aproximação. O Banco do Brasil entende que, apesar de o Banco Central do Brasil (BCB) apresentar critérios mais prescritivos, existe margem de harmonização entre estas práticas adotando o requerido pelo BCB.
 Em 31 de dezembro de 2024, o Banco do Brasil utilizou uma proxy da taxa contratual para mensurar o impacto da Res. 4.966/21 e acordou com o Banco Central do Brasil (BCB) um plano de ação para adotar a taxa efetiva do contrato ao longo do exercício de 2025. Para o IFRS 9, a perda esperada foi calculada considerando o custo de oportunidade dos contratos, assim como calculada em exercícios anteriores."	Recomendamos que seja aplicada a taxa efetiva de juros do contrato no cálculo da perda esperada de acordo com o requerido pela Res. CMN 4.966/21, cumprindo o inteiro teor, inclusive em relação aos prazos, no Plano de Ação acordado com o regulador Banco Central do Brasil.	1	9599	1			Lilian Yuri;Fioravante Mietto;Felipe Fonseca
 										
+ESSE É O FRONTEND QUE MANDA: import { Component, ViewChild, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
+import { FileUpload, FileUploadModule } from 'primeng/fileupload';
+import { ButtonModule } from 'primeng/button';
+import { MessageService, MenuItem } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
+import { TableModule } from 'primeng/table';
+import { StepsModule } from 'primeng/steps';
+import { RouterModule } from '@angular/router';
+import * as XLSX from 'xlsx';
+import { ServicoLLMService } from '../servico-llm.service';
+import { SplitButtonModule } from 'primeng/splitbutton';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { TooltipModule } from 'primeng/tooltip';
+import { PopoverModule } from 'primeng/popover';
+import { ScrollPanelModule } from 'primeng/scrollpanel';
+import { TagModule } from 'primeng/tag';
+
+
+
+// Importações adicionadas para WebSocket
+import { WebSocketService } from '../web-socket.service';
+import { Subscription } from 'rxjs';
+
+
+export interface RcmRelatorio {
+  id: number;
+  relatorio: string;
+  data_emissao: string | null;
+  periodo_apuracao: string | null;
+  constatacoes: string;
+  recomendacoes: string;
+}
+
+@Component({
+  selector: 'app-rcmexcel',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FileUploadModule,
+    ButtonModule,
+    ToastModule,
+    TableModule,
+    StepsModule,
+    RouterModule, SplitButtonModule, ProgressSpinnerModule, TooltipModule, PopoverModule, ScrollPanelModule, TagModule
+  ],
+  providers: [ServicoLLMService, MessageService],
+  templateUrl: './rcmrelatorio.component.html',
+  styleUrls: ['./rcmrelatorio.component.css']
+})
+export class RcmrelatorioComponent implements OnInit {
+  excelFile: File | null = null;
+  pdfFiles: File[] = [];
+  pdfFileItems: { file: File, isValid: boolean }[] = [];
+  relatoriosExcel: string[] = [];
+  rcmRelatorios: RcmRelatorio[] = [];
+  datasDistintas: string[] = [];
+  selectedData: string | null = null;
+
+  statusGpt: string = 'processado';  // Inicializa com 'processado'
+
+
+  loading: boolean = false;
+
+  @ViewChild('excelUploader') excelUploader!: FileUpload;
+  @ViewChild('pdfUploader') pdfUploader!: FileUpload;
+
+  lastUploadedExcel: string | null = null;
+  lastUploadedPdfs: string[] = [];
+
+  steps: MenuItem[] = [];
+  activeStep: number = 0;
+  showHelp: boolean = false;
+
+  colunasObrigatorias = [
+    'RELATORIO',
+    'DATA_EMISSAO',
+    'CONSTATACAO',
+    'EVIDENCIAS',
+    'RECOMENDACAO',
+    'INSTITUICAO_RESPONSAVEL',
+    'PREFIXO_RESPONSAVEL',
+    'INSTITUICAO_ASSUNTO_ELBB',
+    'PREVISAO_IMPLEMENTACAO',
+    'MATRICULA_DO_GESTOR_RESPONSAVEL'
+  ];
+
+  socketTestMessages: string[] = [];
+  private wsSubscription: Subscription | undefined;
+
+  constructor(
+    private messageService: MessageService,
+    private servicoLLM: ServicoLLMService,
+    private router: Router,
+    private wsService: WebSocketService
+  ) { }
+
+  ngOnInit() {
+    this.steps = [
+      { label: 'Excel KPMG' },
+      { label: 'Selecione os Relatórios' },
+      { label: 'Upload Recomendações KPMG' }
+    ];
+    this.getRmcKpmg();
+
+    // Inscreve-se para receber mensagens via WebSocket
+
+      this.wsSubscription = this.wsService.getMessages().subscribe((message: string) => {
+          console.log('Mensagem recebida via WebSocket:', message);
+          this.socketTestMessages.push(message);
+      
+          // Atualiza o statusGpt com base na mensagem recebida
+          if (message.includes('pendente')) {
+              this.statusGpt = 'pendente';
+          } else if (message.includes('s_per')) {
+              this.statusGpt = 'processado';
+          } else {
+              this.statusGpt = 'processamento não finalizado';
+          }
+      });
+  }
+
+  ngOnDestroy(): void {
+    if (this.wsSubscription) {
+      this.wsSubscription.unsubscribe();
+    }
+  }
+
+  limparMensagens() {
+    this.socketTestMessages = [];
+    this.statusGpt = '';
+    // Aqui você pode adicionar lógica adicional para resetar o upload
+  }
+
+  abrirPainel() {
+    window.open('https://pwbi.intranet.bb.com.br/reports/powerbi/%5BInterna%5D/AUDIT/GER%20MTD%20PLA%20RE/GA%20MEFIS/auditoria_externa?rs:embed=true', '_blank');
+  }
+
+  get pdfFilesNames(): string {
+    return this.pdfFileItems.map(item =>
+      item.isValid ? item.file.name : `${item.file.name} (Inválido)`
+    ).join(', ');
+  }
+
+  get validPdfFiles(): File[] {
+    return this.pdfFileItems.filter(item => item.isValid).map(item => item.file);
+  }
+
+  onSelectExcel(event: any) {
+    if (event.files && event.files.length) {
+      this.socketTestMessages = [];
+      const file = event.files[0];
+      this.excelFile = file;
+      this.lerExcel(file);
+      this.activeStep = 1;
+    }
+  }
+
+  onClearExcel() {
+    this.excelFile = null;
+    this.relatoriosExcel = [];
+  }
+
+  onSelectPDF(event: any) {
+    const novosArquivos: File[] = Array.from(event.files);
+    novosArquivos.forEach(arquivo => {
+      // Extrai o nome antes do hífen, remove extensão, espaços, converte para lower case e remove acentos
+      const nomeSemExt = arquivo.name
+        .replace('.pdf', '')
+        .split('-')[0]
+        .trim()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, "");
+      const isValid = this.relatoriosExcel.includes(nomeSemExt);
+      if (!this.pdfFileItems.some(item => item.file.name === arquivo.name)) {
+        this.pdfFileItems.push({ file: arquivo, isValid });
+        if (!isValid) {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Nome divergente',
+            detail: `O arquivo "${arquivo.name}" não corresponde a nenhum relatório esperado.`
+          });
+        }
+      }
+    });
+    console.log('PDFs selecionados:', this.pdfFileItems.map(item => item.file.name));
+    if (this.validPdfFiles.length >= this.relatoriosExcel.length) {
+      this.activeStep = 2;
+    }
+  }
+
+
+  onClearPDF() {
+    this.pdfFileItems = [];
+  }
+
+  lerExcel(file: File) {
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    const reader = new FileReader();
+
+    reader.onload = (e: any) => {
+      let workbook;
+      if (fileExtension === 'csv') {
+        // Para CSV, lemos como string
+        workbook = XLSX.read(e.target.result, { type: 'string' });
+      } else {
+        // Para Excel, lemos como array buffer
+        const data = new Uint8Array(e.target.result);
+        workbook = XLSX.read(data, { type: 'array' });
+      }
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      if (!jsonData || !jsonData.length) {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Planilha vazia',
+          detail: 'Não há dados.'
+        });
+        return;
+      }
+      const cabecalho: string[] = jsonData[0].map((val: any) => val?.toString().trim().toUpperCase());
+      // Valida colunas obrigatórias, etc.
+      // ...
+      const relSet = new Set<string>();
+      (jsonData.slice(1) as any[]).forEach(row => {
+        if (row[0]) {
+          const nomeExtraido = row[0]
+            .toString()
+            .replace(/[-–—\u0096]/g, '-')  // Substitui traços especiais por traço comum
+            .split('-')[0]
+            .trim()
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, "");
+          relSet.add(nomeExtraido);
+        }
+      });
+      this.relatoriosExcel = Array.from(relSet);
+      if (this.relatoriosExcel.length > 1) {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Vários RELATORIO',
+          detail: `Planilha tem ${this.relatoriosExcel.length} valores distintos.`
+        });
+      }
+      console.log('Relatórios Excel:', this.relatoriosExcel);
+    };
+
+    if (fileExtension === 'csv') {
+      reader.readAsText(file, 'ISO-8859-1');
+    } else {
+      reader.readAsArrayBuffer(file);
+    }
+  }
+
+  get pendingRelatorios(): string[] {
+    return this.relatoriosExcel.filter(nome =>
+      !this.pdfFileItems.some(item =>
+        item.file.name
+          .replace('.pdf', '')
+          .replace(/[-–—\u0096]/g, '-')  // Substitui traços especiais por traço comum
+          .split('-')[0]
+          .trim()
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, "") === nome
+      )
+    );
+  }
+
+  // Método para alternar a exibição do painel de upload
+  toggleUploadForm(): void {
+    this.showUpload = !this.showUpload;
+  }
+
+  // Método para cancelar o upload, limpando os arquivos e fechando o painel
+  cancelUpload(): void {
+    this.excelFile = null;
+    this.pdfFileItems = [];
+    this.relatoriosExcel = [];
+    if (this.excelUploader) {
+      this.excelUploader.clear();
+    }
+    if (this.pdfUploader) {
+      this.pdfUploader.clear();
+    }
+    this.showUpload = false;
+    this.activeStep = 0; // Retorna para o primeiro step (Excel)
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Cancelado',
+      detail: 'O upload foi cancelado.'
+    });
+  }
+
+
+  enviarArquivosExcel() {
+    if (!this.excelFile) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Aviso',
+        detail: 'Selecione a planilha Excel.'
+      });
+      return;
+    }
+    if (this.pdfFileItems.length === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Aviso',
+        detail: 'Selecione os PDFs.'
+      });
+      return;
+    }
+    if (this.validPdfFiles.length < this.relatoriosExcel.length) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Faltam PDFs',
+        detail: `Você tem ${this.relatoriosExcel.length} relatórios distintos, mas apenas ${this.validPdfFiles.length} PDFs válidos.`
+      });
+      return;
+    }
+    for (const relatorio of this.relatoriosExcel) {
+      const pdfEncontrado = this.validPdfFiles.some(pdf => {
+        const nameNoExt = pdf.name
+          .replace('.pdf', '')
+          .split('-')[0]
+          .trim()
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, "");
+        return nameNoExt === relatorio;
+      });
+      if (!pdfEncontrado) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Nome divergente',
+          detail: `Relatório "${relatorio}" não tem PDF correspondente.`
+        });
+        return;
+      }
+    }
+    this.loading = true;
+    this.servicoLLM.uploadExcelMultiplosPdfs(this.excelFile, this.validPdfFiles)
+      .subscribe({
+        next: (res) => {
+          console.log('Resposta do backend:', res);
+          if (this.excelFile) {
+            this.lastUploadedExcel = this.excelFile.name;
+          }
+          this.lastUploadedPdfs = this.validPdfFiles.map(pdf => pdf.name);
+          this.excelFile = null;
+          this.pdfFileItems = [];
+          this.relatoriosExcel = [];
+          this.excelUploader?.clear();
+          this.pdfUploader?.clear();
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Sucesso',
+            detail: 'Excel e PDFs enviados com sucesso!'
+          });
+          this.getRmcKpmg();
+          this.showUpload = false;
+          this.loading = false;
+          this.activeStep = 0; // Reset do step para o inicial
+        },
+        error: (err: any) => {
+          console.error('Erro ao enviar Excel+PDFs:', err);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Erro',
+            detail: err.error?.detail || err.message || 'Falha no upload.'
+          });
+          this.loading = false;
+        }
+      });
+  }
+
+  getRmcKpmg(): void {
+    this.servicoLLM.listarRelatoriosRcm().subscribe({
+      next: (lista: RcmRelatorio[]) => {
+        this.rcmRelatorios = lista;
+        this.datasDistintas = [...new Set(lista.map(rel => rel.periodo_apuracao).filter(data => data !== null))];
+        console.log('this.rcmRelatorios ', this.rcmRelatorios);
+        console.log('datasDistintas ', this.datasDistintas);
+      },
+      error: (err) => {
+        console.error('Erro ao buscar relatórios RCM:', err);
+      }
+    });
+  }
+
+  selecionarData(data: string): void {
+    this.selectedData = data;
+    console.log(this.selectedData);
+    const url = `https://mefis.aud.bb.com.br/aplic/chatgeral/agente/rcmkpmg/param1/consolidado/param2/${this.selectedData}`;
+    window.open(url, '_blank');
+  }
+
+
+  downloadRelatorio(relatorioId: number): void {
+    const url = this.servicoLLM.getPdfUrl(relatorioId);
+    window.open(url, '_blank');
+  }
+
+  deletarRelatorio(id: number): void {
+    this.servicoLLM.deletarRelatorioRCM(id).subscribe({
+      next: (res) => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Deletado',
+          detail: 'Registro deletado com sucesso!'
+        });
+        this.getRmcKpmg();
+      },
+      error: (err) => {
+        console.error('Erro ao deletar o registro:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Erro',
+          detail: 'Falha ao deletar o registro.'
+        });
+      }
+    });
+  }
+
+  // Propriedade para controlar a exibição do painel de upload
+  showUpload: boolean = false;
+}
