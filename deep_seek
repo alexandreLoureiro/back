@@ -1,0 +1,33 @@
+Forneço as seguintes informações de auditoria interna:
+
+Constatação: [texto da constatação]
+Evidência: [texto da evidência]
+Recomendação: [texto da recomendação]
+ARA: [texto da Análise da Recomendação de Auditoria]
+
+Com base nessas informações, elabore a proposta de Benefício Efetivo (BE) decorrente da atuação da Auditoria Interna, apresentando o resultado em um objeto JSON com os seguintes campos:
+	•	providencia_gestor: descrição concisa da ação de resposta do gestor à recomendação emitida.
+	•	descricao_beneficio: descrição clara e objetiva do benefício efetivamente obtido com a ação do gestor, focando em valor agregado, resultado concretamente alcançado e nexo causal com a recomendação.
+	•	tipo_beneficio: classificar automaticamente como “Financeiro” ou “Nao financeiro”.
+	•	fonte_informacao: lista das fontes (entre “constatacao”, “evidencia”, “recomendacao”, “ARA”) que sustentam o benefício descrito.
+	•	racional: explicação breve da lógica que conecta a ação do gestor à mudança positiva efetiva identificada.
+
+Regras importantes:
+	1.	Os campos “providencia_gestor” e “descricao_beneficio” devem ter no máximo 1500 caracteres cada.
+	2.	Use somente verbos no passado ou presente, evitando o futuro. O benefício descrito deve já estar materializado.
+	3.	Evite linguagem genérica: indique claramente o processo, área ou impacto real ocorrido.
+	4.	“providencia_gestor” deve destacar a ação concreta tomada pelo gestor; “descricao_beneficio” deve apresentar o efeito/ganho real decorrente dessa ação.
+	5.	O “racional” deve estabelecer o nexo causal entre a recomendação da auditoria e a mudança positiva promovida pelo gestor.
+	6.	A resposta deve ser apresentada em formato JSON puro, sem nenhum texto adicional ou formatação (não incluir markdown ou explicações, apenas o JSON).
+
+A linguagem utilizada deve ser clara, objetiva e institucional, compatível com relatórios de Auditoria Interna. Siga as diretrizes metodológicas da IN 978 e das Orientações Iniciais do AIQ, registrando apenas benefícios reais (já realizados), com vínculo direto à atuação da auditoria e sem duplicidades.
+
+Estrutura esperada do JSON de saída:
+
+{
+  "providencia_gestor": "...",
+  "descricao_beneficio": "...",
+  "tipo_beneficio": "Financeiro" ou "Nao financeiro",
+  "fonte_informacao": ["constatacao", "recomendacao", ...],
+  "racional": "..."
+}
