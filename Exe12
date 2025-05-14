@@ -1,130 +1,143 @@
-# Importações ajustadas
-from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model._logistic import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.svm._classes import SVC
-from sklearn.metrics import f1_score
+antes aparecia a mensagem que o usuário digitava, agora sumiu, o que pode ser?
 
-# Verificar a versão do scikit-learn
-import sklearn
-print(f"Versão do scikit-learn: {sklearn.__version__}")
+  
 
-# Criar um imputador para substituir valores ausentes pela média
-imputador = SimpleImputer(strategy='mean')
+<!-- Mensagens do Chat -->
+      <div class="messages" #messageContainer (scroll)="onScroll()" style="max-height: 600px; overflow-y: auto">
+        <div *ngFor="let msg of messages" [ngClass]="{
+          'user-message': msg.role === 'user',
+          'assistant-message': msg.role === 'assistant'
+        }" class="message-item">
+          <!-- Mensagem do Usuário ou Assistente -->
+          <p-card styleClass="message-card" [style]="{ 'margin-bottom': '1rem', 'white-space': 'pre-wrap' }">
+            <ng-container>
+              <span *ngIf="msg.role === 'user'">
+                <!--    <i class="pi pi-user" style="margin-right: .5rem;"></i>-->
+                <p-avatar *ngIf="msg.role === 'user'" [image]="
+                  'https://humanograma.intranet.bb.com.br/avatar/' +
+                  usuario?.chaveFuncionario
+                " class="mr-2" size="large" shape="circle"></p-avatar>
+              </span>
 
-# Ajustar o imputador nos dados de treino e transformá-los
-X_train_imputado = imputador.fit_transform(exercicio11a)
-# Transformar os dados de teste
-X_test_imputado = imputador.transform(exercicio11b)
+              <span *ngIf="msg.role === 'assistant'">
+                <p-avatar *ngIf="msg.role === 'assistant'" image="assets/assistente.png" class="mr-2" size="large"
+                  shape="circle"></p-avatar>
+              </span>
+              <br />
+              <span>{{ msg.content }}</span>
+            </ng-container>
+          </p-card>
+        </div>
+      </div>
 
-# Criar um escalonador
-escalonador = StandardScaler()
+      <!-- Indicador de carregamento enquanto espera resposta -->
+      <div *ngIf="loading" class="loading-indicator">
+        <!-- Novo indicador de "digitando" -->
+        <div class="typing-indicator">
+          <span class="dot"></span>
+          <span class="dot"></span>
+          <span class="dot"></span>
+        </div>
+        <span style="margin-left: 8px">{{ currentLoadingMessage }}</span>
+      </div>
+      
+      <span *ngIf="alerta_uso_ia">
+        <img src="assets/icone_vetor.jpg" width="25" height="25" alt="Alerta IA" class="icon" style="border-radius: 50%;">
+        <i>
+          <b> Aviso: </b>Esta resposta foi gerada por uma Inteligência Artificial (IA). É responsabilidade do auditor analisar criticamente os dados e validar as informações antes de tomar qualquer decisão.
+      </i>
+      <br>
+      </span>
+      
+      <!-- Barra de input e botão de enviar -->
+      <div class="input-bar">
+        <div class="char-counter" [ngStyle]="{ color: userMessage.length > 1000 ? 'red' : 'inherit' }">
+          {{ userMessage.length }}/1000
+          <span *ngIf="userMessage.length > 1000" style="color: red">
+            (Máx. 1.000 caracteres permitidos)
+          </span>
+        </div>
+        <textarea #textarea [(ngModel)]="userMessage" placeholder="Digite sua mensagem..."
+          (input)="adjustTextArea($event)" (keydown)="handleEnterKey($event)" rows="1" class="chat-textarea"></textarea>
 
-# Ajustar o escalonador nos dados de treino e transformá-los
-X_train_escalonado = escalonador.fit_transform(X_train_imputado)
-# Transformar os dados de teste
-X_test_escalonado = escalonador.transform(X_test_imputado)
-
-# Criar e treinar o modelo de Regressão Logística
-exercicio12e = LogisticRegression(random_state=42, max_iter=1000)
-exercicio12e.fit(X_train_escalonado, exercicio11c.values.ravel())
-
-# Criar e treinar o modelo de Árvore de Decisão
-exercicio12f = DecisionTreeClassifier(random_state=42)
-exercicio12f.fit(X_train_imputado, exercicio11c.values.ravel())
-
-# Criar e treinar o modelo SVM
-exercicio12g = SVC(random_state=42)
-exercicio12g.fit(X_train_escalonado, exercicio11c.values.ravel())
-
-# Fazer previsões com o modelo de Regressão Logística
-y_pred_logistic = exercicio12e.predict(X_test_escalonado)
-# Fazer previsões com o modelo de Árvore de Decisão
-y_pred_tree = exercicio12f.predict(X_test_imputado)
-# Fazer previsões com o modelo SVM
-y_pred_svm = exercicio12g.predict(X_test_escalonado)
-
-# Calcular o F1-score para cada modelo
-# Regressão Logística
-exercicio12a = round(f1_score(exercicio11d, y_pred_logistic), 3)
-# Árvore de Decisão
-exercicio12b = round(f1_score(exercicio11d, y_pred_tree), 3)
-# Support Vector Machine
-exercicio12c = round(f1_score(exercicio11d, y_pred_svm), 3)
-
-# Dicionário com os modelos e seus F1-scores
-modelos = {
-    exercicio12e: exercicio12a,  # Regressão Logística
-    exercicio12f: exercicio12b,  # Árvore de Decisão
-    exercicio12g: exercicio12c   # Support Vector Machine
-}
-
-# Identificar o modelo com o maior F1-score
-exercicio12d = max(modelos, key=modelos.get)
-
-# Dicionário para mapear modelos aos seus nomes
-nomes_modelos = {
-    exercicio12e: 'Regressão Logística',
-    exercicio12f: 'Árvore de Decisão',
-    exercicio12g: 'Support Vector Machine'
-}
-
-# Obter o nome do melhor modelo
-nome_melhor_modelo = nomes_modelos[exercicio12d]
-
-# Exibir os F1-scores
-print(f"F1-score Regressão Logística: {exercicio12a}")
-print(f"F1-score Árvore de Decisão: {exercicio12b}")
-print(f"F1-score Support Vector Machine: {exercicio12c}")
-
-# Exibir o modelo com o maior F1-score
-print(f"Modelo com maior F1-score: {nome_melhor_modelo}")
-
-# Verificar os tipos das variáveis
-print(f"Tipo de exercicio12e: {type(exercicio12e)}")
-print(f"Tipo de exercicio12f: {type(exercicio12f)}")
-print(f"Tipo de exercicio12g: {type(exercicio12g)}")
+        <div class="input-action">
+          <i class="pi pi-send" (click)="sendMessage()" [ngClass]="{
+            disabled:
+              userMessage.trim().length === 0 ||
+              loading ||
+              !contexto_inicial ||
+              userMessage.length > 1000
+          }"></i>
+        </div>
+      </div>
+      <button class="scroll-to-bottom" (click)="scrollToBottom()" *ngIf="showScrollDownButton">
+        <i class="pi pi-arrow-down"></i>
+      </button>
+    </div>
 
 
-
-# Mapear modelos para os nomes de variáveis
-model_objects = {
-    'logreg': exercicio12e,  # Regressão Logística
-    'clf': exercicio12f,     # Árvore de Decisão
-    'svc': exercicio12g      # Support Vector Machine
-}
-
-# Atribuir o identificador com o melhor F1-score
-exercicio12d = max(f1_scores, key=f1_scores.get)  # Isso agora será 'logreg', 'clf', ou 'svc'
-melhor_modelo = model_objects[exercicio12d]  # Agora melhor_modelo será o objeto correto
-
-# Exibir o modelo com o maior F1-score
-print(f"Modelo com maior F1-score: {exercicio12d}")
-
-# A partir daqui, continue com o código de avaliação, usando melhor_modelo
-if isinstance(melhor_modelo, LogisticRegression):
-    y_pred_melhor_modelo = melhor_modelo.predict(X_test_escalonado)
-elif isinstance(melhor_modelo, DecisionTreeClassifier):
-    y_pred_melhor_modelo = melhor_modelo.predict(X_test_imputado)
-elif isinstance(melhor_modelo, SVC):
-    y_pred_melhor_modelo = melhor_modelo.predict(X_test_escalonado)
-else:
-    raise ValueError("Modelo desconhecido.")
-    
-# Matriz de confusão e análise dos resultados
-matriz_confusao = confusion_matrix(exercicio11d, y_pred_melhor_modelo)
-verdadeiros_negativos = matriz_confusao[0, 0]
-falsos_positivos = matriz_confusao[0, 1]
-falsos_negativos = matriz_confusao[1, 0]
-verdadeiros_positivos = matriz_confusao[1, 1]
-
-# Atribuir os resultados às variáveis solicitadas
-exercicio13a = int(falsos_positivos)
-exercicio13b = int(falsos_negativos)
-exercicio13c = 'b'  # Falso negativo é mais crítico neste contexto
-
-# Exibir os resultados
-print(f"Falsos Positivos (exercicio13a): {exercicio13a}")
-print(f"Falsos Negativos (exercicio13b): {exercicio13b}")
-print(f"Erro mais crítico (exercicio13c): {exercicio13c}")
+sendMessage(): void {
+    const trimmedMessage = this.userMessage.trim();
+  
+    if (!trimmedMessage) {
+      this.showNotification('warn', 'Atenção', 'Digite uma mensagem antes de enviar.');
+      return;
+    }   
+  
+    // Limpa o campo de input e redefine a altura do textarea
+    this.userMessage = '';
+    this.resetTextAreaHeight();
+  
+    this.loading = true;
+    this.showNotification('info', 'Enviando', 'Sua mensagem está sendo processada.');
+  
+    // Envia a mensagem ao backend
+    this.servicoLLM.sendMessage(this.sessionId, trimmedMessage).subscribe({
+      next: (response) => {
+        // Adiciona a resposta do assistente ao histórico
+        this.messages.push({ role: 'assistant', content: response.answer });
+        this.loading = false;
+        this.showNotification('success', 'Sucesso', 'Mensagem enviada com sucesso.');      
+        this.scrollToBottom(); 
+  
+        // Salvar mensagens no backend sem bloquear a interface        
+        const mensagemPayloadGeral: MensagemPayloadGeral = {
+          objeto_auditoria: this.objetoAudDetalhes.objeto_auditoria ? this.objetoAudDetalhes.objeto_auditoria.toString() : this.dynamicObject['agente'] , // ou um valor padrão
+          matricula: this.usuario?.chaveFuncionario,
+          sessao: this.sessionId,
+          remetente: 'usuario',
+          conteudo: trimmedMessage
+      };
+        this.servicoLLM.salvarChatGeral(mensagemPayloadGeral).subscribe({
+          next: (res) => {
+            console.log('Mensagem do usuário salva:', res)
+            const mensagemPayloadGeralA: MensagemPayloadGeral = {
+              objeto_auditoria: this.objetoAudDetalhes.objeto_auditoria ? this.objetoAudDetalhes.objeto_auditoria.toString() : this.dynamicObject['agente'] , // ou um valor padrão
+              matricula: this.usuario?.chaveFuncionario,
+              sessao: this.sessionId,
+              remetente: 'assistente',
+              conteudo: response.answer
+            };    
+            this.servicoLLM.salvarChatGeral(mensagemPayloadGeralA).subscribe({
+              next: (res) => {
+                console.log('Mensagem do usuário salva:', res)
+                this.alerta_uso_ia = true;
+              },
+              error: (err) => console.error('Erro ao salvar mensagem do usuário:', err)
+            });
+          },
+          error: (err) => console.error('Erro ao salvar mensagem do usuário:', err)
+        });        
+      },
+      error: (err) => {
+        console.error('Erro ao processar mensagem:', err);
+        this.loading = false;
+        this.showNotification('error', 'Erro', 'Erro ao processar sua mensagem. Tente novamente mais tarde.');
+        this.messages.push({
+          role: 'assistant',
+          content: 'Erro ao processar sua mensagem. Por favor, tente novamente mais tarde.'
+        });
+        this.scrollToBottom();
+      },
+    }); 
+  }
