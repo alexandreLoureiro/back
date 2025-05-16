@@ -1,143 +1,18 @@
-antes aparecia a mensagem que o usuário digitava, agora sumiu, o que pode ser?
+import pandas as pd
+import numpy as np
+from sqlalchemy import text
+from sentence_transformers import SentenceTransformer
+from tqdm.auto import tqdm   # progresso bonitinho
 
-  
-
-<!-- Mensagens do Chat -->
-      <div class="messages" #messageContainer (scroll)="onScroll()" style="max-height: 600px; overflow-y: auto">
-        <div *ngFor="let msg of messages" [ngClass]="{
-          'user-message': msg.role === 'user',
-          'assistant-message': msg.role === 'assistant'
-        }" class="message-item">
-          <!-- Mensagem do Usuário ou Assistente -->
-          <p-card styleClass="message-card" [style]="{ 'margin-bottom': '1rem', 'white-space': 'pre-wrap' }">
-            <ng-container>
-              <span *ngIf="msg.role === 'user'">
-                <!--    <i class="pi pi-user" style="margin-right: .5rem;"></i>-->
-                <p-avatar *ngIf="msg.role === 'user'" [image]="
-                  'https://humanograma.intranet.bb.com.br/avatar/' +
-                  usuario?.chaveFuncionario
-                " class="mr-2" size="large" shape="circle"></p-avatar>
-              </span>
-
-              <span *ngIf="msg.role === 'assistant'">
-                <p-avatar *ngIf="msg.role === 'assistant'" image="assets/assistente.png" class="mr-2" size="large"
-                  shape="circle"></p-avatar>
-              </span>
-              <br />
-              <span>{{ msg.content }}</span>
-            </ng-container>
-          </p-card>
-        </div>
-      </div>
-
-      <!-- Indicador de carregamento enquanto espera resposta -->
-      <div *ngIf="loading" class="loading-indicator">
-        <!-- Novo indicador de "digitando" -->
-        <div class="typing-indicator">
-          <span class="dot"></span>
-          <span class="dot"></span>
-          <span class="dot"></span>
-        </div>
-        <span style="margin-left: 8px">{{ currentLoadingMessage }}</span>
-      </div>
-      
-      <span *ngIf="alerta_uso_ia">
-        <img src="assets/icone_vetor.jpg" width="25" height="25" alt="Alerta IA" class="icon" style="border-radius: 50%;">
-        <i>
-          <b> Aviso: </b>Esta resposta foi gerada por uma Inteligência Artificial (IA). É responsabilidade do auditor analisar criticamente os dados e validar as informações antes de tomar qualquer decisão.
-      </i>
-      <br>
-      </span>
-      
-      <!-- Barra de input e botão de enviar -->
-      <div class="input-bar">
-        <div class="char-counter" [ngStyle]="{ color: userMessage.length > 1000 ? 'red' : 'inherit' }">
-          {{ userMessage.length }}/1000
-          <span *ngIf="userMessage.length > 1000" style="color: red">
-            (Máx. 1.000 caracteres permitidos)
-          </span>
-        </div>
-        <textarea #textarea [(ngModel)]="userMessage" placeholder="Digite sua mensagem..."
-          (input)="adjustTextArea($event)" (keydown)="handleEnterKey($event)" rows="1" class="chat-textarea"></textarea>
-
-        <div class="input-action">
-          <i class="pi pi-send" (click)="sendMessage()" [ngClass]="{
-            disabled:
-              userMessage.trim().length === 0 ||
-              loading ||
-              !contexto_inicial ||
-              userMessage.length > 1000
-          }"></i>
-        </div>
-      </div>
-      <button class="scroll-to-bottom" (click)="scrollToBottom()" *ngIf="showScrollDownButton">
-        <i class="pi pi-arrow-down"></i>
-      </button>
-    </div>
+MODEL_PATH = "/opt/models/all-MiniLM-L6-v2"   # já copiado para o servidor
+model = SentenceTransformer(MODEL_PATH, device="cpu")
 
 
-sendMessage(): void {
-    const trimmedMessage = this.userMessage.trim();
-  
-    if (!trimmedMessage) {
-      this.showNotification('warn', 'Atenção', 'Digite uma mensagem antes de enviar.');
-      return;
-    }   
-  
-    // Limpa o campo de input e redefine a altura do textarea
-    this.userMessage = '';
-    this.resetTextAreaHeight();
-  
-    this.loading = true;
-    this.showNotification('info', 'Enviando', 'Sua mensagem está sendo processada.');
-  
-    // Envia a mensagem ao backend
-    this.servicoLLM.sendMessage(this.sessionId, trimmedMessage).subscribe({
-      next: (response) => {
-        // Adiciona a resposta do assistente ao histórico
-        this.messages.push({ role: 'assistant', content: response.answer });
-        this.loading = false;
-        this.showNotification('success', 'Sucesso', 'Mensagem enviada com sucesso.');      
-        this.scrollToBottom(); 
-  
-        // Salvar mensagens no backend sem bloquear a interface        
-        const mensagemPayloadGeral: MensagemPayloadGeral = {
-          objeto_auditoria: this.objetoAudDetalhes.objeto_auditoria ? this.objetoAudDetalhes.objeto_auditoria.toString() : this.dynamicObject['agente'] , // ou um valor padrão
-          matricula: this.usuario?.chaveFuncionario,
-          sessao: this.sessionId,
-          remetente: 'usuario',
-          conteudo: trimmedMessage
-      };
-        this.servicoLLM.salvarChatGeral(mensagemPayloadGeral).subscribe({
-          next: (res) => {
-            console.log('Mensagem do usuário salva:', res)
-            const mensagemPayloadGeralA: MensagemPayloadGeral = {
-              objeto_auditoria: this.objetoAudDetalhes.objeto_auditoria ? this.objetoAudDetalhes.objeto_auditoria.toString() : this.dynamicObject['agente'] , // ou um valor padrão
-              matricula: this.usuario?.chaveFuncionario,
-              sessao: this.sessionId,
-              remetente: 'assistente',
-              conteudo: response.answer
-            };    
-            this.servicoLLM.salvarChatGeral(mensagemPayloadGeralA).subscribe({
-              next: (res) => {
-                console.log('Mensagem do usuário salva:', res)
-                this.alerta_uso_ia = true;
-              },
-              error: (err) => console.error('Erro ao salvar mensagem do usuário:', err)
-            });
-          },
-          error: (err) => console.error('Erro ao salvar mensagem do usuário:', err)
-        });        
-      },
-      error: (err) => {
-        console.error('Erro ao processar mensagem:', err);
-        this.loading = false;
-        this.showNotification('error', 'Erro', 'Erro ao processar sua mensagem. Tente novamente mais tarde.');
-        this.messages.push({
-          role: 'assistant',
-          content: 'Erro ao processar sua mensagem. Por favor, tente novamente mais tarde.'
-        });
-        this.scrollToBottom();
-      },
-    }); 
-  }
+# nome_da_tabela : (coluna_titulo, coluna_texto)
+ORIGENS = {
+    "noticias_mercado":       ("titulo", "texto"),
+    "bb_atende":              ("assunto", "descricao"),
+    "entidade_fiscalizacao":  ("titulo", "detalhe"),
+}
+
+
