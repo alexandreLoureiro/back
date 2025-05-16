@@ -16,3 +16,99 @@ ORIGENS = {
 }
 
 
+def ingere_tabela(tabela, col_titulo, col_texto, batch=256):
+    print(f"Ingerindo {tabela}…")
+    
+    # 2.1 puxar tudo para um DataFrame
+    df = pd.read_sql(f"SELECT id, {col_titulo}, {col_texto} FROM {tabela}", engine)
+    df.rename(columns={col_titulo: "titulo", col_texto: "texto"}, inplace=True)
+    df["origem"] = tabela  # traço de procedência
+    
+    # 2.2 gerar embeddings em lotes
+    embeddings = []
+    for chunk in tqdm(np.array_split(df["texto"].values, max(1, len(df)//batch))):
+        emb = model.encode(chunk.tolist(),
+                           normalize_embeddings=True,
+                           batch_size=batch)
+        embeddings.append(emb.astype(np.float32))
+    df["embedding"] = np.vstack(embeddings).tolist()
+    
+    # 2.3 UPSERT na tabela docs (se já existir id + origem)
+    upsert_sql = text("""
+        INSERT INTO docs (src_id, origem, titulo, texto, embedding)
+        VALUES (:src_id, :origem, :titulo, :texto, :embedding)
+        ON CONFLICT (src_id, origem)
+        DO UPDATE SET
+            titulo = EXCLUDED.titulo,
+            texto  = EXCLUDED.texto,
+            embedding = EXCLUDED.embedding;
+    """)
+    with engineV.begin() as conn:
+        conn.execute(
+            upsert_sql,
+            df[["id", "origem", "titulo", "texto", "embedding"]]
+              .rename(columns={"id": "src_id"})
+              .to_dict(orient="records")
+        )
+    print(f"{len(df)} registros processados.")
+
+
+for tab, (col_titulo, col_texto) in ORIGENS.items():
+    ingere_tabela(tab, col_titulo, col_texto)
+
+
+def busca_estratificada(pergunta, k=5, limiar=0.75):
+    emb = model.encode(pergunta, normalize_embeddings=True).tolist()
+    
+    sql = text("""
+        WITH ranked AS (
+            SELECT id, src_id, origem, titulo, texto,
+                   1 - (embedding <=> :emb) AS score,
+                   ROW_NUMBER() OVER (
+                       PARTITION BY origem
+                       ORDER BY embedding <-> :emb
+                   ) AS rn
+            FROM docs
+            WHERE 1 - (embedding <=> :emb) >= :limiar
+        )
+        SELECT *
+          FROM ranked
+         WHERE rn <= :k
+      ORDER BY score DESC;
+    """)
+    with engineV.connect() as conn:
+        rows = conn.execute(sql, {"emb": emb,
+                                  "limiar": limiar,
+                                  "k": k}).fetchall()
+    return pd.DataFrame(rows)
+
+
+df_res = busca_estratificada("impacto do Drex offline", k=5, limiar=0.70)
+df_res[["origem", "titulo", "score"]]
+
+
+def busca_com_fallback(pergunta, total=15, k_por_origem=5, limiar=0.75):
+    principais = busca_estratificada(pergunta, k_por_origem, limiar)
+    falta = total - len(principais)
+    if falta <= 0:
+        return principais
+    
+    emb = model.encode(pergunta, normalize_embeddings=True).tolist()
+    supl_sql = text("""
+        SELECT id, src_id, origem, titulo, texto,
+               1 - (embedding <=> :emb) AS score
+          FROM docs
+      ORDER BY embedding <-> :emb
+         LIMIT :limite;
+    """)
+    with engineV.connect() as conn:
+        supl = conn.execute(supl_sql, {"emb": emb, "limite": falta}).fetchall()
+    df_supl = pd.DataFrame(supl)
+    
+    # evitar duplicados
+    df_final = pd.concat([principais, df_supl]).drop_duplicates("id")
+    return df_final.sort_values("score", ascending=False).reset_index(drop=True)
+
+
+
+
